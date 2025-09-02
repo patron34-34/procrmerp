@@ -1,5 +1,3 @@
-
-
 import React, { useState, useMemo } from 'react';
 import { useApp } from '../../../context/AppContext';
 import { Invoice, InvoiceStatus } from '../../../types';
@@ -40,6 +38,7 @@ const InvoiceSummaryReport: React.FC = () => {
         [InvoiceStatus.Sent]: '#3b82f6',
         [InvoiceStatus.Overdue]: '#ef4444',
         [InvoiceStatus.Draft]: '#64748b',
+        [InvoiceStatus.Archived]: '#64748b',
     };
 
     const handleExport = () => {

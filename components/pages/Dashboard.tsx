@@ -1,5 +1,3 @@
-
-
 import React, { useState } from 'react';
 import { useApp } from '../../context/AppContext';
 import { AVAILABLE_WIDGETS } from '../../constants';
@@ -10,7 +8,8 @@ import WidgetWrapper from '../dashboard-widgets/WidgetWrapper';
 import StatCardWidget from '../dashboard-widgets/StatCardWidget';
 import ChartWidget from '../dashboard-widgets/ChartWidget';
 import ListWidget from '../dashboard-widgets/ListWidget';
-import Card from '../ui/Card';
+import EmptyState from '../ui/EmptyState';
+import { ICONS } from '../../constants';
 
 const WIDGET_MAP = {
   StatCard: StatCardWidget,
@@ -25,6 +24,7 @@ const Dashboard: React.FC = () => {
   const [originalLayout, setOriginalLayout] = useState(dashboardLayout);
 
   const canManageDashboard = hasPermission('dashboard:duzenle');
+  const hasWidgets = dashboardLayout.length > 0;
 
   const handleEditToggle = () => {
     if (isEditMode) {
@@ -61,34 +61,44 @@ const Dashboard: React.FC = () => {
           </div>
         )}
       </div>
+      
+      {hasWidgets ? (
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-6 auto-rows-[160px]">
+          {dashboardLayout.map(widget => {
+            const config = AVAILABLE_WIDGETS.find(w => w.id === widget.widgetId);
+            if (!config) return null;
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-6 auto-rows-min">
-        {dashboardLayout.map(widget => {
-          const config = AVAILABLE_WIDGETS.find(w => w.id === widget.widgetId);
-          if (!config) return null;
-
-          const WidgetComponent = WIDGET_MAP[config.type];
-          
-          return (
-            <Card
-              key={widget.id}
-              className="!p-0 flex flex-col h-full"
-              style={{
-                gridColumn: `span ${widget.w}`,
-                gridRow: `span ${widget.h}`,
-              }}
-            >
-              <WidgetWrapper
-                widget={widget}
-                config={config}
-                isEditMode={isEditMode}
+            const WidgetComponent = WIDGET_MAP[config.type];
+            
+            return (
+              <div
+                key={widget.id}
+                style={{
+                  gridColumn: `span ${widget.w}`,
+                  gridRow: `span ${widget.h}`,
+                }}
               >
-                <WidgetComponent widgetId={widget.widgetId} />
-              </WidgetWrapper>
-            </Card>
-          );
-        })}
-      </div>
+                <WidgetWrapper
+                  widget={widget}
+                  config={config}
+                  isEditMode={isEditMode}
+                >
+                  <WidgetComponent widgetId={widget.widgetId} />
+                </WidgetWrapper>
+              </div>
+            );
+          })}
+        </div>
+      ) : (
+        <div className="mt-12">
+            <EmptyState
+                icon={ICONS.dashboard}
+                title="Kontrol Paneliniz Boş"
+                description="Başlamak için panoyu düzenleyin ve bileşenler ekleyin."
+                action={canManageDashboard ? <Button onClick={() => setIsEditMode(true)}>Panoyu Düzenle</Button> : undefined}
+            />
+        </div>
+      )}
 
       <Modal isOpen={isAddWidgetModalOpen} onClose={() => setIsAddWidgetModalOpen(false)} title="Bileşen Ekle">
         <div className="max-h-96 overflow-y-auto">
@@ -101,7 +111,7 @@ const Dashboard: React.FC = () => {
                       addWidgetToDashboard(widget.id);
                       setIsAddWidgetModalOpen(false);
                     }}
-                    className="w-full text-left p-3 bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 rounded-md"
+                    className="w-full text-left p-3 bg-slate-100 dark:bg-dark-sidebar hover:bg-slate-200 dark:hover:bg-dark-border rounded-lg"
                   >
                     {widget.name}
                   </button>

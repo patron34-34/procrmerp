@@ -196,7 +196,7 @@ const TaskFormModal: React.FC<TaskFormModalProps> = ({ isOpen, onClose, task, pr
                     </div>
                      <div>
                         <label htmlFor="startDate" className="block text-sm font-medium text-text-secondary">Başlangıç Tarihi</label>
-                        <input type="date" name="startDate" id="startDate" value={formData.startDate} onChange={handleInputChange} className="mt-1 block w-full p-2 border rounded-md dark:bg-slate-700 dark:border-dark-border"/>
+                        <input type="date" name="startDate" id="startDate" value={formData.startDate || ''} onChange={handleInputChange} className="mt-1 block w-full p-2 border rounded-md dark:bg-slate-700 dark:border-dark-border"/>
                     </div>
                      <div>
                         <label htmlFor="dueDate" className="block text-sm font-medium text-text-secondary">Bitiş Tarihi</label>

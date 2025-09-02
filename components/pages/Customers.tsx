@@ -1,6 +1,3 @@
-
-
-
 import React, { useState, useMemo, useCallback } from 'react';
 import { useApp } from '../../context/AppContext';
 import { Customer, SortConfig } from '../../types';
@@ -16,12 +13,13 @@ import Modal from '../ui/Modal';
 import ConfirmationModal from '../ui/ConfirmationModal';
 import CustomerFilterBar from '../customers/CustomerFilterBar';
 import CustomerMapView from '../customers/CustomerMapView';
+import { calculateHealthScore } from '../../utils/healthScoreCalculator';
 
 
 type ViewMode = 'list' | 'kanban' | 'map';
 
 const Customers: React.FC = () => {
-    const { customers, employees, hasPermission, assignCustomersToEmployee, addTagsToCustomers, deleteMultipleCustomers, updateCustomerStatus, updateCustomer, savedViews } = useApp();
+    const { customers, employees, hasPermission, assignCustomersToEmployee, addTagsToCustomers, deleteMultipleCustomers, updateCustomerStatus, updateCustomer, loadSavedView, deals, invoices, tickets } = useApp();
     const [viewMode, setViewMode] = useState<ViewMode>('list');
     const [selectedCustomerIds, setSelectedCustomerIds] = useState<number[]>([]);
     const [isFormModalOpen, setIsFormModalOpen] = useState(false);
@@ -74,20 +72,21 @@ const Customers: React.FC = () => {
         setSelectedCustomerIds([]);
     };
 
-    const handleLoadView = (viewId: string) => {
-        const view = savedViews.find(v => v.id === parseInt(viewId));
+    const handleLoadView = useCallback((viewId: string) => {
+        const view = loadSavedView(parseInt(viewId, 10));
         if (view) {
             setFilters(view.filters);
             setSortConfig(view.sortConfig);
         }
-    };
+    }, [loadSavedView]);
     
     const enrichedCustomers = useMemo(() => {
         return customers.map(customer => {
             const assignee = employees.find(e => e.id === customer.assignedToId);
-            return { ...customer, assignedToName: assignee?.name || 'Atanmamış' };
+            const healthScore = calculateHealthScore(customer, deals, invoices, tickets);
+            return { ...customer, assignedToName: assignee?.name || 'Atanmamış', healthScore };
         });
-    }, [customers, employees]);
+    }, [customers, employees, deals, invoices, tickets]);
     
     const filteredAndSortedCustomers = useMemo(() => {
         let filtered = enrichedCustomers.filter(c => 

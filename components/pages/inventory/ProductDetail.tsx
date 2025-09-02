@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { useParams, Link, useNavigate } from 'react-router-dom';
 import { useApp } from '../../../context/AppContext';
 import Card from '../../ui/Card';
 import { ICONS } from '../../../constants';
@@ -13,6 +13,7 @@ type ActiveTab = 'overview' | 'stock' | 'history';
 
 const ProductDetail: React.FC = () => {
     const { id } = useParams<{ id: string }>();
+    const navigate = useNavigate();
     const { products, warehouses, stockMovements, stockItems, hasPermission, getProductStockInfo } = useApp();
     const [activeTab, setActiveTab] = useState<ActiveTab>('overview');
     
@@ -43,6 +44,19 @@ const ProductDetail: React.FC = () => {
     return (
         <>
             <div className="space-y-6">
+                <div className="flex justify-between items-center">
+                    <Button variant="secondary" onClick={() => navigate('/inventory/products')}>
+                       <span className="flex items-center gap-2">&larr; Ürün Listesine Geri Dön</span>
+                    </Button>
+                    {canManage && (
+                        <div className="flex gap-2">
+                            <Button variant="secondary" onClick={() => setIsTransferModalOpen(true)}>Stok Transferi</Button>
+                            <Button variant="secondary" onClick={() => setIsAdjustmentModalOpen(true)}>Stok Düzeltmesi</Button>
+                            <Button onClick={() => setIsEditModalOpen(true)}>Düzenle</Button>
+                        </div>
+                    )}
+                </div>
+
                 <Card>
                     <div className="flex justify-between items-start">
                         <div>
@@ -52,13 +66,6 @@ const ProductDetail: React.FC = () => {
                                 <span>Kategori: {product.category}</span>
                             </div>
                         </div>
-                        {canManage && (
-                            <div className="flex gap-2">
-                                <Button variant="secondary" onClick={() => setIsTransferModalOpen(true)}>Stok Transferi</Button>
-                                <Button variant="secondary" onClick={() => setIsAdjustmentModalOpen(true)}>Stok Düzeltmesi</Button>
-                                <Button onClick={() => setIsEditModalOpen(true)}>Düzenle</Button>
-                            </div>
-                        )}
                     </div>
                 </Card>
 

@@ -1,4 +1,3 @@
-
 import React, { useState, useMemo } from 'react';
 import { useApp } from '../../context/AppContext';
 import { Document } from '../../types';
@@ -70,7 +69,7 @@ const MoveItemsModal: React.FC<MoveItemsModalProps> = ({ isOpen, onClose, itemsT
                         onClick={() => setTargetFolderId(null)}
                         className={`w-full text-left p-2 my-1 rounded-md flex items-center gap-2 ${targetFolderId === null ? 'bg-primary-100 dark:bg-primary-900/50' : 'hover:bg-slate-100 dark:hover:bg-slate-700'}`}
                     >
-                       {ICONS.documents} Ana Dizin
+                       {ICONS.folder} Ana Dizin
                     </button>
                     <FolderTree
                         folders={allFolders}

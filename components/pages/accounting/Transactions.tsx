@@ -123,7 +123,7 @@ const Transactions: React.FC = () => {
                         </table>
                     ) : (
                         <EmptyState
-                            icon={ICONS.transactions}
+                            icon={ICONS.transfer}
                             title="Henüz Finansal İşlem Yok"
                             description="İlk gelirinizi veya giderinizi ekleyerek başlayın."
                             action={canManageFinance ? <Button onClick={openModalForNew}>İşlem Ekle</Button> : undefined}

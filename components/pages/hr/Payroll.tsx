@@ -1,6 +1,5 @@
 
 
-
 import React, { useState } from 'react';
 import { useApp } from '../../../context/AppContext';
 import { PayrollRun } from '../../../types';
@@ -8,13 +7,14 @@ import Card from '../../ui/Card';
 import Button from '../../ui/Button';
 import { ICONS } from '../../../constants';
 import EmptyState from '../../ui/EmptyState';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import Modal from '../../ui/Modal';
 import { useNotification } from '../../../context/NotificationContext';
 
 const Payroll: React.FC = () => {
     const { payrollRuns, addPayrollRun, hasPermission } = useApp();
     const { addToast } = useNotification();
+    const navigate = useNavigate();
     const [isModalOpen, setIsModalOpen] = useState(false);
     
     const currentYear = new Date().getFullYear();
@@ -32,13 +32,12 @@ const Payroll: React.FC = () => {
 
     const handleCreateRun = () => {
         const payPeriod = `${selectedMonth} ${selectedYear}`;
-        if (payrollRuns.some(run => run.payPeriod === payPeriod)) {
-             addToast(`${payPeriod} dönemi için zaten bir bordro mevcut.`, "warning");
-             return;
-        }
         if (payPeriod.trim()) {
-            addPayrollRun(payPeriod.trim());
+            const newRun = addPayrollRun(payPeriod.trim());
             setIsModalOpen(false);
+            if (newRun) {
+                navigate(`/hr/payroll/${newRun.id}`);
+            }
         } else {
             addToast("Lütfen bir bordro dönemi belirtin.", "warning");
         }
@@ -83,7 +82,7 @@ const Payroll: React.FC = () => {
                                         </td>
                                         <td className="p-3">
                                             <Link to={`/hr/payroll/${run.id}`} className="text-primary-600 hover:underline text-sm">
-                                                Puantaj ve Bordro Yönetimi
+                                                Yönet
                                             </Link>
                                         </td>
                                     </tr>
@@ -92,7 +91,7 @@ const Payroll: React.FC = () => {
                         </table>
                     ) : (
                          <EmptyState
-                            icon={ICONS.payroll!}
+                            icon={ICONS.payroll}
                             title="Henüz Bordro Dönemi Yok"
                             description="İlk bordro döneminizi oluşturarak maaş ödemelerini yönetmeye başlayın."
                             action={canManage ? <Button onClick={() => setIsModalOpen(true)}>Bordro Dönemi Oluştur</Button> : undefined}

@@ -1,6 +1,4 @@
-
-
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { useApp } from '../../../context/AppContext';
 import { LeaveRequest, LeaveStatus, LeaveType } from '../../../types';
 import Card from '../../ui/Card';
@@ -10,7 +8,7 @@ import EmptyState from '../../ui/EmptyState';
 import { ICONS } from '../../../constants';
 
 const LeaveManagement: React.FC = () => {
-    const { leaveRequests, employees, addLeaveRequest, updateLeaveRequestStatus, hasPermission } = useApp();
+    const { leaveRequests, employees, addLeaveRequest, updateLeaveRequestStatus, hasPermission, calculateAnnualLeaveBalance } = useApp();
     const [isModalOpen, setIsModalOpen] = useState(false);
 
     const canManageLeaves = hasPermission('ik:izin-yonet');
@@ -24,6 +22,11 @@ const LeaveManagement: React.FC = () => {
         reason: '',
     };
     const [formData, setFormData] = useState(initialFormState);
+    
+    const selectedEmployeeBalance = useMemo(() => {
+        if (!formData.employeeId) return null;
+        return calculateAnnualLeaveBalance(formData.employeeId);
+    }, [formData.employeeId, calculateAnnualLeaveBalance, leaveRequests]);
 
     const resetForm = () => {
         setFormData(initialFormState);
@@ -119,6 +122,16 @@ const LeaveManagement: React.FC = () => {
                            {employees.map(e => <option key={e.id} value={e.id}>{e.name}</option>)}
                         </select>
                     </div>
+                    {formData.leaveType === LeaveType.Annual && selectedEmployeeBalance && (
+                        <div className="p-3 bg-blue-50 text-blue-800 rounded-md text-sm">
+                            <p className="font-bold text-center mb-2">Seçilen Çalışanın İzin Bakiyesi</p>
+                            <div className="grid grid-cols-3 text-center">
+                                <div><p className="font-bold text-lg">{selectedEmployeeBalance.entitled}</p><p>Hak Edilen</p></div>
+                                <div><p className="font-bold text-lg">{selectedEmployeeBalance.used}</p><p>Kullanılan</p></div>
+                                <div><p className="font-bold text-lg text-green-600">{selectedEmployeeBalance.balance}</p><p>Kalan</p></div>
+                            </div>
+                        </div>
+                    )}
                      <div>
                         <label htmlFor="leaveType" className="block text-sm font-semibold text-text-secondary dark:text-dark-text-secondary">İzin Türü *</label>
                         <select name="leaveType" id="leaveType" value={formData.leaveType} onChange={handleInputChange} required className="mt-1 block w-full p-2 border border-border rounded-md shadow-sm dark:bg-slate-700 dark:border-dark-border dark:text-white">

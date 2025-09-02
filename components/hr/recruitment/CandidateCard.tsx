@@ -18,7 +18,7 @@ const CandidateCard: React.FC<CandidateCardProps> = ({ candidate, onClick, canMa
             draggable={canManage}
             onDragStart={canManage ? handleDragStart : undefined}
             onClick={onClick}
-            className={`bg-white p-3 mb-3 rounded-md shadow-sm border border-slate-200 dark:bg-dark-card/50 dark:border-dark-border ${canManage ? 'cursor-grab active:cursor-grabbing' : 'cursor-pointer'}`}
+            className={`bg-card p-3 mb-3 rounded-md shadow-sm border border-border dark:border-dark-border dark:bg-dark-card ${canManage ? 'cursor-grab active:cursor-grabbing' : 'cursor-pointer'}`}
         >
             <div className="flex items-center gap-3">
                 <img src={candidate.avatar} alt={candidate.name} className="h-10 w-10 rounded-full" />

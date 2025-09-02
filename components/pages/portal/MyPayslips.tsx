@@ -1,9 +1,10 @@
-
 import React, { useState, useMemo } from 'react';
 import { useApp } from '../../../context/AppContext';
 import { Payslip } from '../../../types';
 import Card from '../../ui/Card';
 import PayslipDetailModal from '../../hr/PayslipDetailModal';
+import EmptyState from '../../ui/EmptyState';
+import { ICONS } from '../../../constants';
 
 const MyPayslips: React.FC = () => {
     const { currentUser, payslips } = useApp();
@@ -19,26 +20,34 @@ const MyPayslips: React.FC = () => {
         <>
             <Card title="Maaş Pusulalarım">
                 <div className="overflow-x-auto">
-                    <table className="w-full text-left">
-                        <thead className="border-b dark:border-dark-border"><tr className="bg-slate-50 dark:bg-slate-900/50">
-                            <th className="p-3 font-semibold">Dönem</th>
-                            <th className="p-3 font-semibold text-right">Brüt Maaş</th>
-                            <th className="p-3 font-semibold text-right">Net Maaş</th>
-                            <th className="p-3 font-semibold text-center">Eylemler</th>
-                        </tr></thead>
-                        <tbody>
-                            {myPayslips.map(p => (
-                                <tr key={p.id} className="border-b dark:border-dark-border hover:bg-slate-50 dark:hover:bg-slate-800/50">
-                                    <td className="p-3 font-medium">{p.payPeriod}</td>
-                                    <td className="p-3 text-right font-mono">${p.grossPay.toLocaleString(undefined, { minimumFractionDigits: 2 })}</td>
-                                    <td className="p-3 text-right font-mono text-green-600 font-semibold">${p.netPay.toLocaleString(undefined, { minimumFractionDigits: 2 })}</td>
-                                    <td className="p-3 text-center">
-                                        <button onClick={() => setViewingPayslip(p)} className="text-primary-600 hover:underline text-sm">Görüntüle/Yazdır</button>
-                                    </td>
-                                </tr>
-                            ))}
-                        </tbody>
-                    </table>
+                    {myPayslips.length > 0 ? (
+                        <table className="w-full text-left">
+                            <thead className="border-b dark:border-dark-border"><tr className="bg-slate-50 dark:bg-slate-900/50">
+                                <th className="p-3 font-semibold">Dönem</th>
+                                <th className="p-3 font-semibold text-right">Brüt Maaş</th>
+                                <th className="p-3 font-semibold text-right">Net Maaş</th>
+                                <th className="p-3 font-semibold text-center">Eylemler</th>
+                            </tr></thead>
+                            <tbody>
+                                {myPayslips.map(p => (
+                                    <tr key={p.id} className="border-b dark:border-dark-border hover:bg-slate-50 dark:hover:bg-slate-800/50">
+                                        <td className="p-3 font-medium">{p.payPeriod}</td>
+                                        <td className="p-3 text-right font-mono">${p.grossPay.toLocaleString(undefined, { minimumFractionDigits: 2 })}</td>
+                                        <td className="p-3 text-right font-mono text-green-600 font-semibold">${p.netPay.toLocaleString(undefined, { minimumFractionDigits: 2 })}</td>
+                                        <td className="p-3 text-center">
+                                            <button onClick={() => setViewingPayslip(p)} className="text-primary-600 hover:underline text-sm">Görüntüle/Yazdır</button>
+                                        </td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    ) : (
+                        <EmptyState 
+                            icon={ICONS.payroll}
+                            title="Maaş Pusulası Bulunamadı"
+                            description="Sistemde sizin için oluşturulmuş bir maaş pusulası henüz bulunmuyor."
+                        />
+                    )}
                 </div>
             </Card>
             {viewingPayslip && (

@@ -1,17 +1,16 @@
-import React, { useState, useMemo, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { useApp } from '../../context/AppContext';
-import { getUserColor } from '../../utils/colorUtils';
-import Button from '../ui/Button';
+import { ICONS } from '../../constants';
+import { Employee } from '../../types';
 
 interface CalendarUserFilterProps {
-    selectedUserIds: Set<number>;
-    onSelectionChange: (newSet: Set<number>) => void;
+    selectedUsers: number[];
+    onSelectionChange: (selected: number[]) => void;
 }
 
-const CalendarUserFilter: React.FC<CalendarUserFilterProps> = ({ selectedUserIds, onSelectionChange }) => {
+const CalendarUserFilter: React.FC<CalendarUserFilterProps> = ({ selectedUsers, onSelectionChange }) => {
     const { employees } = useApp();
     const [isOpen, setIsOpen] = useState(false);
-    const [searchTerm, setSearchTerm] = useState('');
     const wrapperRef = useRef<HTMLDivElement>(null);
 
     useEffect(() => {
@@ -20,68 +19,68 @@ const CalendarUserFilter: React.FC<CalendarUserFilterProps> = ({ selectedUserIds
                 setIsOpen(false);
             }
         };
-        document.addEventListener('mousedown', handleClickOutside);
-        return () => document.removeEventListener('mousedown', handleClickOutside);
+        document.addEventListener("mousedown", handleClickOutside);
+        return () => document.removeEventListener("mousedown", handleClickOutside);
     }, []);
-
-    const handleToggle = (userId: number) => {
-        const newSet = new Set(selectedUserIds);
-        if (newSet.has(userId)) {
-            newSet.delete(userId);
+    
+    const handleToggleUser = (userId: number) => {
+        const newSelection = new Set(selectedUsers);
+        if(newSelection.has(userId)) {
+            newSelection.delete(userId);
         } else {
-            newSet.add(userId);
+            newSelection.add(userId);
         }
-        onSelectionChange(newSet);
+        onSelectionChange(Array.from(newSelection));
     };
 
-    const filteredEmployees = useMemo(() => {
-        return employees.filter(e => e.name.toLowerCase().includes(searchTerm.toLowerCase()));
-    }, [employees, searchTerm]);
+    const handleSelectAll = () => {
+        onSelectionChange(employees.map(e => e.id));
+    };
+    
+    const handleClearAll = () => {
+        onSelectionChange([]);
+    };
 
-    const buttonText = `${selectedUserIds.size} Takvim`;
+    const selectedCount = selectedUsers.length;
+    const buttonText = selectedCount === 0 ? 'Kullanıcı Seç' : selectedCount === 1 ? employees.find(e => e.id === selectedUsers[0])?.name : `${selectedCount} Kullanıcı`;
 
     return (
-        <div className="w-64 flex-shrink-0 bg-card dark:bg-dark-card rounded-lg p-4" ref={wrapperRef}>
-            <h3 className="font-bold text-lg mb-3">Takvimler</h3>
-            <div className="relative">
-                <Button variant="secondary" onClick={() => setIsOpen(!isOpen)} className="w-full flex justify-between items-center">
-                    <span>{buttonText}</span>
-                    <svg className={`w-4 h-4 transition-transform ${isOpen ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" /></svg>
-                </Button>
-
-                {isOpen && (
-                    <div className="absolute top-full mt-2 w-full bg-card dark:bg-dark-card border border-border dark:border-dark-border rounded-lg shadow-lg z-20">
-                        <div className="p-2 border-b dark:border-dark-border">
-                            <input
-                                type="text"
-                                placeholder="Çalışan ara..."
-                                value={searchTerm}
-                                onChange={(e) => setSearchTerm(e.target.value)}
-                                className="w-full p-2 border rounded-md dark:bg-slate-700 dark:border-dark-border"
-                            />
-                        </div>
-                        <ul className="space-y-1 p-2 max-h-60 overflow-y-auto">
-                            {filteredEmployees.map(user => (
-                                <li key={user.id}>
-                                    <label className="flex items-center gap-3 p-2 rounded-md hover:bg-slate-100 dark:hover:bg-slate-700/50 cursor-pointer">
-                                        <input
-                                            type="checkbox"
-                                            checked={selectedUserIds.has(user.id)}
-                                            onChange={() => handleToggle(user.id)}
-                                            className="h-4 w-4 rounded text-primary-600 focus:ring-primary-500 border-slate-300 dark:border-slate-600 dark:bg-slate-900 dark:checked:bg-primary-500"
-                                            style={{ accentColor: getUserColor(user.id) }}
-                                        />
-                                        <img src={user.avatar} alt={user.name} className="w-6 h-6 rounded-full" />
-                                        <span className="text-sm">{user.name}</span>
-                                    </label>
-                                </li>
-                            ))}
-                        </ul>
+        <div className="relative" ref={wrapperRef}>
+            <button
+                onClick={() => setIsOpen(!isOpen)}
+                className="flex items-center gap-2 p-2 border rounded-md dark:bg-slate-700 dark:border-dark-border hover:bg-slate-100 dark:hover:bg-slate-600"
+            >
+                {ICONS.customers}
+                <span className="text-sm">{buttonText}</span>
+            </button>
+            {isOpen && (
+                <div className="absolute top-full mt-2 right-0 bg-card dark:bg-dark-card border dark:border-dark-border rounded-lg shadow-lg z-20 w-72">
+                    <div className="p-2 border-b dark:border-dark-border flex justify-between">
+                        <button onClick={handleSelectAll} className="text-xs text-primary-600 hover:underline">Tümünü Seç</button>
+                        <button onClick={handleClearAll} className="text-xs text-primary-600 hover:underline">Temizle</button>
                     </div>
-                )}
-            </div>
+                    <div className="max-h-60 overflow-y-auto p-2">
+                        {employees.map(emp => (
+                            <label key={emp.id} className="flex items-center gap-3 p-2 rounded-md hover:bg-slate-50 dark:hover:bg-slate-800/50">
+                                <input
+                                    type="checkbox"
+                                    checked={selectedUsers.includes(emp.id)}
+                                    onChange={() => handleToggleUser(emp.id)}
+                                    className="h-4 w-4 rounded border-gray-300 text-primary-600 focus:ring-primary-500"
+                                />
+                                <img src={emp.avatar} alt={emp.name} className="w-8 h-8 rounded-full"/>
+                                <div>
+                                    <p className="font-semibold text-sm">{emp.name}</p>
+                                    <p className="text-xs text-text-secondary">{emp.position}</p>
+                                </div>
+                            </label>
+                        ))}
+                    </div>
+                </div>
+            )}
         </div>
     );
 };
 
+// FIX: Add default export to make the component a module.
 export default CalendarUserFilter;

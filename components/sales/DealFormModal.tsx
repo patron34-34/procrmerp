@@ -9,11 +9,12 @@ interface DealFormModalProps {
   isOpen: boolean;
   onClose: () => void;
   deal: Deal | null;
+  prefilledData?: Partial<Omit<Deal, 'id' | 'customerName' | 'assignedToName' | 'value' | 'lastActivityDate'>> | null;
 }
 
 type DealFormData = Omit<Deal, 'id' | 'customerName' | 'assignedToName' | 'value' | 'lastActivityDate'>;
 
-const DealFormModal: React.FC<DealFormModalProps> = ({ isOpen, onClose, deal }) => {
+const DealFormModal: React.FC<DealFormModalProps> = ({ isOpen, onClose, deal, prefilledData }) => {
     const { addDeal, updateDeal, customers, employees, products } = useApp();
 
     const initialFormState: DealFormData = {
@@ -38,24 +39,26 @@ const DealFormModal: React.FC<DealFormModalProps> = ({ isOpen, onClose, deal }) 
     );
 
     useEffect(() => {
-        if (deal) {
-            setFormData({
-                title: deal.title,
-                customerId: deal.customerId,
-                stage: deal.stage,
-                closeDate: deal.closeDate,
-                assignedToId: deal.assignedToId,
-                lineItems: [...deal.lineItems],
-                winReason: deal.winReason,
-                lossReason: deal.lossReason,
-            });
-            const customer = customers.find(c => c.id === deal.customerId);
-            if (customer) setCustomerSearch(customer.name);
-        } else {
-            setFormData(initialFormState);
-            setCustomerSearch(customers.find(c => c.id === initialFormState.customerId)?.name || '');
+        let initialState = { ...initialFormState };
+        let initialCustomerId = customers[0]?.id || 0;
+
+        if (deal) { // Editing existing deal
+            initialState = { ...initialState, ...deal };
+            initialCustomerId = deal.customerId;
+        } else if (prefilledData) { // Creating new with prefilled data
+            initialState = { ...initialState, ...prefilledData };
+            initialCustomerId = prefilledData.customerId || initialCustomerId;
         }
-    }, [deal, isOpen, customers]);
+        
+        setFormData(initialState);
+        const customer = customers.find(c => c.id === initialCustomerId);
+        if (customer) {
+            setCustomerSearch(customer.name);
+        } else {
+            setCustomerSearch('');
+        }
+
+    }, [deal, prefilledData, isOpen, customers]);
     
     useEffect(() => {
         const handleClickOutside = (event: MouseEvent) => {

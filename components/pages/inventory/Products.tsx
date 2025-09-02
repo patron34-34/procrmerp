@@ -10,10 +10,12 @@ import ProductForm from '../../inventory/ProductForm';
 import { Link } from 'react-router-dom';
 import InventoryTransferForm from '../../inventory/InventoryTransferForm';
 import InventoryAdjustmentForm from '../../inventory/InventoryAdjustmentForm';
+import { useNotification } from '../../../context/NotificationContext';
 
 
 const Products: React.FC = () => {
-    const { products, deleteProduct, hasPermission, warehouses, getProductStockInfo } = useApp();
+    const { products, deleteProduct, hasPermission, warehouses, getProductStockInfo, addToCart } = useApp();
+    const { addToast } = useNotification();
     const [isProductFormOpen, setIsProductFormOpen] = useState(false);
     const [isTransferFormOpen, setIsTransferFormOpen] = useState(false);
     const [isAdjustmentFormOpen, setIsAdjustmentFormOpen] = useState(false);
@@ -21,24 +23,9 @@ const Products: React.FC = () => {
     const [activeProduct, setActiveProduct] = useState<Product | null>(null);
     const [productToDelete, setProductToDelete] = useState<Product | null>(null);
     const [searchTerm, setSearchTerm] = useState('');
-    const [openMenuId, setOpenMenuId] = useState<number | null>(null);
-    const menuRef = useRef<HTMLDivElement>(null);
-
 
     const canManageInventory = hasPermission('envanter:yonet');
     
-    useEffect(() => {
-        const handleClickOutside = (event: MouseEvent) => {
-            if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
-                setOpenMenuId(null);
-            }
-        };
-        document.addEventListener("mousedown", handleClickOutside);
-        return () => {
-            document.removeEventListener("mousedown", handleClickOutside);
-        };
-    }, []);
-
     const openModalForNew = () => {
         if (!canManageInventory) return;
         setActiveProduct(null);
@@ -49,24 +36,20 @@ const Products: React.FC = () => {
         if (!canManageInventory) return;
         setActiveProduct(product);
         setIsProductFormOpen(true);
-        setOpenMenuId(null);
     };
     
     const openTransferForProduct = (product: Product) => {
         setActiveProduct(product);
         setIsTransferFormOpen(true);
-        setOpenMenuId(null);
     };
 
     const openAdjustmentForProduct = (product: Product) => {
         setActiveProduct(product);
         setIsAdjustmentFormOpen(true);
-        setOpenMenuId(null);
     };
 
     const handleDeleteRequest = (product: Product) => {
         setProductToDelete(product);
-        setOpenMenuId(null);
     };
 
     const handleDeleteConfirm = () => {
@@ -74,6 +57,15 @@ const Products: React.FC = () => {
             deleteProduct(productToDelete.id);
             setProductToDelete(null);
         }
+    };
+    
+    const handleAddToCart = (product: Product) => {
+        const stockInfo = getProductStockInfo(product.id);
+        if (stockInfo.available < 1) {
+            addToast(`${product.name} için yeterli stok bulunmuyor.`, 'warning');
+            return;
+        }
+        addToCart(product, 1);
     };
 
     const filteredProducts = products.filter(p => 
@@ -83,6 +75,8 @@ const Products: React.FC = () => {
     );
 
     const getWarehouseName = (id: number) => warehouses.find(w => w.id === id)?.name || 'Bilinmeyen Depo';
+
+    const actionButtonClasses = "p-2 rounded-lg text-slate-500 hover:bg-slate-100 hover:text-primary-600 dark:hover:bg-slate-700 transition-colors";
 
     return (
         <>
@@ -109,7 +103,7 @@ const Products: React.FC = () => {
                                     <th className="p-4 font-semibold">Kategori</th>
                                     <th className="p-4 font-semibold text-right">Fiyat</th>
                                     <th className="p-4 font-semibold text-right">Kullanılabilir Stok</th>
-                                    {canManageInventory && <th className="p-4 font-semibold w-20 text-center">Eylemler</th>}
+                                    {canManageInventory && <th className="p-4 font-semibold w-32 text-center">Eylemler</th>}
                                 </tr>
                             </thead>
                             <tbody>
@@ -137,20 +131,14 @@ const Products: React.FC = () => {
                                             </div>
                                         </td>
                                         {canManageInventory && <td className="p-4 text-center">
-                                            <div className="relative">
-                                                <button onClick={() => setOpenMenuId(openMenuId === product.id ? null : product.id)} className="text-slate-500 hover:text-slate-700 p-1 rounded-full">
-                                                     {ICONS.ellipsisVertical}
+                                            <div className="flex items-center justify-center gap-1">
+                                                <button onClick={() => handleAddToCart(product)} className={`${actionButtonClasses}`} title="Sepete Ekle">
+                                                    <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" /></svg>
                                                 </button>
-                                                {openMenuId === product.id && (
-                                                    <div ref={menuRef} className="absolute right-0 mt-2 w-56 bg-card dark:bg-dark-card border border-border dark:border-dark-border rounded-md shadow-lg z-20">
-                                                        <ul className="py-1">
-                                                            <li><button onClick={() => openModalForEdit(product)} className="w-full text-left flex items-center gap-3 px-4 py-2 text-sm text-text-secondary hover:bg-slate-100 dark:hover:bg-slate-800">{ICONS.edit} Düzenle</button></li>
-                                                            <li><button onClick={() => openTransferForProduct(product)} className="w-full text-left flex items-center gap-3 px-4 py-2 text-sm text-text-secondary hover:bg-slate-100 dark:hover:bg-slate-800">{ICONS.transfer} Stok Transferi</button></li>
-                                                            <li><button onClick={() => openAdjustmentForProduct(product)} className="w-full text-left flex items-center gap-3 px-4 py-2 text-sm text-text-secondary hover:bg-slate-100 dark:hover:bg-slate-800">{ICONS.adjustment} Stok Düzeltmesi</button></li>
-                                                            <li><button onClick={() => handleDeleteRequest(product)} className="w-full text-left flex items-center gap-3 px-4 py-2 text-sm text-red-600 hover:bg-slate-100 dark:hover:bg-slate-800">{ICONS.trash} Sil</button></li>
-                                                        </ul>
-                                                    </div>
-                                                )}
+                                                <button onClick={() => openModalForEdit(product)} className={`${actionButtonClasses}`} title="Düzenle">{ICONS.edit}</button>
+                                                <button onClick={() => openTransferForProduct(product)} className={`${actionButtonClasses}`} title="Stok Transferi">{ICONS.transfer}</button>
+                                                <button onClick={() => openAdjustmentForProduct(product)} className={`${actionButtonClasses}`} title="Stok Düzeltmesi">{ICONS.adjustment}</button>
+                                                <button onClick={() => handleDeleteRequest(product)} className={`${actionButtonClasses} hover:text-red-600`} title="Sil">{ICONS.trash}</button>
                                             </div>
                                         </td>}
                                     </tr>
@@ -160,7 +148,7 @@ const Products: React.FC = () => {
                         </table>
                     ) : (
                         <EmptyState
-                            icon={ICONS.products}
+                            icon={ICONS.inventory}
                             title="Henüz Ürün Yok"
                             description="İlk ürününüzü ekleyerek envanterinizi yönetmeye başlayın."
                             action={canManageInventory ? <Button onClick={openModalForNew}>Ürün Ekle</Button> : undefined}

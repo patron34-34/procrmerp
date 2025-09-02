@@ -1,13 +1,14 @@
-
 import React, { useState, useMemo } from 'react';
 import { useApp } from '../../../context/AppContext';
 import { LeaveRequest, LeaveStatus, LeaveType } from '../../../types';
 import Card from '../../ui/Card';
 import Button from '../../ui/Button';
 import Modal from '../../ui/Modal';
+import { ICONS } from '../../../constants';
+import EmptyState from '../../ui/EmptyState';
 
 const MyLeaveRequests: React.FC = () => {
-    const { currentUser, leaveRequests, addLeaveRequest } = useApp();
+    const { currentUser, leaveRequests, addLeaveRequest, calculateAnnualLeaveBalance } = useApp();
     const [isModalOpen, setIsModalOpen] = useState(false);
 
     const today = new Date().toISOString().split('T')[0];
@@ -21,35 +22,14 @@ const MyLeaveRequests: React.FC = () => {
 
 
     const myLeaveRequests = useMemo(() => {
-        return leaveRequests.filter(lr => lr.employeeId === currentUser.id);
+        return leaveRequests
+            .filter(lr => lr.employeeId === currentUser.id)
+            .sort((a,b) => new Date(b.startDate).getTime() - new Date(a.startDate).getTime());
     }, [leaveRequests, currentUser.id]);
 
-    const annualLeaveBalance = useMemo(() => {
-        const hireDate = new Date(currentUser.hireDate);
-        const today = new Date();
-        const yearsOfService = today.getFullYear() - hireDate.getFullYear();
-        
-        let totalEntitled = 0;
-        if (yearsOfService >= 1) {
-            for (let i = 1; i <= yearsOfService; i++) {
-                if (i <= 5) totalEntitled += 14;
-                else if (i <= 15) totalEntitled += 20;
-                else totalEntitled += 26;
-            }
-        }
-        
-        const usedLeave = myLeaveRequests
-            .filter(lr => lr.leaveType === LeaveType.Annual && lr.status === LeaveStatus.Approved)
-            .reduce((sum, lr) => {
-                const start = new Date(lr.startDate);
-                const end = new Date(lr.endDate);
-                const diffTime = Math.abs(end.getTime() - start.getTime());
-                const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1;
-                return sum + diffDays;
-            }, 0);
-        
-        return totalEntitled - usedLeave;
-    }, [currentUser, myLeaveRequests]);
+    const leaveBalance = useMemo(() => {
+        return calculateAnnualLeaveBalance(currentUser.id);
+    }, [currentUser.id, calculateAnnualLeaveBalance, myLeaveRequests]);
 
     const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
         const { name, value } = e.target;
@@ -76,36 +56,54 @@ const MyLeaveRequests: React.FC = () => {
         <>
             <div className="space-y-6">
                 <Card>
-                    <div className="flex justify-between items-center">
-                        <div>
-                            <h4 className="text-text-secondary dark:text-dark-text-secondary">Kalan Yıllık İzin Hakkınız</h4>
-                            <p className="text-3xl font-bold">{annualLeaveBalance} gün</p>
+                    <div className="flex flex-wrap justify-between items-center gap-4">
+                        <div className="flex gap-8">
+                            <div>
+                                <h4 className="text-text-secondary dark:text-dark-text-secondary">Kalan Yıllık İzin</h4>
+                                <p className="text-3xl font-bold text-primary-600">{leaveBalance.balance} gün</p>
+                            </div>
+                             <div>
+                                <h4 className="text-text-secondary dark:text-dark-text-secondary">Hak Edilen</h4>
+                                <p className="text-3xl font-bold">{leaveBalance.entitled} gün</p>
+                            </div>
+                             <div>
+                                <h4 className="text-text-secondary dark:text-dark-text-secondary">Kullanılan</h4>
+                                <p className="text-3xl font-bold">{leaveBalance.used} gün</p>
+                            </div>
                         </div>
                         <Button onClick={() => setIsModalOpen(true)}>Yeni İzin Talebi Oluştur</Button>
                     </div>
                 </Card>
                 <Card title="İzin Geçmişim">
                     <div className="overflow-x-auto">
-                        <table className="w-full text-left">
-                            <thead className="border-b dark:border-dark-border"><tr className="bg-slate-50 dark:bg-slate-900/50">
-                                <th className="p-3 font-semibold">İzin Türü</th>
-                                <th className="p-3 font-semibold">Başlangıç</th>
-                                <th className="p-3 font-semibold">Bitiş</th>
-                                <th className="p-3 font-semibold">Sebep</th>
-                                <th className="p-3 font-semibold">Durum</th>
-                            </tr></thead>
-                            <tbody>
-                                {myLeaveRequests.map(lr => (
-                                    <tr key={lr.id} className="border-b dark:border-dark-border">
-                                        <td className="p-3">{lr.leaveType}</td>
-                                        <td className="p-3">{lr.startDate}</td>
-                                        <td className="p-3">{lr.endDate}</td>
-                                        <td className="p-3">{lr.reason}</td>
-                                        <td className="p-3">{getStatusBadge(lr.status)}</td>
-                                    </tr>
-                                ))}
-                            </tbody>
-                        </table>
+                        {myLeaveRequests.length > 0 ? (
+                            <table className="w-full text-left">
+                                <thead className="border-b dark:border-dark-border"><tr className="bg-slate-50 dark:bg-slate-900/50">
+                                    <th className="p-3 font-semibold">İzin Türü</th>
+                                    <th className="p-3 font-semibold">Başlangıç</th>
+                                    <th className="p-3 font-semibold">Bitiş</th>
+                                    <th className="p-3 font-semibold">Sebep</th>
+                                    <th className="p-3 font-semibold">Durum</th>
+                                </tr></thead>
+                                <tbody>
+                                    {myLeaveRequests.map(lr => (
+                                        <tr key={lr.id} className="border-b dark:border-dark-border">
+                                            <td className="p-3">{lr.leaveType}</td>
+                                            <td className="p-3">{lr.startDate}</td>
+                                            <td className="p-3">{lr.endDate}</td>
+                                            <td className="p-3">{lr.reason}</td>
+                                            <td className="p-3">{getStatusBadge(lr.status)}</td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        ) : (
+                            <EmptyState 
+                                icon={ICONS.leave}
+                                title="İzin Talebi Bulunamadı"
+                                description="Henüz oluşturulmuş bir izin talebiniz bulunmuyor."
+                            />
+                        )}
                     </div>
                 </Card>
             </div>

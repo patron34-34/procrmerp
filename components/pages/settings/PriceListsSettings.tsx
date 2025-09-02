@@ -99,7 +99,7 @@ const PriceListsSettings: React.FC = () => {
                     </table>
                 ) : (
                     <EmptyState
-                        icon={ICONS.priceList!}
+                        icon={ICONS.priceList}
                         title="Henüz Fiyat Listesi Oluşturulmamış"
                         description="İlk fiyat listenizi ekleyerek başlayın."
                         action={canManage ? <Button onClick={openModalForNew}>Fiyat Listesi Ekle</Button> : undefined}

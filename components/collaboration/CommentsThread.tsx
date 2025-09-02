@@ -5,7 +5,7 @@ import { Comment } from '../../types';
 import { ICONS } from '../../constants';
 
 interface CommentsThreadProps {
-  entityType: 'customer' | 'project' | 'deal' | 'task';
+  entityType: 'customer' | 'project' | 'deal' | 'task' | 'ticket' | 'sales_order';
   entityId: number;
 }
 

@@ -1,8 +1,6 @@
-
-
 import React, { useState } from 'react';
 import { useApp } from '../../context/AppContext';
-import { Customer } from '../../types';
+import { Customer, SystemListItem } from '../../types';
 import { Link } from 'react-router-dom';
 
 const KanbanCard: React.FC<{ customer: Customer; onDragStart: (e: React.DragEvent<HTMLDivElement>, customerId: number) => void; canManage: boolean }> = ({ customer, onDragStart, canManage }) => {
@@ -10,7 +8,7 @@ const KanbanCard: React.FC<{ customer: Customer; onDragStart: (e: React.DragEven
         <div 
             draggable={canManage}
             onDragStart={(e) => canManage && onDragStart(e, customer.id)}
-            className={`bg-white p-3 mb-3 rounded-md shadow-sm border border-slate-200 dark:bg-dark-card/50 dark:border-dark-border ${canManage ? 'cursor-grab active:cursor-grabbing' : 'cursor-default'}`}
+            className={`bg-card p-3 mb-3 rounded-md shadow-sm border border-border dark:border-dark-border ${canManage ? 'cursor-grab active:cursor-grabbing' : 'cursor-default'}`}
         >
             <div className="flex items-center gap-3">
                 <img src={customer.avatar} alt={customer.name} className="h-10 w-10 rounded-full" />
@@ -29,33 +27,27 @@ const KanbanCard: React.FC<{ customer: Customer; onDragStart: (e: React.DragEven
 };
 
 const KanbanColumn: React.FC<{
-  status: Customer['status'];
+  statusInfo: SystemListItem;
   customers: Customer[];
   onDragStart: (e: React.DragEvent<HTMLDivElement>, customerId: number) => void;
-  onDrop: (e: React.DragEvent<HTMLDivElement>, status: Customer['status']) => void;
+  onDrop: (e: React.DragEvent<HTMLDivElement>, status: string) => void;
   canManage: boolean;
-}> = ({ status, customers, onDragStart, onDrop, canManage }) => {
+}> = ({ statusInfo, customers, onDragStart, onDrop, canManage }) => {
     const [isOver, setIsOver] = useState(false);
 
     const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => { e.preventDefault(); if (canManage) setIsOver(true); };
     const handleDragLeave = () => setIsOver(false);
-    const handleDrop = (e: React.DragEvent<HTMLDivElement>) => { if (canManage) { onDrop(e, status); setIsOver(false); } };
-
-    const statusConfig = {
-        potensiyel: { title: 'Potensiyel', color: 'border-t-blue-500' },
-        aktif: { title: 'Aktif', color: 'border-t-green-500' },
-        kaybedilmiş: { title: 'Kaybedilmiş', color: 'border-t-red-500' },
-    };
+    const handleDrop = (e: React.DragEvent<HTMLDivElement>) => { if (canManage) { onDrop(e, statusInfo.id); setIsOver(false); } };
 
     return (
         <div
             onDragOver={handleDragOver}
             onDragLeave={handleDragLeave}
             onDrop={handleDrop}
-            className={`flex-1 min-w-[300px] bg-slate-100 rounded-lg p-3 transition-colors duration-300 dark:bg-dark-card/30 ${isOver ? 'bg-slate-200 dark:bg-dark-card/60' : ''}`}
+            className={`flex-1 min-w-[300px] bg-slate-100 rounded-lg p-3 transition-colors duration-300 dark:bg-dark-sidebar ${isOver ? 'bg-slate-200 dark:bg-slate-800' : ''}`}
         >
-            <div className={`p-2 mb-3 rounded-t-md border-t-4 ${statusConfig[status].color}`}>
-                <h3 className="font-bold text-text-main dark:text-dark-text-main">{statusConfig[status].title}</h3>
+            <div className="p-2 mb-3 rounded-t-md border-t-4" style={{ borderTopColor: statusInfo.color || '#64748b' }}>
+                <h3 className="font-bold text-text-main dark:text-dark-text-main">{statusInfo.label}</h3>
                 <span className="text-sm text-text-secondary dark:text-dark-text-secondary">{customers.length} müşteri</span>
             </div>
             <div className="max-h-[calc(100vh-450px)] overflow-y-auto pr-2">
@@ -69,31 +61,30 @@ const KanbanColumn: React.FC<{
 
 interface CustomerKanbanViewProps {
     customers: Customer[];
-    onUpdateStatus: (customerId: number, newStatus: Customer['status']) => void;
+    onUpdateStatus: (customerId: number, newStatus: string) => void;
 }
 
 const CustomerKanbanView: React.FC<CustomerKanbanViewProps> = ({ customers, onUpdateStatus }) => {
-    const { hasPermission } = useApp();
+    const { hasPermission, systemLists } = useApp();
     const canManageCustomers = hasPermission('musteri:yonet');
+    const statuses = systemLists.customerStatus;
 
     const handleDragStart = (e: React.DragEvent<HTMLDivElement>, customerId: number) => {
         e.dataTransfer.setData('customerId', customerId.toString());
     };
 
-    const handleDrop = (e: React.DragEvent<HTMLDivElement>, newStatus: Customer['status']) => {
+    const handleDrop = (e: React.DragEvent<HTMLDivElement>, newStatus: string) => {
         const customerId = parseInt(e.dataTransfer.getData('customerId'), 10);
         onUpdateStatus(customerId, newStatus);
     };
 
-    const statuses: Customer['status'][] = ['potensiyel', 'aktif', 'kaybedilmiş'];
-
     return (
         <div className="flex gap-4 overflow-x-auto pb-4">
-            {statuses.map(status => (
+            {statuses.map(statusInfo => (
                 <KanbanColumn
-                    key={status}
-                    status={status}
-                    customers={customers.filter(c => c.status === status)}
+                    key={statusInfo.id}
+                    statusInfo={statusInfo}
+                    customers={customers.filter(c => c.status === statusInfo.id)}
                     onDragStart={handleDragStart}
                     onDrop={handleDrop}
                     canManage={canManageCustomers}

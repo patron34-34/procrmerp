@@ -4,6 +4,7 @@ import { Deal, DealStage } from '../../types';
 import Modal from '../ui/Modal';
 import Button from '../ui/Button';
 import { WIN_REASONS } from '../../constants';
+import { useNotification } from '../../context/NotificationContext';
 
 interface DealWonModalProps {
   isOpen: boolean;
@@ -13,21 +14,26 @@ interface DealWonModalProps {
 
 const DealWonModal: React.FC<DealWonModalProps> = ({ isOpen, onClose, deal }) => {
     const { updateDealWinLossReason, createProjectFromDeal, createTasksFromDeal, convertDealToSalesOrder } = useApp();
+    const { addToast } = useNotification();
     const [winReason, setWinReason] = useState('');
     const [otherReason, setOtherReason] = useState('');
 
     const handleAction = (action: 'just_close' | 'create_project' | 'create_tasks') => {
         const finalReason = winReason === 'Diğer' ? otherReason : winReason;
         if (!finalReason.trim()) {
-            alert('Lütfen bir kazanma nedeni belirtin.');
+            addToast('Lütfen bir kazanma nedeni belirtin.', 'warning');
             return;
         }
 
         // First, update the deal status
         updateDealWinLossReason(deal.id, DealStage.Won, finalReason);
 
-        // ALWAYS create a sales order upon winning
-        convertDealToSalesOrder(deal);
+        // ALWAYS attempt to create a sales order upon winning, but check for line items first.
+        if (deal.lineItems && deal.lineItems.length > 0) {
+            convertDealToSalesOrder(deal);
+        } else {
+            addToast("Anlaşmada ürün bulunmadığı için satış siparişi oluşturulmadı.", "info");
+        }
 
         // Then, perform the optional follow-up action
         if (action === 'create_project') {
@@ -74,7 +80,7 @@ const DealWonModal: React.FC<DealWonModalProps> = ({ isOpen, onClose, deal }) =>
                 <div className="border-t pt-4 space-y-2 dark:border-dark-border">
                     <h4 className="font-semibold">Sonraki Adım Nedir?</h4>
                     <p className="text-sm text-text-secondary dark:text-dark-text-secondary">
-                        Satış siparişiniz otomatik olarak oluşturuldu. Dilerseniz ek olarak aşağıdaki adımları da başlatabilirsiniz.
+                        Anlaşma kalemleri varsa satış siparişiniz otomatik olarak oluşturulacaktır. Dilerseniz ek olarak aşağıdaki adımları da başlatabilirsiniz.
                     </p>
                     <div className="flex flex-col sm:flex-row gap-2 pt-2">
                         <Button onClick={() => handleAction('create_project')} className="w-full justify-center">
@@ -88,7 +94,7 @@ const DealWonModal: React.FC<DealWonModalProps> = ({ isOpen, onClose, deal }) =>
 
                 <div className="text-center pt-4">
                      <button onClick={() => handleAction('just_close')} className="text-sm text-primary-600 hover:underline">
-                        Sadece Anlaşmayı Kapat
+                        Sadece Anlaşmayı Kapat (ve Sipariş Oluştur)
                     </button>
                 </div>
             </div>

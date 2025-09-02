@@ -1,5 +1,3 @@
-
-
 import React, { useState, useEffect, useMemo } from 'react';
 import { useApp } from '../../../context/AppContext';
 import { Permission, Role } from '../../../types';
@@ -103,78 +101,70 @@ const RolesSettings: React.FC = () => {
         <>
             <div className="flex gap-6">
                 <div className="w-1/4">
-                    <Card title="Roller" action={<Button onClick={() => setIsFormModalOpen(true)}>{ICONS.add}</Button>}>
-                        <nav className="space-y-1">
+                    <Card
+                        title="Roller"
+                        action={<Button onClick={() => setIsFormModalOpen(true)}>{ICONS.add} Yeni Rol</Button>}
+                    >
+                        <div className="space-y-1">
                             {roles.map(role => (
                                 <button
                                     key={role.id}
                                     onClick={() => setSelectedRole(role)}
-                                    className={`w-full text-left flex items-center justify-between p-2 rounded-md text-sm ${selectedRole?.id === role.id ? 'bg-primary-100 text-primary-700 font-semibold dark:bg-primary-900/50 dark:text-primary-300' : 'hover:bg-slate-100 dark:hover:bg-slate-700'}`}
+                                    className={`w-full text-left p-2 rounded-md text-sm font-medium flex justify-between items-center ${selectedRole?.id === role.id ? 'bg-primary-100 text-primary-700 dark:bg-primary-900/50 dark:text-primary-300' : 'hover:bg-slate-100 dark:hover:bg-slate-700'}`}
                                 >
                                     <span>{role.name}</span>
-                                    {!role.isSystemRole && (
-                                        <button onClick={(e) => { e.stopPropagation(); setRoleToDelete(role); }} className="text-slate-400 hover:text-red-500">
-                                            {ICONS.trash}
-                                        </button>
+                                    {!role.isSystemRole && selectedRole?.id === role.id && (
+                                        <button onClick={(e) => { e.stopPropagation(); setRoleToDelete(role); }} className="text-red-500 hover:text-red-700">{ICONS.trash}</button>
                                     )}
                                 </button>
                             ))}
-                        </nav>
+                        </div>
                     </Card>
                 </div>
                 <div className="w-3/4">
                     {selectedRole && (
-                        <Card title={`${selectedRole.name} Rolü İzinleri`}>
-                            <div className="space-y-6">
-                                {Object.entries(permissionGroups).map(([groupName, groupInfo]) => (
+                        <Card title={`İzinler: ${selectedRole.name}`}>
+                            <div className="space-y-6 max-h-[70vh] overflow-y-auto pr-4">
+                                {Object.entries(permissionGroups).map(([groupName, group]) => (
                                     <div key={groupName}>
                                         <h4 className="font-bold text-lg">{groupName}</h4>
-                                        <p className="text-sm text-text-secondary dark:text-dark-text-secondary mb-3">{groupInfo.description}</p>
-                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                            {groupInfo.permissions.map(permission => (
-                                                <div key={permission} className="flex items-start">
-                                                    <div className="flex items-center h-5">
-                                                        <input
-                                                            id={permission}
-                                                            name={permission}
-                                                            type="checkbox"
-                                                            checked={currentPermissions.has(permission)}
-                                                            onChange={(e) => handlePermissionChange(permission, e.target.checked)}
-                                                            disabled={selectedRole.isSystemRole}
-                                                            className="focus:ring-primary-500 h-4 w-4 text-primary-600 border-gray-300 rounded"
-                                                        />
-                                                    </div>
-                                                    <div className="ml-3 text-sm">
-                                                        <label htmlFor={permission} className="font-medium text-text-main dark:text-dark-text-main">{permission}</label>
-                                                        <p className="text-text-secondary dark:text-dark-text-secondary">{PERMISSION_DESCRIPTIONS[permission] || 'Açıklama yok'}</p>
-                                                    </div>
-                                                </div>
+                                        <p className="text-sm text-text-secondary dark:text-dark-text-secondary mb-2">{group.description}</p>
+                                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-x-4 gap-y-2">
+                                            {group.permissions.map(permission => (
+                                                <label key={permission} className="flex items-center" title={PERMISSION_DESCRIPTIONS[permission]}>
+                                                    <input
+                                                        type="checkbox"
+                                                        checked={currentPermissions.has(permission)}
+                                                        onChange={(e) => handlePermissionChange(permission, e.target.checked)}
+                                                        disabled={selectedRole.isSystemRole}
+                                                        className="h-4 w-4 rounded border-gray-300 text-primary-600 focus:ring-primary-500"
+                                                    />
+                                                    <span className="ml-2 text-sm">{permission}</span>
+                                                </label>
                                             ))}
                                         </div>
                                     </div>
                                 ))}
                             </div>
                             {!selectedRole.isSystemRole && (
-                                <div className="mt-6 pt-4 border-t dark:border-dark-border text-right">
-                                    <Button onClick={handleSave}>Değişiklikleri Kaydet</Button>
+                                <div className="flex justify-end pt-4 mt-4 border-t dark:border-dark-border">
+                                    <Button onClick={handleSave}>İzinleri Kaydet</Button>
                                 </div>
                             )}
                         </Card>
                     )}
                 </div>
             </div>
-
-            <RoleFormModal 
+            <RoleFormModal
                 isOpen={isFormModalOpen}
                 onClose={() => setIsFormModalOpen(false)}
             />
-
             <ConfirmationModal
                 isOpen={!!roleToDelete}
                 onClose={() => setRoleToDelete(null)}
                 onConfirm={handleDeleteConfirm}
                 title="Rolü Sil"
-                message={`'${roleToDelete?.name}' rolünü kalıcı olarak silmek istediğinizden emin misiniz? Bu role sahip kullanıcılar varsayılan role atanacaktır.`}
+                message={`'${roleToDelete?.name}' adlı rolü kalıcı olarak silmek istediğinizden emin misiniz? Bu role sahip kullanıcılar varsayılan role atanacaktır.`}
             />
         </>
     );

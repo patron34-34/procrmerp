@@ -67,7 +67,8 @@ export const generateJournalEntryFromPrompt = async (
       },
     });
     
-    const jsonString = response.text;
+    // FIX: Trim whitespace from the AI response before parsing JSON.
+    const jsonString = response.text.trim();
     const generatedItems = JSON.parse(jsonString);
 
     if (!Array.isArray(generatedItems)) {
@@ -142,7 +143,8 @@ export const generatePuantajFromPrompt = async (prompt: string): Promise<Record<
             },
         });
         
-        const jsonString = response.text;
+        // FIX: Trim whitespace from the AI response before parsing JSON.
+        const jsonString = response.text.trim();
         return JSON.parse(jsonString);
 
     } catch (error) {
@@ -183,7 +185,8 @@ export const generateSubtasksFromPrompt = async (taskTitle: string): Promise<str
             },
         });
 
-        const jsonString = response.text;
+        // FIX: Trim whitespace from the AI response before parsing JSON.
+        const jsonString = response.text.trim();
         const result = JSON.parse(jsonString);
         
         if (result && Array.isArray(result.subtasks)) {
@@ -245,7 +248,8 @@ export const generateCustomerSuggestions = async (customerContext: any): Promise
             },
         });
 
-        const jsonString = response.text;
+        // FIX: Trim whitespace from the AI response before parsing JSON.
+        const jsonString = response.text.trim();
         const result = JSON.parse(jsonString);
 
         if (result && Array.isArray(result.suggestions)) {
@@ -256,5 +260,26 @@ export const generateCustomerSuggestions = async (customerContext: any): Promise
     } catch (error) {
         console.error("Error generating customer suggestions with AI:", error);
         throw new Error("Yapay zeka ile öneri oluşturulurken bir hata oluştu.");
+    }
+};
+
+export const summarizeText = async (text: string): Promise<string> => {
+    if (!API_KEY) {
+        throw new Error("API Anahtarı ayarlanmadığı için yapay zeka özelliği kullanılamıyor.");
+    }
+    try {
+        const model = 'gemini-2.5-flash';
+        const systemInstruction = "You are a helpful assistant. Summarize the following text in Turkish in a few concise sentences.";
+
+        const response: GenerateContentResponse = await ai.models.generateContent({
+            model,
+            contents: `Please summarize this support ticket description: "${text}"`,
+            config: { systemInstruction },
+        });
+
+        return response.text;
+    } catch (error) {
+        console.error("Error summarizing text with AI:", error);
+        throw new Error("Yapay zeka ile özetleme yapılırken bir hata oluştu.");
     }
 };

@@ -1,5 +1,3 @@
-
-
 import React, { useState, useRef, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { Deal, DealStage } from '../../types';
@@ -37,7 +35,7 @@ const DealCard: React.FC<DealCardProps> = ({ deal, onDragStart, onEdit, onDelete
     <div
       draggable={canManage}
       onDragStart={(e) => canManage && onDragStart(e, deal.id)}
-      className={`bg-white p-3 mb-3 rounded-md shadow-sm border border-slate-200 dark:bg-dark-card/50 dark:border-dark-border relative ${canManage ? 'cursor-grab active:cursor-grabbing' : 'cursor-default'}`}
+      className={`bg-card p-3 mb-3 rounded-md shadow-sm border border-border dark:border-dark-border relative dark:bg-dark-card ${canManage ? 'cursor-grab active:cursor-grabbing' : 'cursor-default'}`}
     >
       <div className="flex justify-between items-start">
         <div className="flex-1 overflow-hidden">

@@ -1,26 +1,37 @@
-
-import React from 'react';
+import React, { useState } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { useApp } from '../../../context/AppContext';
 import Card from '../../ui/Card';
 import Button from '../../ui/Button';
 import { ICONS } from '../../../constants';
+import ConfirmationModal from '../../ui/ConfirmationModal';
 
 const PickListDetail: React.FC = () => {
     const { id } = useParams<{ id: string }>();
     const navigate = useNavigate();
-    const { pickLists, employees } = useApp();
+    const { pickLists, employees, confirmPickList, hasPermission } = useApp();
+
+    const [isConfirmModalOpen, setIsConfirmModalOpen] = useState(false);
+    const canManage = hasPermission('toplama-listesi:yonet');
 
     const pickListId = parseInt(id || '', 10);
     const pickList = pickLists.find(p => p.id === pickListId);
 
     if (!pickList) {
-        return <Card title="Hata"><p>Toplama listesi bulunamadı. <Link to="/inventory/pick-lists">Listeye geri dön</Link>.</p></Card>;
+        return <Card title="Hata"><p>Toplama listesi bulunamadı. <Link to="/sales/pick-lists">Listeye geri dön</Link>.</p></Card>;
     }
 
     const assignedTo = employees.find(e => e.id === pickList.assignedToId);
+    const isCompleted = pickList.status === 'Toplandı';
+    
+    const handleConfirm = () => {
+        confirmPickList(pickList.id);
+        setIsConfirmModalOpen(false);
+    };
+
 
     return (
+        <>
         <div className="space-y-6 printable-area">
             <Card>
                 <div className="flex justify-between items-start flex-wrap gap-4">
@@ -30,8 +41,11 @@ const PickListDetail: React.FC = () => {
                         {assignedTo && <p className="text-text-secondary dark:text-dark-text-secondary">Atanan Kişi: {assignedTo.name}</p>}
                     </div>
                     <div className="flex gap-2 no-print">
-                        <Button variant="secondary" onClick={() => navigate('/inventory/pick-lists')}>&larr; Listeye Dön</Button>
-                        <Button onClick={() => window.print()}>Yazdır</Button>
+                        <Button variant="secondary" onClick={() => navigate('/sales/pick-lists')}>&larr; Listeye Dön</Button>
+                        <Button onClick={() => window.print()}><span className="flex items-center gap-2">{ICONS.print} Yazdır</span></Button>
+                        {canManage && !isCompleted && (
+                             <Button onClick={() => setIsConfirmModalOpen(true)}><span className="flex items-center gap-2">{ICONS.check} Toplandığını Onayla</span></Button>
+                        )}
                     </div>
                 </div>
             </Card>
@@ -51,7 +65,7 @@ const PickListDetail: React.FC = () => {
                             </tr>
                         </thead>
                         <tbody>
-                            {pickList.items.map((item, index) => (
+                            {pickList.items.sort((a,b) => (a.binLocation || 'zzz').localeCompare(b.binLocation || 'zzz')).map((item, index) => (
                                 <tr key={index} className="border-b dark:border-dark-border last:border-0">
                                     <td className="p-3 text-center">
                                         <div className="w-6 h-6 border-2 border-slate-400 rounded-md inline-block"></div>
@@ -76,6 +90,14 @@ const PickListDetail: React.FC = () => {
                 </div>
             </Card>
         </div>
+        <ConfirmationModal
+            isOpen={isConfirmModalOpen}
+            onClose={() => setIsConfirmModalOpen(false)}
+            onConfirm={handleConfirm}
+            title="Toplamayı Onayla"
+            message="Bu listedeki tüm ürünlerin toplandığını onaylıyor musunuz? Bu işlem ilgili sevkiyatları 'Sevk Edildi' olarak güncelleyecek ve stoktan düşecektir. Bu işlem geri alınamaz."
+        />
+        </>
     );
 };
 

@@ -1,12 +1,12 @@
-
 import React, { useState, useMemo, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useApp } from '../../context/AppContext';
-import { Customer } from '../../types';
+import { Customer, SortConfig } from '../../types';
 import Button from '../ui/Button';
 import EmptyState from '../ui/EmptyState';
 import ConfirmationModal from '../ui/ConfirmationModal';
 import { ICONS } from '../../constants';
+import HealthScoreIndicator from './HealthScoreIndicator';
 
 interface CustomerListViewProps {
     customers: (Customer & { assignedToName: string })[];
@@ -15,31 +15,14 @@ interface CustomerListViewProps {
     onSelectionChange: (selectedIds: number[]) => void;
 }
 
-const HealthIndicator: React.FC<{ score: number; factors: string[] }> = ({ score, factors }) => {
-    const getHealthInfo = () => {
-        if (score > 75) return { color: 'bg-green-500', text: 'İyi' };
-        if (score > 40) return { color: 'bg-yellow-500', text: 'Riskli' };
-        return { color: 'bg-red-500', text: 'Zayıf' };
-    };
-    const { color, text } = getHealthInfo();
-    const tooltipText = `Sağlık Puanı: ${score}/100\n${factors.join('\n')}`;
-
-    return (
-        <div className="flex items-center gap-2" title={tooltipText}>
-            <div className={`w-3 h-3 rounded-full ${color}`}></div>
-            <span>{text}</span>
-        </div>
-    );
-};
-
-
 const CustomerListView: React.FC<CustomerListViewProps> = (props) => {
-  const { employees, deleteCustomer, hasPermission, systemLists, getCustomerHealthScore } = useApp();
+  const { employees, deleteCustomer, hasPermission, systemLists } = useApp();
   const { customers, onEdit, onUpdate, onSelectionChange } = props;
   
   const [customerToDelete, setCustomerToDelete] = useState<Customer | null>(null);
   const [selectedIds, setSelectedIds] = useState<number[]>([]);
   const [editingCell, setEditingCell] = useState<{ id: number; key: 'status' | 'assignedToId' } | null>(null);
+  const [sortConfig, setSortConfig] = useState<SortConfig>({ key: 'name', direction: 'ascending' });
   
   const canManageCustomers = hasPermission('musteri:yonet');
   
@@ -55,10 +38,22 @@ const CustomerListView: React.FC<CustomerListViewProps> = (props) => {
     setCurrentPage(1);
   }, [customers]);
 
-  const paginatedCustomers = useMemo(() => {
+  const sortedAndPaginatedCustomers = useMemo(() => {
+    let sorted = [...customers];
+    if (sortConfig !== null) {
+      sorted.sort((a, b) => {
+        const key = sortConfig.key as keyof typeof a;
+        const valA = a[key] ?? '';
+        const valB = b[key] ?? '';
+        
+        if (valA < valB) return sortConfig.direction === 'ascending' ? -1 : 1;
+        if (valA > valB) return sortConfig.direction === 'ascending' ? 1 : -1;
+        return 0;
+      });
+    }
     const startIndex = (currentPage - 1) * itemsPerPage;
-    return customers.slice(startIndex, startIndex + itemsPerPage);
-  }, [customers, currentPage, itemsPerPage]);
+    return sorted.slice(startIndex, startIndex + itemsPerPage);
+  }, [customers, currentPage, itemsPerPage, sortConfig]);
   
   const totalPages = Math.ceil(customers.length / itemsPerPage);
   
@@ -71,7 +66,7 @@ const CustomerListView: React.FC<CustomerListViewProps> = (props) => {
 
   const handleSelectAll = (e: React.ChangeEvent<HTMLInputElement>) => {
     if(e.target.checked) {
-        const newSelectedIds = paginatedCustomers.map(c => c.id)
+        const newSelectedIds = sortedAndPaginatedCustomers.map(c => c.id)
         setSelectedIds(newSelectedIds);
     } else {
         setSelectedIds([]);
@@ -93,14 +88,24 @@ const CustomerListView: React.FC<CustomerListViewProps> = (props) => {
     setEditingCell(null);
   };
 
-  const getStatusChip = (status: Customer['status']) => {
-    const statusInfo = systemLists.customerStatus.find(s => s.id === status);
-    const styles: { [key in Customer['status']]: string } = {
-      aktif: 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200',
-      kaybedilmiş: 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200',
-      potensiyel: 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200',
-    };
-    return <span className={`px-2 py-1 text-xs font-medium rounded-full ${styles[status]}`}>{statusInfo?.label || status}</span>;
+  const getStatusChip = (statusId: Customer['status']) => {
+    const statusInfo = systemLists.customerStatus.find(s => s.id === statusId);
+    const color = statusInfo?.color || '#64748b'; // default slate color
+    return <span className="px-2 py-1 text-xs font-medium rounded-full" style={{ backgroundColor: `${color}20`, color }}>{statusInfo?.label || statusId}</span>;
+  };
+
+  const SortableHeader: React.FC<{ columnKey: keyof (Customer & { assignedToName: string }); title: string; }> = ({ columnKey, title }) => {
+    const isSorted = sortConfig?.key === columnKey;
+    const directionIcon = sortConfig?.direction === 'ascending' ? '▲' : '▼';
+
+    return (
+        <th className="p-3 font-semibold cursor-pointer" onClick={() => setSortConfig({ key: columnKey, direction: isSorted && sortConfig.direction === 'ascending' ? 'descending' : 'ascending' })}>
+            <div className="flex items-center gap-2">
+                {title}
+                {isSorted && <span className="text-xs">{directionIcon}</span>}
+            </div>
+        </th>
+    );
   };
 
   return (
@@ -108,30 +113,27 @@ const CustomerListView: React.FC<CustomerListViewProps> = (props) => {
     <div className="overflow-x-auto">
       {customers.length > 0 ? (
           <table className="w-full text-left">
-          <thead className="border-b dark:border-dark-border"><tr className="bg-slate-50 dark:bg-slate-900/50">
-              {canManageCustomers && <th className="p-3"><input type="checkbox" onChange={handleSelectAll} checked={selectedIds.length === paginatedCustomers.length && paginatedCustomers.length > 0} /></th>}
-              <th className="p-3 font-semibold">Müşteri Adı</th>
-              <th className="p-3 font-semibold">Sağlık</th>
-              <th className="p-3 font-semibold">Sorumlu</th>
-              <th className="p-3 font-semibold">Son İletişim</th>
-              <th className="p-3 font-semibold">Durum</th>
+          <thead className="border-b dark:border-dark-border"><tr className="bg-slate-50 dark:bg-slate-900/50 text-xs uppercase text-text-secondary">
+              {canManageCustomers && <th className="p-3"><input type="checkbox" onChange={handleSelectAll} checked={selectedIds.length === sortedAndPaginatedCustomers.length && sortedAndPaginatedCustomers.length > 0} /></th>}
+              <SortableHeader columnKey="company" title="Müşteri Adı" />
+              <SortableHeader columnKey="assignedToName" title="Sorumlu" />
+              <SortableHeader columnKey="lastContact" title="Son İletişim" />
+              <SortableHeader columnKey="healthScore" title="Sağlık Skoru" />
+              <SortableHeader columnKey="status" title="Durum" />
               {canManageCustomers && <th className="p-3 font-semibold">Eylemler</th>}
           </tr></thead>
           <tbody>
-              {paginatedCustomers.map((customer) => {
-                  const health = getCustomerHealthScore(customer.id);
-                  return (
-              <tr key={customer.id} className="border-b dark:border-dark-border hover:bg-slate-50 dark:hover:bg-slate-800/50">
-                  {canManageCustomers && <td className="p-3"><input type="checkbox" checked={selectedIds.includes(customer.id)} onChange={(e) => handleSelectOne(e, customer.id)} /></td>}
-                  <td className="p-3 flex items-center gap-4">
+              {sortedAndPaginatedCustomers.map((customer) => (
+              <tr key={customer.id} className="odd:bg-slate-50 dark:odd:bg-slate-800/50">
+                  {canManageCustomers && <td className="p-4"><input type="checkbox" checked={selectedIds.includes(customer.id)} onChange={(e) => handleSelectOne(e, customer.id)} /></td>}
+                  <td className="p-4 flex items-center gap-4">
                       <img src={customer.avatar} alt={customer.name} className="h-10 w-10 rounded-full" />
                       <div>
                         <Link to={`/customers/${customer.id}`} className="font-medium hover:text-primary-600 dark:hover:text-primary-400">{customer.company}</Link>
-                        <p className="text-sm text-text-secondary dark:text-dark-text-secondary">{customer.email}</p>
+                        <p className="text-sm text-text-secondary">{customer.email}</p>
                       </div>
                   </td>
-                  <td className="p-3"><HealthIndicator score={health.score} factors={health.factors} /></td>
-                  <td className="p-3 text-text-secondary dark:text-dark-text-secondary" onClick={() => canManageCustomers && setEditingCell({ id: customer.id, key: 'assignedToId' })}>
+                  <td className="p-4 text-text-secondary" onClick={() => canManageCustomers && setEditingCell({ id: customer.id, key: 'assignedToId' })}>
                     {editingCell?.id === customer.id && editingCell.key === 'assignedToId' ? (
                         <select
                             defaultValue={customer.assignedToId}
@@ -146,8 +148,9 @@ const CustomerListView: React.FC<CustomerListViewProps> = (props) => {
                         <span className="cursor-pointer hover:bg-slate-200 dark:hover:bg-slate-700 p-1 rounded">{customer.assignedToName}</span>
                     )}
                   </td>
-                  <td className="p-3 text-text-secondary dark:text-dark-text-secondary">{customer.lastContact}</td>
-                  <td className="p-3" onClick={() => canManageCustomers && setEditingCell({ id: customer.id, key: 'status' })}>
+                  <td className="p-4 text-text-secondary">{customer.lastContact}</td>
+                  <td className="p-4"><HealthScoreIndicator score={customer.healthScore || 0} /></td>
+                  <td className="p-4" onClick={() => canManageCustomers && setEditingCell({ id: customer.id, key: 'status' })}>
                     {editingCell?.id === customer.id && editingCell.key === 'status' ? (
                          <select
                             defaultValue={customer.status}
@@ -162,13 +165,12 @@ const CustomerListView: React.FC<CustomerListViewProps> = (props) => {
                         <div className="cursor-pointer">{getStatusChip(customer.status)}</div>
                     )}
                   </td>
-                  {canManageCustomers && <td className="p-3"><div className="flex items-center gap-3">
+                  {canManageCustomers && <td className="p-4"><div className="flex items-center gap-3">
                      <button onClick={() => onEdit(customer)} className="text-slate-500 hover:text-primary-600">{ICONS.edit}</button>
                      <button onClick={() => setCustomerToDelete(customer)} className="text-slate-500 hover:text-red-600">{ICONS.trash}</button>
                   </div></td>}
               </tr>
-                  )
-              })}
+              ))}
           </tbody>
           </table>
       ) : (

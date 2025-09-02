@@ -1,4 +1,5 @@
 
+
 import React, { useState, useEffect } from 'react';
 import { useApp } from '../../context/AppContext';
 import { Warehouse } from '../../types';
@@ -54,7 +55,7 @@ const WarehouseForm: React.FC<WarehouseFormProps> = ({ isOpen, onClose, warehous
                     <input type="text" id="location" name="location" value={formData.location} onChange={handleInputChange} className="mt-1 w-full p-2 border rounded-md dark:bg-slate-700 dark:border-dark-border"/>
                 </div>
                 <div className="flex items-center">
-                    <input type="checkbox" id="isDefault" name="isDefault" checked={formData.isDefault} onChange={handleInputChange} className="h-4 w-4 rounded border-gray-300 text-primary-600 focus:ring-primary-500"/>
+                    <input type="checkbox" id="isDefault" name="isDefault" checked={formData.isDefault || false} onChange={handleInputChange} className="h-4 w-4 rounded border-gray-300 text-primary-600 focus:ring-primary-500"/>
                     <label htmlFor="isDefault" className="ml-2 block text-sm">Varsayılan Depo Yap</label>
                 </div>
                 <div className="flex justify-end pt-4 gap-2">

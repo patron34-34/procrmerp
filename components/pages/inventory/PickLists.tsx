@@ -57,7 +57,7 @@ const PickLists: React.FC = () => {
                     </table>
                 ) : (
                     <EmptyState
-                        icon={ICONS.pickList!}
+                        icon={ICONS.pickList}
                         title="Henüz Toplama Listesi Yok"
                         description="Sevkiyat sayfasından toplama listesi oluşturarak depo operasyonlarınızı başlatın."
                     />

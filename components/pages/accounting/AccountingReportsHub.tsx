@@ -32,7 +32,7 @@ const AccountingReportsHub: React.FC = () => {
                     <Link key={report.link} to={report.link}>
                         <Card className="h-full hover:shadow-lg hover:border-primary-500 transition-all duration-300 transform hover:-translate-y-1">
                             <div className="flex items-start gap-4">
-                                <div className="flex-shrink-0 text-primary-600">
+                                <div className="flex-shrink-0 text-primary-600 w-6 h-6">
                                     {report.icon}
                                 </div>
                                 <div>

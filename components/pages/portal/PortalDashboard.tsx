@@ -1,4 +1,3 @@
-
 import React, { useMemo } from 'react';
 import { useApp } from '../../../context/AppContext';
 import Card from '../../ui/Card';
@@ -7,7 +6,7 @@ import { LeaveStatus } from '../../../types';
 import Button from '../../ui/Button';
 
 const PortalDashboard: React.FC = () => {
-    const { currentUser, payslips, leaveRequests } = useApp();
+    const { currentUser, payslips, leaveRequests, calculateAnnualLeaveBalance } = useApp();
 
     const lastPayslip = useMemo(() => {
         return payslips
@@ -21,6 +20,10 @@ const PortalDashboard: React.FC = () => {
             .filter(lr => lr.employeeId === currentUser.id && lr.startDate >= today && lr.status === LeaveStatus.Approved)
             .sort((a, b) => new Date(a.startDate).getTime() - new Date(b.startDate).getTime())[0];
     }, [leaveRequests, currentUser.id]);
+    
+    const leaveBalance = useMemo(() => {
+        return calculateAnnualLeaveBalance(currentUser.id);
+    }, [currentUser.id, calculateAnnualLeaveBalance, leaveRequests]);
 
     return (
         <div className="space-y-6">
@@ -35,26 +38,31 @@ const PortalDashboard: React.FC = () => {
                                 <span className="text-text-secondary">Net Ödeme:</span>
                                 <span className="font-bold text-green-600">${lastPayslip.netPay.toLocaleString()}</span>
                             </div>
-                            <Link to="/portal/payslips" className="text-primary-600 hover:underline text-sm font-semibold">Tümünü Gör →</Link>
+                            <Link to="/portal/payslips" className="text-primary-600 hover:underline text-sm font-semibold block mt-4">Tümünü Gör →</Link>
                         </div>
                     ) : (
                         <p className="text-text-secondary">Henüz maaş pusulası oluşturulmadı.</p>
                     )}
                 </Card>
-                <Card title="Yaklaşan İzin">
-                    {upcomingLeave ? (
-                        <div className="space-y-2">
-                             <p className="text-lg font-semibold">{upcomingLeave.leaveType}</p>
-                             <p className="text-text-secondary">{upcomingLeave.startDate} - {upcomingLeave.endDate}</p>
-                             <Link to="/portal/leaves" className="text-primary-600 hover:underline text-sm font-semibold">Tüm İzinleri Gör →</Link>
+                <Card title="İzin Durumu">
+                     <div className="space-y-2">
+                        <div className="text-center">
+                            <p className="text-4xl font-bold text-primary-600">{leaveBalance.balance}</p>
+                            <p className="text-text-secondary">gün kullanılabilir yıllık izniniz var.</p>
                         </div>
-                    ) : (
-                        <p className="text-text-secondary">Yaklaşan onaylanmış bir izniniz yok.</p>
-                    )}
+                        {upcomingLeave && (
+                            <div className="mt-4 pt-4 border-t dark:border-dark-border">
+                                <p className="font-semibold text-sm">Yaklaşan İzin:</p>
+                                <p className="text-text-secondary text-sm">{upcomingLeave.startDate} - {upcomingLeave.endDate} ({upcomingLeave.leaveType})</p>
+                            </div>
+                        )}
+                        <Link to="/portal/leaves" className="text-primary-600 hover:underline text-sm font-semibold block mt-4">İzin Taleplerini Yönet →</Link>
+                    </div>
                 </Card>
                  <Card title="Hızlı Eylemler">
                     <div className="flex flex-col gap-2">
                         <Link to="/portal/leaves"><Button className="w-full justify-center">Yeni İzin Talebi Oluştur</Button></Link>
+                        <Link to="/portal/expenses"><Button variant="secondary" className="w-full justify-center">Yeni Masraf Talebi</Button></Link>
                         <Link to="/profile"><Button variant="secondary" className="w-full justify-center">Profilimi Görüntüle</Button></Link>
                     </div>
                  </Card>

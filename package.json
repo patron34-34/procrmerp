@@ -1,5 +1,5 @@
 {
-  "name": "profusion-crm-&-erp",
+  "name": "copy-of-profusion-crm-&-erp",
   "private": true,
   "version": "0.0.0",
   "type": "module",
@@ -10,11 +10,11 @@
   },
   "dependencies": {
     "@google/genai": "latest",
-    "react-dom": "^19.1.1",
-    "react": "^19.1.1",
-    "react-router-dom": "^7.7.1",
-    "recharts": "^3.1.0",
-    "leaflet": "^1.9.4"
+    "react": "18.2.0",
+    "react-router-dom": "6.22.3",
+    "recharts": "2.12.3",
+    "leaflet": "1.9.4",
+    "react-dom": "18.2.0"
   },
   "devDependencies": {
     "@types/node": "^22.14.0",

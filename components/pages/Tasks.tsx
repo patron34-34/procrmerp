@@ -425,7 +425,6 @@ const Tasks: React.FC = () => {
                         {viewMode === 'kanban' && (
                             <TaskKanbanView 
                                 tasks={filteredTasks}
-                                allTasks={allVisibleTasks}
                                 onTaskClick={handleOpenDetailModal}
                                 onStatusChange={handleStatusChange}
                             />

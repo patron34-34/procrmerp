@@ -1,4 +1,3 @@
-
 import React, { useState, useMemo } from 'react';
 import { Deal, DealStage } from '../../types';
 import DealCard from './DealCard';
@@ -37,7 +36,7 @@ const PipelineColumn: React.FC<PipelineColumnProps> = ({ stage, deals, onDragSta
       onDragOver={handleDragOver}
       onDragLeave={handleDragLeave}
       onDrop={handleDrop}
-      className={`flex-1 min-w-[300px] bg-slate-100 rounded-lg p-3 transition-colors duration-300 dark:bg-dark-card/30 ${isOver ? 'bg-slate-200 dark:bg-dark-card/60' : ''}`}
+      className={`flex-1 min-w-[300px] bg-background dark:bg-dark-background rounded-lg p-3 transition-colors duration-300 ${isOver ? 'bg-slate-200 dark:bg-slate-800' : ''}`}
     >
       <div className={`p-2 mb-3 rounded-t-md border-t-4 ${stageColors[stage]}`}>
         <div className="flex justify-between items-center">

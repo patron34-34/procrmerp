@@ -1,9 +1,7 @@
-
-
 import React from 'react';
-import Card from '../../ui/Card';
-import Button from '../../ui/Button';
-import { ICONS } from '../../../constants';
+import Card from '../ui/Card';
+import Button from '../ui/Button';
+import { ICONS } from '../../constants';
 import { Link } from 'react-router-dom';
 
 const DataSettings: React.FC = () => {

@@ -9,6 +9,7 @@ interface ProjectFormModalProps {
   isOpen: boolean;
   onClose: () => void;
   project: Project | null;
+  prefilledData?: Partial<Omit<Project, 'id' | 'client'>> | null;
 }
 
 interface FormErrors {
@@ -16,7 +17,7 @@ interface FormErrors {
     deadline?: string;
 }
 
-const ProjectFormModal: React.FC<ProjectFormModalProps> = ({ isOpen, onClose, project }) => {
+const ProjectFormModal: React.FC<ProjectFormModalProps> = ({ isOpen, onClose, project, prefilledData }) => {
     const { customers, addProject, updateProject } = useApp();
     
     const initialFormState: Omit<Project, 'id' | 'client'> = {
@@ -37,14 +38,16 @@ const ProjectFormModal: React.FC<ProjectFormModalProps> = ({ isOpen, onClose, pr
     const [errors, setErrors] = useState<FormErrors>({});
 
     useEffect(() => {
+        let initialState = { ...initialFormState };
         if (project) {
             const { client, ...projectData } = project;
-            setFormData(projectData);
-        } else {
-            setFormData(initialFormState);
+            initialState = { ...initialState, ...projectData };
+        } else if (prefilledData) {
+            initialState = { ...initialState, ...prefilledData };
         }
-        setErrors({}); 
-    }, [project, isOpen]);
+        setFormData(initialState);
+        setErrors({});
+    }, [project, prefilledData, isOpen, customers]);
 
 
     const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {

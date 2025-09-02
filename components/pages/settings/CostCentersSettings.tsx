@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { useApp } from '../../../context/AppContext';
 import { CostCenter } from '../../../types';
@@ -78,7 +79,7 @@ const CostCentersSettings: React.FC = () => {
                         </table>
                     ) : (
                          <EmptyState
-                            icon={ICONS.costCenter!}
+                            icon={ICONS.costCenter}
                             title="Henüz Maliyet Merkezi Yok"
                             description="İlk maliyet merkezinizi ekleyerek gider takibini detaylandırın."
                             action={canManage ? <Button onClick={openModalForNew}>Maliyet Merkezi Ekle</Button> : undefined}

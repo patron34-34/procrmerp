@@ -1,5 +1,3 @@
-
-
 import React, { useRef, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { ICONS } from '../../constants';
@@ -40,7 +38,7 @@ const EventPopover: React.FC<EventPopoverProps> = ({ event, target, onClose }) =
             case 'project': return `/projects/${event.data.id}`;
             case 'deal': return `/deals/${event.data.id}`;
             case 'invoice': return `/invoices`;
-            case 'task': return `/tasks`;
+            case 'task': return `/planner`;
             default: return '/';
         }
     };
@@ -53,6 +51,7 @@ const EventPopover: React.FC<EventPopoverProps> = ({ event, target, onClose }) =
     }
 
     const customerLink = getRelatedCustomerLink();
+    const customerName = event.data.customerName || (event.type === 'project' && event.data.client);
 
     return (
         <div ref={popoverRef} style={popoverStyle} className="z-50 bg-card dark:bg-dark-card rounded-lg shadow-xl border dark:border-dark-border">
@@ -89,9 +88,9 @@ const EventPopover: React.FC<EventPopoverProps> = ({ event, target, onClose }) =
                     <Link to={getDetailLink()} onClick={onClose} className="text-primary-600 hover:underline font-semibold text-sm">
                         Detayları Gör →
                     </Link>
-                    {customerLink && event.data.customerName && (
+                    {customerLink && customerName && (
                         <Link to={customerLink} onClick={onClose} className="text-sm text-text-secondary hover:underline">
-                            {event.data.customerName}
+                            {customerName}
                         </Link>
                     )}
                 </div>
@@ -100,4 +99,5 @@ const EventPopover: React.FC<EventPopoverProps> = ({ event, target, onClose }) =
     );
 };
 
+// FIX: Add default export to make the component a module.
 export default EventPopover;

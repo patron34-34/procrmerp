@@ -24,13 +24,13 @@ const Modal: React.FC<ModalProps> = ({ isOpen, onClose, title, children, size = 
 
   return (
     <div 
-      className="fixed inset-0 bg-black bg-opacity-60 z-50 flex justify-center items-start pt-12"
+      className="fixed inset-0 bg-black/70 z-50 flex justify-center items-start pt-12 backdrop-blur-sm"
       onClick={onClose}
       aria-modal="true"
       role="dialog"
     >
       <div 
-        className={`bg-card rounded-lg shadow-xl w-full m-4 dark:bg-dark-card border border-border dark:border-dark-border ${sizeClasses[size]}`}
+        className={`bg-card rounded-xl shadow-2xl w-full m-4 dark:bg-dark-card border border-border dark:border-dark-border ${sizeClasses[size]}`}
         onClick={e => e.stopPropagation()}
       >
         <div className="flex justify-between items-center px-6 py-4 border-b border-border dark:border-dark-border">

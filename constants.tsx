@@ -1,258 +1,274 @@
 import React from 'react';
 import { 
     Customer, Deal, Project, Task, Notification, Invoice, Product, Supplier, PurchaseOrder, 
-    Employee, LeaveRequest, BankAccount, Transaction, TransactionType, SupportTicket, Permission, 
-    ActivityLog, ActionType, EntityType, Document, DashboardWidget, Comment, CommunicationLog, 
-    CommunicationLogType, SavedView, SortConfig, Contact, DealLineItem, CustomFieldDefinition, 
-    SalesActivity, SalesActivityType, DocumentShare, DocumentType, SharePermission, PurchaseOrderItem, 
-    PerformanceReview, JobOpening, Candidate, OnboardingTemplate, OnboardingWorkflow, 
+    Employee, LeaveRequest, BankAccount, Transaction, SupportTicket, Permission, 
+    ActivityLog, Document, DashboardWidget, Comment, CommunicationLog, 
+    SavedView, SortConfig, Contact, DealLineItem, CustomFieldDefinition, 
+    SalesActivity, PerformanceReview, JobOpening, Candidate, OnboardingTemplate, OnboardingWorkflow, 
     OnboardingWorkflowStatus, OnboardingType, CompanyInfo, CustomFieldType, BrandingSettings, 
     SecuritySettings, Role, Account, JournalEntry, JournalEntryItem, JournalEntryType, JournalEntryStatus, 
     AccountType, RecurringJournalEntry, RecurringFrequency, Budget, CostCenter, Bill, BillStatus, 
-    TaxRate, TransactionCategory, SystemLists, SystemListKey, SystemListItem, EmailTemplate, 
+    TaxRate, SystemLists, SystemListItem, EmailTemplate, 
     PriceList, PriceListItem, InvoiceStatus, DealStage, PurchaseOrderStatus, LeaveType, LeaveStatus, 
-    TaskStatus, TicketStatus, TicketPriority, TaskPriority, CandidateStage, Automation, AutomationLog, 
+    TaskStatus, TaskPriority, TicketStatus, TicketPriority, CandidateStage, Automation, AutomationLog, 
     AutomationTriggerType, AutomationActionType, Warehouse, StockMovement, InventoryTransfer, 
     InventoryAdjustment, StockMovementType, AdjustmentReason, InventoryAdjustmentStatus, 
-    InventoryTransferStatus, SalesOrder, SalesOrderStatus, Shipment, ShipmentStatus, WidgetConfig, 
+    SalesOrder, SalesOrderStatus, Shipment, ShipmentStatus, WidgetConfig, 
     StockItem, StockItemStatus, SalesOrderItem, PickList, PickListItem, InvoiceLineItem, ShipmentItem, 
-    PayrollRun, Payslip, PayslipEarning, PayslipDeduction, SeveranceCalculationResult, 
-    PayrollSimulationResult, TaskTemplate, ScheduledTask, Attachment, Address,
-    ReportCardInfo, Cinsiyet, CalismaStatusu, SigortaKolu, MedeniDurum, EgitimSeviyesi
+    PayrollRun, Payslip, TaskTemplate, ScheduledTask, Attachment, Address,
+    ReportCardInfo, Cinsiyet, CalismaStatusu, SigortaKolu, MedeniDurum, EgitimSeviyesi,
+    ProductType, EInvoiceType, Unit, SupplierContact, BillOfMaterials, WorkOrder, WorkOrderStatus,
+    InvoiceType, EInvoiceScenario, EInvoiceProfile, CountersSettings, JobOpeningStatus, AssignedDepartment,
+    Expense, ExpenseStatus, Asset, AssetStatus,
+    TransactionType, TransactionCategory, DocumentType, CommunicationLogType, SalesActivityType,
+    HrParameters
 } from './types';
 
 export const Logo: React.FC<{ className?: string }> = ({ className }) => (
-    <svg className={className} viewBox="0 0 200 50" fill="none" xmlns="http://www.w3.org/2000/svg">
-        <path d="M25 5L5 25L25 45L45 25L25 5Z" stroke="currentColor" strokeWidth="4" strokeLinejoin="round"/>
-        <path d="M25 5L45 25" stroke="currentColor" strokeWidth="4" strokeLinejoin="round"/>
-        <text x="55" y="32" fontFamily="Inter, sans-serif" fontSize="24" fontWeight="bold" fill="currentColor">ProFusion</text>
+    <svg className={className} viewBox="0 0 208 50" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+            <linearGradient id="logoGradient" x1="0" y1="0" x2="1" y2="1">
+                <stop stopColor="#1e40af" /> 
+                <stop offset="1" stopColor="#14b8a6" />
+            </linearGradient>
+        </defs>
+        {/* 'P' part of the icon */}
+        <path d="M8 0H28C38.4934 0 47 8.50659 47 19V19C47 29.4934 38.4934 38 28 38H22V50H8V0Z" fill="url(#logoGradient)"/>
+        {/* 'F' part of the icon */}
+        <path d="M22 0H41V10H22V0Z" fill="url(#logoGradient)"/>
+        <path d="M22 19H35V29H22V19Z" fill="url(#logoGradient)"/>
+        
+        {/* Text "ProFusion" */}
+        <text x="58" y="35" fontFamily="Inter, sans-serif" fontSize="30" fill="currentColor">
+            <tspan fontWeight="800">Pro</tspan>
+            <tspan fontWeight="500">Fusion</tspan>
+        </text>
     </svg>
 );
 
-const iconWrapper = (svg: JSX.Element) => React.cloneElement(svg, {
-    className: "h-5 w-5",
-    strokeWidth: 1.5,
-});
+const iconBaseClass = "h-6 w-6";
+const smallIconBaseClass = "h-5 w-5";
 
 export const ICONS = {
-    dashboard: iconWrapper(<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M2.25 12l8.954-8.955c.44-.439 1.152-.439 1.591 0L21.75 12M4.5 9.75v10.125c0 .621.504 1.125 1.125 1.125H9.75v-4.875c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125V21h4.125c.621 0 1.125-.504 1.125-1.125V9.75M8.25 21h8.25" /></svg>),
-    customers: iconWrapper(<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M18 18.72a9.094 9.094 0 003.741-.479 3 3 0 00-4.682-2.72m-7.5-2.962c.566-.16-1.168.359-1.168.359m0 0a3.004 3.004 0 01-3.5-2.25m3.5 2.25a3.001 3.001 0 003.5-2.25m-3.5 2.25a3.001 3.001 0 01-3.5-2.25m0 0a3.004 3.004 0 00-3.5-2.25m7.5-2.962c-.566.16-1.168-.359-1.168-.359m0 0a3.004 3.004 0 013.5 2.25m-3.5-2.25a3.001 3.001 0 00-3.5 2.25m3.5-2.25a3.001 3.001 0 013.5 2.25m0 0a3.004 3.004 0 003.5 2.25m-7.5 2.962c.566.16 1.168-.359 1.168-.359m0 0a3.004 3.004 0 00-3.5 2.25m3.5 2.25a3.001 3.001 0 01-3.5-2.25m0 0a3.004 3.004 0 01-3.5-2.25m7.5-2.962c-.566-.16-1.168.359-1.168-.359" /></svg>),
-    sales: iconWrapper(<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M2.25 18L9 11.25l4.306 4.307a11.95 11.95 0 015.814-5.519l2.74-1.22m0 0l-5.94-2.28m5.94 2.28l-2.28 5.941" /></svg>),
-    planner: iconWrapper(<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0h18" /><path strokeLinecap="round" strokeLinejoin="round" d="M9 14.25l2.25 2.25 4.5-4.5" /></svg>),
-    salesOrder: iconWrapper(<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M15.75 10.5V6a3.75 3.75 0 10-7.5 0v4.5m11.356-1.993l1.263 12c.07.658-.463 1.243-1.117 1.243H4.252c-.654 0-1.187-.585-1.117-1.243l1.263-12A3.75 3.75 0 017.5 6h9a3.75 3.75 0 013.75 3.75z" /></svg>),
-    projects: iconWrapper(<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M20.25 14.15v4.075c0 1.313-.964 2.446-2.25 2.656h-11.5c-1.286-.21-2.25-1.343-2.25-2.656V14.15M17.25 4.5l-4.5 4.5-4.5-4.5" /></svg>),
-    tasks: iconWrapper(<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>),
-    invoices: iconWrapper(<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>),
-    documents: iconWrapper(<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M2.25 12.75V12A2.25 2.25 0 014.5 9.75h15A2.25 2.25 0 0121.75 12v.75m-8.69-6.44l-2.12-2.12a1.5 1.5 0 00-1.061-.44H4.5A2.25 2.25 0 002.25 6v12a2.25 2.25 0 002.25 2.25h15A2.25 2.25 0 0021.75 18V9a2.25 2.25 0 00-2.25-2.25h-5.379a1.5 1.5 0 01-1.06-.44z" /></svg>),
-    automations: iconWrapper(<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M15.59 14.37a6 6 0 01-5.84 7.38v-4.82m5.84-2.56a14.96 14.96 0 010 2.56m0 0a14.96 14.96 0 01-2.56 0m2.56 0V12a2.25 2.25 0 00-2.25-2.25h-1.5m3.75 0V7.5a2.25 2.25 0 00-2.25-2.25h-1.5m3.75 0h.375c.621 0 1.125.504 1.125 1.125v1.5c0 .621-.504 1.125-1.125 1.125h-.375m-3.75 0h.375c.621 0 1.125.504 1.125 1.125v1.5c0 .621-.504 1.125-1.125 1.125h-.375m-3.75 0h-.375a1.125 1.125 0 01-1.125-1.125v-1.5c0 -.621.504 1.125 1.125-1.125h.375m-3.75 0V7.5a2.25 2.25 0 012.25-2.25h1.5M12 14.37v4.82m0 0a6 6 0 01-5.84-7.38m5.84 7.38a14.96 14.96 0 010-2.56m0 2.56a14.96 14.96 0 012.56 0m-2.56 0V12a2.25 2.25 0 012.25-2.25h1.5m-3.75 0V7.5a2.25 2.25 0 012.25-2.25h1.5m-3.75 0h-.375a1.125 1.125 0 00-1.125 1.125v1.5c0 .621.504 1.125 1.125 1.125h.375m0 0h.375c.621 0 1.125.504 1.125 1.125v1.5c0 .621-.504 1.125-1.125 1.125h-.375m0 0V12a2.25 2.25 0 00-2.25-2.25h-1.5" /></svg>),
-    reports: iconWrapper(<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M3.375 19.5h17.25m-17.25 0a1.125 1.125 0 01-1.125-1.125V6.375m1.125 13.125A1.125 1.125 0 004.5 19.5h15V6.375m0 13.125A1.125 1.125 0 0119.5 19.5h-15m15-13.125a1.125 1.125 0 00-1.125-1.125H6.375m13.125 0A1.125 1.125 0 0119.5 4.5h-15m15 0a1.125 1.125 0 00-1.125-1.125H6.375m0 0A1.125 1.125 0 015.25 3h13.5" /></svg>),
-    support: iconWrapper(<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z" /></svg>),
-    inventory: iconWrapper(<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M20.25 7.5l-.625 10.632a2.25 2.25 0 01-2.247 2.118H6.622a2.25 2.25 0 01-2.247-2.118L3.75 7.5M10 11.25h4M3.375 7.5h17.25c.621 0 1.125-.504 1.125-1.125v-1.5c0-.621-.504-1.125-1.125-1.125H3.375c-.621 0-1.125.504-1.125 1.125v1.5c0 .621.504 1.125 1.125 1.125z" /></svg>),
-    products: iconWrapper(<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M21 7.5l-9-5.25L3 7.5m18 0l-9 5.25m9-5.25v9l-9 5.25M3 7.5l9 5.25M3 7.5v9l9 5.25m0-9v9" /></svg>),
-    accounting: iconWrapper(<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v.01M12 12v.01M12 12V11m0 1v.01M12 16v.01M12 16v-1m0 1v.01M12 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>),
-    hr: iconWrapper(<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M17.982 18.725A7.488 7.488 0 0012 15.75a7.488 7.488 0 00-5.982 2.975m11.963 0a9 9 0 10-11.963 0m11.963 0A8.966 8.966 0 0112 21a8.966 8.966 0 01-5.982-2.275M15 9.75a3 3 0 11-6 0 3 3 0 016 0z" /></svg>),
-    adminPanel: iconWrapper(<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M10.343 3.94c.09-.542.56-1.007 1.11-1.212l2.29.916a12 12 0 014.28 4.28l.916 2.29c.205.55.153 1.154-.142 1.636l-2.146 3.193m-2.29-9.16a12 12 0 00-4.28-4.28l-.916-2.29a1.65 1.65 0 00-1.636-.142L2.96 5.599a12.022 12.022 0 00-.916 2.29c-.205.55-.153 1.154.142 1.636l2.146 3.193m9.16-2.29a12 12 0 014.28 4.28l.916 2.29c.205.55.153 1.154-.142 1.636l-2.146 3.193a12 12 0 01-4.28 4.28l-2.29.916a1.65 1.65 0 01-1.636.142l-3.193-2.146a12.022 12.022 0 01-2.29-.916c-.55-.205-1.154-.153-1.636.142l-3.193 2.146m9.16-11.453a3.001 3.001 0 11-4.243 4.243 3.001 3.001 0 014.243-4.243z" /></svg>),
-    general: iconWrapper(<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M3.75 21h16.5M4.5 3h15M5.25 3v18m13.5-18v18M9 6.75h6.375a.375.375 0 01.375.375v1.5a.375.375 0 01-.375.375H9a.375.375 0 01-.375-.375v-1.5A.375.375 0 019 6.75zM9 12.75h6.375a.375.375 0 01.375.375v1.5a.375.375 0 01-.375.375H9a.375.375 0 01-.375-.375v-1.5A.375.375 0 019 12.75z" /></svg>),
-    appearance: iconWrapper(<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M4.034 7.5h15.932c.66 0 1.147.694.857 1.285L12.857 19.21a1.96 1.96 0 01-3.714 0L4.17 8.785a.784.784 0 01-.136-1.285z" /></svg>),
-    security: iconWrapper(<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75m-3-7.036A11.959 11.959 0 013.598 6 11.99 11.99 0 003 9.749c0 5.592 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.571-.6-3.75M15 3.75a11.959 11.959 0 01-3.598 2.25" /></svg>),
-    employees: iconWrapper(<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M15 19.128a9.38 9.38 0 002.625.372 9.337 9.337 0 004.121-.952 4.125 4.125 0 00-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.106A12.318 12.318 0 018.624 21c-2.331 0-4.512-.645-6.374-1.766l-.001-.109a6.375 6.375 0 0111.964-4.663M15 19.128L12 15.75M15 19.128l-2.625-2.625m0-3l-2.625 2.625m2.625-2.625l2.625 2.625m-2.625-2.625L12 15.75M12 12a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0z" /></svg>),
-    roles: iconWrapper(<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M15 19.128a9.38 9.38 0 002.625.372 9.337 9.337 0 004.121-.952 4.125 4.125 0 00-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.106A12.318 12.318 0 018.624 21c-2.331 0-4.512-.645-6.374-1.766l-.001-.109a6.375 6.375 0 0111.964-4.663M15 19.128L12 15.75M15 19.128l-2.625-2.625m0-3l-2.625 2.625m2.625-2.625l2.625 2.625m-2.625-2.625L12 15.75M12 12a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0z" /></svg>),
-    customization: iconWrapper(<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M9.53 16.122a3 3 0 00-5.78 1.128 2.25 2.25 0 01-2.4 2.245 4.5 4.5 0 008.4-2.245c0-.399-.078-.78-.22-1.128zm0 0a15.998 15.998 0 003.388-1.62m-5.043-.025a15.998 15.998 0 011.622-3.385m5.043.025a15.998 15.998 0 001.622-3.385m3.388 1.62a15.998 15.998 0 01-3.388-1.62m-5.043-.025a15.998 15.998 0 01-3.388-1.622m7.703 6.042a15.998 15.998 0 00-1.622-3.385m-5.043-.025a15.998 15.998 0 01-1.622-3.385m5.043.025a15.998 15.998 0 013.388 1.622m-7.703 6.042a15.998 15.998 0 011.622 3.385m-3.388-1.62a15.998 15.998 0 00-3.388 1.622m" /></svg>),
-    priceList: iconWrapper(<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M3.75 3v11.25A2.25 2.25 0 006 16.5h2.25M3.75 3h-1.5m1.5 0h16.5m0 0h1.5m-1.5 0v11.25A2.25 2.25 0 0118 16.5h-2.25m-7.5 0h7.5m-7.5 0l-1 3m8.5-3l1 3m0 0l.5 1.5m-.5-1.5h-9.5m0 0l-.5 1.5M9 11.25v1.5M12 9v3.75m3-6v6" /></svg>),
-    tax: iconWrapper(<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M9 14.25l6-6m4.5-3.493V21.75l-3.75-1.5-3.75 1.5-3.75-1.5-3.75 1.5V4.757c0-1.108.806-2.057 1.907-2.185a48.507 48.507 0 0111.186 0c1.1.128 1.907 1.077 1.907 2.185z" /></svg>),
-    costCenter: iconWrapper(<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M4.26 10.147a60.436 60.436 0 00-.491 6.347A48.627 48.627 0 0112 20.904a48.627 48.627 0 018.232-4.41 60.46 60.46 0 00-.491-6.347m-15.482 0a50.57 50.57 0 00-2.658-.813A59.905 59.905 0 0112 3.493a59.902 59.902 0 0110.399 5.84c-.896.248-1.783.52-2.658.814m-15.482 0l2.903 7.12A59.962 59.962 0 0112 20.904a59.962 59.962 0 016.822-8.636l2.903-7.12" /></svg>),
-    integrations: iconWrapper(<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M13.19 8.688a4.5 4.5 0 011.242 7.244l-4.5 4.5a4.5 4.5 0 01-6.364-6.364l1.757-1.757m13.35-.622l1.757-1.757a4.5 4.5 0 00-6.364-6.364l-4.5 4.5a4.5 4.5 0 001.242 7.244" /></svg>),
-    dataManagement: iconWrapper(<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l7.5-7.5 7.5 7.5m-15 6l7.5-7.5 7.5 7.5" /></svg>),
-    add: iconWrapper(<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" /></svg>),
-    trash: iconWrapper(<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0" /></svg>),
-    edit: iconWrapper(<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0115.75 21H5.25A2.25 2.25 0 013 18.75V8.25A2.25 2.25 0 015.25 6H10" /></svg>),
-    export: iconWrapper(<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5m-13.5-9L12 3m0 0l4.5 4.5M12 3v13.5" /></svg>),
-    import: iconWrapper(<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3" /></svg>),
-    list: iconWrapper(<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M8.25 6.75h12M8.25 12h12m-12 5.25h12M3.75 6.75h.007v.008H3.75V6.75zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zM3.75 12h.007v.008H3.75V12zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zM3.75 17.25h.007v.008H3.75v-.008zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0z" /></svg>),
-    kanban: iconWrapper(<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M9 4.5v15m6-15v15m-10.875 0h15.75c.621 0 1.125-.504 1.125-1.125V5.625c0-.621-.504-1.125-1.125-1.125H4.125C3.504 4.5 3 5.004 3 5.625v12.75c0 .621.504 1.125 1.125 1.125z" /></svg>),
-    map: iconWrapper(<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M9 6.75V15m6-6v8.25m.5-10.5h-7a.5.5 0 00-.5.5v12.5a.5.5 0 00.5.5h7a.5.5 0 00.5-.5V6.25a.5.5 0 00-.5-.5z" /></svg>),
-    analytics: iconWrapper(<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M3.75 3v16.5h16.5" /><path strokeLinecap="round" strokeLinejoin="round" d="M12 18.75h3.75m-3.75 0A4.502 4.502 0 0112 14.25v-2.25m0-2.25v-2.25a4.5 4.5 0 10-9 0v6.75a4.5 4.5 0 109 0v-6.75" /></svg>),
-    calendar: iconWrapper(<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0h18" /></svg>),
-    gantt: iconWrapper(<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25H12" /></svg>),
-    notification: iconWrapper(<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M14.857 17.082a23.848 23.848 0 005.454-1.31A8.967 8.967 0 0118 9.75v-.7V9A6 6 0 006 9v.75a8.967 8.967 0 01-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.255 24.255 0 01-5.714 0m5.714 0a3 3 0 11-5.714 0" /></svg>),
-    search: iconWrapper(<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z" /></svg>),
-    close: iconWrapper(<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>),
-    lock: iconWrapper(<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M16.5 10.5V6.75a4.5 4.5 0 10-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 002.25-2.25v-6.75a2.25 2.25 0 00-2.25-2.25H6.75a2.25 2.25 0 00-2.25 2.25v6.75a2.25 2.25 0 002.25 2.25z" /></svg>),
-    filePdf: iconWrapper(<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m2.25 0H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z" /></svg>),
-    fileWord: iconWrapper(<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m2.25 0H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z" /></svg>),
-    fileExcel: iconWrapper(<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m2.25 0H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z" /></svg>),
-    fileImage: iconWrapper(<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M2.25 15.75l5.159-5.159a2.25 2.25 0 013.182 0l5.159 5.159m-1.5-1.5l1.409-1.409a2.25 2.25 0 013.182 0l2.909 2.909m-18 3.75h16.5a1.5 1.5 0 001.5-1.5V6a1.5 1.5 0 00-1.5-1.5H3.75A1.5 1.5 0 002.25 6v12a1.5 1.5 0 001.5 1.5zm10.5-11.25h.008v.008h-.008V8.25zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0z" /></svg>),
-    fileOther: iconWrapper(<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m.75 12l3 3m0 0l3-3m-3 3v-6m-1.5-9H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z" /></svg>),
-    note: iconWrapper(<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L6.832 19.82a4.5 4.5 0 01-1.897 1.13l-2.685.8.8-2.685a4.5 4.5 0 011.13-1.897L16.863 4.487zm0 0L19.5 7.125" /></svg>),
-    phoneCall: iconWrapper(<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M2.25 6.75c0 8.284 6.716 15 15 15h2.25a2.25 2.25 0 002.25-2.25v-1.372c0-.516-.351-.966-.852-1.091l-4.423-1.106c-.44-.11-.902.055-1.173.417l-.97 1.293c-.282.376-.769.542-1.21.38a12.035 12.035 0 01-7.143-7.143c-.162-.441.004-.928.38-1.21l1.293-.97c.363-.271.527-.734.417-1.173L6.963 3.102a1.125 1.125 0 00-1.091-.852H4.5A2.25 2.25 0 002.25 4.5v2.25z" /></svg>),
-    meeting: iconWrapper(<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M18 18.72a9.094 9.094 0 003.741-.479 3 3 0 00-4.682-2.72m-7.5-2.962c.566-.16-1.168.359-1.168.359m0 0a3.004 3.004 0 01-3.5-2.25m3.5 2.25a3.001 3.001 0 003.5-2.25m-3.5 2.25a3.001 3.001 0 01-3.5-2.25m0 0a3.004 3.004 0 00-3.5-2.25m7.5-2.962c-.566.16-1.168-.359-1.168-.359m0 0a3.004 3.004 0 013.5 2.25m-3.5-2.25a3.001 3.001 0 00-3.5 2.25m3.5-2.25a3.001 3.001 0 013.5 2.25m0 0a3.004 3.004 0 003.5 2.25m-7.5 2.962c.566.16 1.168-.359 1.168-.359m0 0a3.004 3.004 0 00-3.5 2.25m3.5 2.25a3.001 3.001 0 01-3.5-2.25m0 0a3.004 3.004 0 01-3.5-2.25m7.5-2.962c-.566-.16-1.168.359-1.168-.359" /></svg>),
-    email: iconWrapper(<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M21.75 6.75v10.5a2.25 2.25 0 01-2.25 2.25h-15a2.25 2.25 0 01-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25m19.5 0v.243a2.25 2.25 0 01-1.07 1.916l-7.5 4.615a2.25 2.25 0 01-2.36 0L3.32 8.91a2.25 2.25 0 01-1.07-1.916V6.75" /></svg>),
-    ellipsisVertical: iconWrapper(<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M12 6.75a.75.75 0 110-1.5.75.75 0 010 1.5zM12 12.75a.75.75 0 110-1.5.75.75 0 010 1.5zM12 18.75a.75.75 0 110-1.5.75.75 0 010 1.5z" /></svg>),
-    transfer: iconWrapper(<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M7.5 21L3 16.5m0 0L7.5 12M3 16.5h13.5m0-13.5L21 7.5m0 0L16.5 12M21 7.5H7.5" /></svg>),
-    adjustment: iconWrapper(<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M10.5 6h9.75M10.5 6a1.5 1.5 0 11-3 0m3 0a1.5 1.5 0 10-3 0M3.75 6H7.5m3 12h9.75m-9.75 0a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m-3.75 0H7.5m9-6h3.75m-3.75 0a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m-9.75 0h9.75" /></svg>),
-    suppliers: iconWrapper(<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path d="M9 17a2 2 0 11-4 0 2 2 0 014 0zM19 17a2 2 0 11-4 0 2 2 0 014 0z" /><path strokeLinecap="round" strokeLinejoin="round" d="M13 16V6a1 1 0 00-1-1H4a1 1 0 00-1 1v10l2 2h8a1 1 0 001-1z" /><path strokeLinecap="round" strokeLinejoin="round" d="M13 16V6a1 1 0 00-1-1H4a1 1 0 00-1 1v10l2 2h8a1 1 0 001-1z" /><path strokeLinecap="round" strokeLinejoin="round" d="M13 16h2a1 1 0 001-1V6h2a1 1 0 011 1v9a1 1 0 01-1 1h-1l-2 2z" /></svg>),
-    receive: iconWrapper(<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" /></svg>),
-    purchaseOrder: iconWrapper(<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" /></svg>),
-    leave: iconWrapper(<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M8 17l4 4 4-4m-4-5v9" /><path strokeLinecap="round" strokeLinejoin="round" d="M20.898 12.102A9.955 9.955 0 0112 21a9.955 9.955 0 01-8.898-8.898" /><path strokeLinecap="round" strokeLinejoin="round" d="M3.102 12.102A9.955 9.955 0 0112 3a9.955 9.955 0 018.898 8.898" /></svg>),
-    starFilled: iconWrapper(<svg xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z" /></svg>),
-    starOutline: iconWrapper(<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z" /></svg>),
-    folder: iconWrapper(<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M2.25 12.75V12A2.25 2.25 0 014.5 9.75h15A2.25 2.25 0 0121.75 12v.75m-8.69-6.44l-2.12-2.12a1.5 1.5 0 00-1.061-.44H4.5A2.25 2.25 0 002.25 6v12a2.25 2.25 0 002.25 2.25h15A2.25 2.25 0 0021.75 18V9a2.25 2.25 0 00-2.25-2.25h-5.379a1.5 1.5 0 01-1.06-.44z" /></svg>),
-    share: iconWrapper(<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M7.217 10.907a2.25 2.25 0 100 4.186m0-4.186c.114.05.23.09.349.124m-3.498 3.938c.22.062.45.101.687.124m7.538-2.552a2.25 2.25 0 100 4.186m0-4.186c-.114.05-.23.09-.349.124m3.498 3.938c-.22.062-.45.101-.687.124m-7.187-3.949a2.25 2.25 0 100-4.186m0 4.186c.114-.05.23-.09.349-.124m-3.498-3.938c.22-.062.45-.101.687.124m7.187 3.949a2.25 2.25 0 100-4.186m0 4.186c-.114-.05-.23-.09-.349-.124m3.498-3.938c-.22-.062-.45-.101-.687.124" /></svg>),
-    system: iconWrapper(<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M17.25 6.75L22.5 12l-5.25 5.25m-10.5 0L1.5 12l5.25-5.25m7.5-3l-4.5 16.5" /></svg>),
-    magic: iconWrapper(<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M9.528 1.718a.75.75 0 01.162.819A8.97 8.97 0 009 6a9 9 0 009 9 8.97 8.97 0 003.463-.69.75.75 0 01.82.162l3.19 3.19a.75.75 0 01-.53 1.28l-3.19-3.19a.75.75 0 01-.162-.82z" /><path strokeLinecap="round" strokeLinejoin="round" d="M12 2.25a.75.75 0 01.75.75v.01a.75.75 0 01-1.5 0V3a.75.75 0 01.75-.75zm0 18a.75.75 0 01.75.75v.01a.75.75 0 01-1.5 0V21a.75.75 0 01.75-.75zm6-10.5a.75.75 0 01.75.75v.01a.75.75 0 01-1.5 0v-.01a.75.75 0 01.75-.75zM4.5 12a.75.75 0 01.75.75v.01a.75.75 0 01-1.5 0v-.01a.75.75 0 01.75-.75z" /></svg>),
-    saveAndNew: iconWrapper(<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M12 9v6m3-3H9m12 0a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>),
-    copy: iconWrapper(<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M15.75 17.25v3.375c0 .621-.504 1.125-1.125 1.125h-9.75a1.125 1.125 0 01-1.125-1.125V7.875c0-.621.504-1.125 1.125-1.125H6.75a9.06 9.06 0 011.5.124m7.5 10.376h3.375c.621 0 1.125-.504 1.125-1.125V11.25c0-4.46-3.243-8.161-7.5-8.876a9.06 9.06 0 00-1.5-.124H9.375c-.621 0-1.125.504-1.125 1.125v3.5m7.5 10.375H9.375a1.125 1.125 0 01-1.125-1.125v-9.25m12 6.625v-1.875a3.375 3.375 0 00-3.375-3.375h-1.5a1.125 1.125 0 01-1.125-1.125v-1.5a3.375 3.375 0 00-3.375-3.375H9.75" /></svg>),
-    reverse: iconWrapper(<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M3 7.5L7.5 3m0 0L12 7.5M7.5 3v13.5m13.5 0L16.5 21m0 0L12 16.5m4.5 4.5V7.5" /></svg>),
-    trialBalance: iconWrapper(<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5M12 17.25h8.25" /></svg>),
-    balanceSheet: iconWrapper(<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M12 3v18m9-9H3" /><path strokeLinecap="round" strokeLinejoin="round" d="M4.5 7.5l7.5 7.5 7.5-7.5" /></svg>),
-    incomeStatement: iconWrapper(<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>),
-    cashFlow: iconWrapper(<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M2.25 18.75a60.07 60.07 0 0115.797 2.101c.727.198 1.453-.342 1.453-1.096V18.75M3.75 4.5v.75A.75.75 0 013 6h-.75m0 0v-.375c0-.621.504-1.125 1.125-1.125H20.25M2.25 6v9m18-10.5v.75c0 .414.336.75.75.75h.75m-1.5-1.5h.375c.621 0 1.125.504 1.125 1.125v9.75c0 .621-.504 1.125-1.125 1.125h-.375m1.5-1.5H21a.75.75 0 00-.75.75v.75m0 0H3.75m0 0h-.375a1.125 1.125 0 01-1.125-1.125V15m1.5 1.5v-.75A.75.75 0 003 15h-.75M15 10.5a3 3 0 11-6 0 3 3 0 016 0z" /></svg>),
-    ledger: iconWrapper(<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M12 6.042A8.967 8.967 0 006 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 016 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 016-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0018 18a8.967 8.967 0 00-6 2.292m0-14.25v14.25" /></svg>),
-    arAging: iconWrapper(<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0h18" /></svg>),
-    profitAndLoss: iconWrapper(<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M2.25 18.75a60.07 60.07 0 0115.797 2.101c.727.198 1.453-.342 1.453-1.096V18.75M3.75 4.5v.75A.75.75 0 013 6h-.75m0 0v-.375c0-.621.504-1.125 1.125-1.125H20.25M2.25 6v9m18-10.5v.75c0 .414.336.75.75.75h.75m-1.5-1.5h.375c.621 0 1.125.504 1.125 1.125v9.75c0 .621-.504 1.125-1.125 1.125h-.375m1.5-1.5H21a.75.75 0 00-.75.75v.75m0 0H3.75m0 0h-.375a1.125 1.125 0 01-1.125-1.125V15m1.5 1.5v-.75A.75.75 0 003 15h-.75M15 10.5a3 3 0 11-6 0 3 3 0 016 0z" /></svg>),
-    bills: iconWrapper(<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M9 14.25l6-6m4.5-3.493V21.75l-3.75-1.5-3.75 1.5-3.75-1.5-3.75 1.5V4.757c0-1.108.806-2.057 1.907-2.185a48.507 48.507 0 0111.186 0c1.1.128 1.907 1.077 1.907 2.185z" /></svg>),
-    bank: iconWrapper(<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M2.25 8.25h19.5M2.25 9h19.5m-16.5 5.25h6m-6 2.25h3m-3.75 3h15a2.25 2.25 0 002.25-2.25V6.75A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25v10.5A2.25 2.25 0 004.5 19.5z" /></svg>),
-    transactions: iconWrapper(<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M7.5 21L3 16.5m0 0L7.5 12M3 16.5h18" /><path strokeLinecap="round" strokeLinejoin="round" d="M16.5 3L21 7.5m0 0L16.5 12M21 7.5H3" /></svg>),
-    warehouse: iconWrapper(<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M3.75 21h16.5M4.5 3h15M5.25 3v18m13.5-18v18M9 6.75h6.375a.375.375 0 01.375.375v1.5a.375.375 0 01-.375.375H9a.375.375 0 01-.375-.375v-1.5A.375.375 0 019 6.75zM9 12.75h6.375a.375.375 0 01.375.375v1.5a.375.375 0 01-.375.375H9a.375.375 0 01-.375-.375v-1.5A.375.375 0 019 12.75z" /></svg>),
-    shipment: iconWrapper(<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path d="M9 17a2 2 0 11-4 0 2 2 0 014 0zM19 17a2 2 0 11-4 0 2 2 0 014 0z" /><path strokeLinecap="round" strokeLinejoin="round" d="M13 16V6a1 1 0 00-1-1H4a1 1 0 00-1 1v10l2 2h8a1 1 0 001-1z" /><path strokeLinecap="round" strokeLinejoin="round" d="M13 16h2a1 1 0 001-1V6h2a1 1 0 011 1v9a1 1 0 01-1 1h-1l-2 2z" /></svg>),
-    pickList: iconWrapper(<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>),
-    payroll: iconWrapper(<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M2.25 18.75a60.07 60.07 0 0115.797 2.101c.727.198 1.453-.342 1.453-1.096V18.75M3.75 4.5v.75A.75.75 0 013 6h-.75m0 0v-.375c0-.621.504-1.125 1.125-1.125H20.25M2.25 6v9m18-10.5v.75c0 .414.336.75.75.75h.75m-1.5-1.5h.375c.621 0 1.125.504 1.125 1.125v9.75c0 .621-.504 1.125-1.125 1.125h-.375m1.5-1.5H21a.75.75 0 00-.75.75v.75m0 0H3.75m0 0h-.375a1.125 1.125 0 01-1.125-1.125V15m1.5 1.5v-.75A.75.75 0 003 15h-.75M15 10.5a3 3 0 11-6 0 3 3 0 016 0z" /></svg>),
-    budget: iconWrapper(<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M2.25 18.75a60.07 60.07 0 0115.797 2.101c.727.198 1.453-.342 1.453-1.096V18.75M3.75 4.5v.75A.75.75 0 013 6h-.75m0 0v-.375c0-.621.504-1.125 1.125-1.125H20.25M2.25 6v9m18-10.5v.75c0 .414.336.75.75.75h.75m-1.5-1.5h.375c.621 0 1.125.504 1.125 1.125v9.75c0 .621-.504 1.125-1.125 1.125h-.375m1.5-1.5H21a.75.75 0 00-.75.75v.75m0 0H3.75m0 0h-.375a1.125 1.125 0 01-1.125-1.125V15m1.5 1.5v-.75A.75.75 0 003 15h-.75M15 10.5a3 3 0 11-6 0 3 3 0 016 0z" /></svg>),
+    dashboard: <svg className={iconBaseClass} xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8h5z"/></svg>,
+    customers: <svg className={iconBaseClass} xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z"/></svg>,
+    sales: <svg className={iconBaseClass} xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M16 6l2.29 2.29-4.88 4.88-4-4L2 16.59 3.41 18l6-6 4 4 6.3-6.29L22 12V6z"/></svg>,
+    projects: <svg className={iconBaseClass} xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M22 6h-8l-2-2H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2zm0 12H4V6h5.17l2 2H22v10z"/></svg>,
+    planner: <svg className={iconBaseClass} xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M9 11H7v2h2v-2zm4 0h-2v2h2v-2zm4 0h-2v2h2v-2zm2-7h-1V2h-2v2H8V2H6v2H5c-1.11 0-2 .9-2 2v14c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 16H5V9h14v11z"/></svg>,
+    inventory: <svg className={iconBaseClass} xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M20 2H4c-1.1 0-2 .9-2 2v4c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm0 6H4V4h16v4zm0 10H4c-1.1 0-2 .9-2 2v4c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2v-4c0-1.1-.9-2-2-2zm0 6H4v-4h16v4z"/></svg>,
+    manufacturing: <svg className={iconBaseClass} xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2L1 21h22M12 6l9 15H3m14-8v-2h-4v2h4z"/></svg>,
+    invoices: <svg className={iconBaseClass} xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>,
+    bank: <svg className={iconBaseClass} xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M3.75 21h16.5M4.5 3h15M5.25 3v18m13.5-18v18M9 6.75h6m-6 3h6m-6 3h6m-6 3h6m-6 3h6" /></svg>,
+    accounting: <svg className={iconBaseClass} xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M12 6v12m-3-6h6" /></svg>,
+    hr: <svg className={iconBaseClass} xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M15 19.128a9.38 9.38 0 002.625.372 9.337 9.337 0 004.121-.952 4.125 4.125 0 00-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.106A12.318 12.318 0 018.624 21c-2.331 0-4.512-.645-6.374-1.766l-.001-.109a6.375 6.375 0 0111.964-4.66c.12-.144.237-.29.348-.437m-5.165 4.908a2.25 2.25 0 01-3.182-3.182 2.25 2.25 0 013.182 3.182zM12 12a3.375 3.375 0 100-6.75 3.375 3.375 0 000 6.75z" /></svg>,
+    reports: <svg className={iconBaseClass} xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M3 13.125C3 12.504 3.504 12 4.125 12h2.25c.621 0 1.125.504 1.125 1.125v6.75C7.5 20.496 6.996 21 6.375 21h-2.25A1.125 1.125 0 013 19.875v-6.75zM9.75 8.625c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125v11.25c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V8.625zM16.5 4.125c0-.621.504-1.125 1.125-1.125h2.25C20.496 3 21 3.504 21 4.125v15.75c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V4.125z" /></svg>,
+    adminPanel: <svg className={iconBaseClass} xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75m-3-7.036A11.959 11.959 0 013.598 6 11.99 11.99 0 003 9.749c0 5.592 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.571-.598-3.751h-.152c-3.196 0-6.1-1.248-8.25-3.286zm0 13.036h.008v.008h-.008v-.008z" /></svg>,
+    list: <svg className={smallIconBaseClass} xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M3 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1z" clipRule="evenodd" /></svg>,
+    kanban: <svg className={smallIconBaseClass} xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor"><path d="M5 3a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2V5a2 2 0 00-2-2H5zm3 1h4v12H8V4z" /></svg>,
+    map: <svg className={smallIconBaseClass} xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M12 1.5a.75.75 0 01.75.75v4.5a.75.75 0 01-1.5 0V3.362l-2.073 1.382A.75.75 0 018.5 4.5v4.25a.75.75 0 01-1.5 0V5.513l-2.073 1.382A.75.75 0 014.25 6.5v8a.75.75 0 01-1.5 0v-8A2.25 2.25 0 015 4.362l2.5-1.667A2.25 2.25 0 0110 4.362l2.5 1.667A2.25 2.25 0 0115 8.138v4.112a2.25 2.25 0 01-2.5 2.167 2.25 2.25 0 01-2.5-2.167v-1.25a.75.75 0 011.5 0v1.25c0 .414.336.75.75.75s.75-.336.75-.75V8.138a.75.75 0 00-.377-.654L10.377 6.1a.75.75 0 010-1.308l2.5-1.667A.75.75 0 0012 2.25v-.75A.75.75 0 0112 1.5z" clipRule="evenodd" /></svg>,
+    import: <svg className={smallIconBaseClass} xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor"><path d="M10.75 2.75a.75.75 0 00-1.5 0v8.614L6.28 8.28a.75.75 0 10-1.06 1.06l4.25 4.25a.75.75 0 001.06 0l4.25-4.25a.75.75 0 10-1.06-1.06l-2.97 2.97V2.75z" /><path d="M3.5 12.75a.75.75 0 00-1.5 0v2.5A2.75 2.75 0 004.75 18h10.5A2.75 2.75 0 0018 15.25v-2.5a.75.75 0 00-1.5 0v2.5c0 .69-.56 1.25-1.25 1.25H4.75c-.69 0-1.25-.56-1.25-1.25v-2.5z" /></svg>,
+    add: <svg className={smallIconBaseClass} xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor"><path d="M10.75 4.75a.75.75 0 00-1.5 0v4.5h-4.5a.75.75 0 000 1.5h4.5v4.5a.75.75 0 001.5 0v-4.5h4.5a.75.75 0 000-1.5h-4.5v-4.5z" /></svg>,
+    analytics: <svg className={smallIconBaseClass} xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M1 11.5a.5.5 0 01.5-.5h2a.5.5 0 01.5.5v3a.5.5 0 01-1 0v-2.5h-1v2.5a.5.5 0 01-1 0v-3zM8.25.5a.5.5 0 00-.5.5v14a.5.5 0 001 0v-14a.5.5 0 00-.5.5zM14.5 4.5a.5.5 0 01.5-.5h2a.5.5 0 01.5.5v10a.5.5 0 01-1 0v-9.5h-1v9.5a.5.5 0 01-1 0v-10z" clipRule="evenodd" /></svg>,
+    export: <svg className={smallIconBaseClass} xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor"><path d="M10 3.75a.75.75 0 01.75.75v8.614l2.97-2.97a.75.75 0 011.06 1.06l-4.25 4.25a.75.75 0 01-1.06 0L5.22 11.28a.75.75 0 011.06-1.06l2.97 2.97V4.5a.75.75 0 01.75-.75z" /><path d="M3.5 12.75a.75.75 0 00-1.5 0v2.5A2.75 2.75 0 004.75 18h10.5A2.75 2.75 0 0018 15.25v-2.5a.75.75 0 00-1.5 0v2.5c0 .69-.56 1.25-1.25 1.25H4.75c-.69 0-1.25-.56-1.25-1.25v-2.5z" /></svg>,
+    edit: <svg className={smallIconBaseClass} xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor"><path d="M17.414 2.586a2 2 0 00-2.828 0L7 10.172V13h2.828l7.586-7.586a2 2 0 000-2.828z" /><path fillRule="evenodd" d="M2 6a2 2 0 012-2h4a1 1 0 010 2H4v10h10v-4a1 1 0 112 0v4a2 2 0 01-2 2H4a2 2 0 01-2-2V6z" clipRule="evenodd" /></svg>,
+    trash: <svg className={smallIconBaseClass} xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clipRule="evenodd" /></svg>,
+    close: <svg className={iconBaseClass} xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" /></svg>,
+    general: <svg className={smallIconBaseClass} xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor"><path d="M3.5 2.75a.75.75 0 00-1.5 0v14.5a.75.75 0 001.5 0v-4.392l1.657-.348a6.449 6.449 0 014.271.572 7.95 7.95 0 005.965.044l2.836-.616a.75.75 0 00.572-1.242l-2.66-2.918a.75.75 0 00-1.152-.088l-1.42 1.238a4.95 4.95 0 00-5.074-.032L3.5 8.351V2.75z" /></svg>,
+    appearance: <svg className={smallIconBaseClass} xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor"><path d="M10 2a.75.75 0 01.75.75v1.5a.75.75 0 01-1.5 0v-1.5A.75.75 0 0110 2zM10 15a.75.75 0 01.75.75v1.5a.75.75 0 01-1.5 0v-1.5A.75.75 0 0110 15zM10 7a3 3 0 100 6 3 3 0 000-6z" /><path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-1.06 1.061a1 1 0 11-1.415-1.414l1.061-1.06a1 1 0 011.414 0zM5.354 7.768a1 1 0 00-1.415-1.414L2.879 7.414a1 1 0 101.414 1.414l1.061-1.06zM17.414 14.121a1 1 0 01-1.414 0l-1.061-1.06a1 1 0 111.415-1.415l1.06 1.061a1 1 0 010 1.414zM4.293 14.121a1 1 0 10-1.414-1.414L3.94 11.646a1 1 0 101.414 1.414l-1.06 1.061z" clipRule="evenodd" /></svg>,
+    security: <svg className={smallIconBaseClass} xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M10 1a4.5 4.5 0 00-4.5 4.5V9H5a2 2 0 00-2 2v6a2 2 0 002 2h10a2 2 0 002-2v-6a2 2 0 00-2-2h-.5V5.5A4.5 4.5 0 0010 1zm3 8V5.5a3 3 0 10-6 0V9h6z" clipRule="evenodd" /></svg>,
+    employees: <svg className={smallIconBaseClass} xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor"><path d="M10 8a3 3 0 100-6 3 3 0 000 6zM3.465 14.493a1.23 1.23 0 00.41 1.412A9.98 9.98 0 0010 18a9.98 9.98 0 006.125-2.095 1.23 1.23 0 00.41-1.412A6.969 6.969 0 0010 11.5a6.969 6.969 0 00-6.535 2.993z" /></svg>,
+    roles: <svg className={smallIconBaseClass} xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M15 19.128a9.38 9.38 0 002.625.372 9.337 9.337 0 004.121-.952 4.125 4.125 0 00-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.106A12.318 12.318 0 018.624 21c-2.331 0-4.512-.645-6.374-1.766l-.001-.109a6.375 6.375 0 0111.964-4.66c.12-.144.237-.29.348-.437" /></svg>,
+    customization: <svg className={smallIconBaseClass} xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M10.5 6h9.75M10.5 6a1.5 1.5 0 11-3 0m3 0a1.5 1.5 0 10-3 0M3.75 6H7.5m3 12h9.75m-9.75 0a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m-3.75 0H7.5m9-6h3.75m-3.75 0a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m-9.75 0h9.75" /></svg>,
+    integrations: <svg className={smallIconBaseClass} xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M13.19 8.688a4.5 4.5 0 011.242 7.244l-4.5 4.5a4.5 4.5 0 01-6.364-6.364l1.757-1.757m13.35-.622l1.757-1.757a4.5 4.5 0 00-6.364-6.364l-4.5 4.5a4.5 4.5 0 001.242 7.244" /></svg>,
+    dataManagement: <svg className={smallIconBaseClass} xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M20.25 6.375c0 2.278-3.694 4.125-8.25 4.125S3.75 8.653 3.75 6.375m16.5 0c0-2.278-3.694-4.125-8.25-4.125S3.75 4.097 3.75 6.375m16.5 0v11.25c0 2.278-3.694 4.125-8.25 4.125s-8.25-1.847-8.25-4.125V6.375" /></svg>,
+    priceList: <svg className={smallIconBaseClass} xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M12 6v12m-3-2.818l.879.659c1.171.879 3.07.879 4.242 0 1.172-.879 1.172-2.303 0-3.182C13.536 12.219 12.768 12 12 12c-.725 0-1.45-.22-2.003-.659-1.106-.879-1.106-2.303 0-3.182s2.9-.879 4.006 0l.415.33M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>,
+    tax: <svg className={smallIconBaseClass} xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M9 14.25l6-6m4.5-3.493V21.75l-3.75-1.5-3.75 1.5-3.75-1.5-3.75 1.5V2.75l3.75 1.5 3.75-1.5 3.75 1.5z" /></svg>,
+    costCenter: <svg className={smallIconBaseClass} xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12a7.5 7.5 0 0015 0m-15 0a7.5 7.5 0 1115 0m-15 0H3m18 0h-1.5m-15 0c0-5.942 4.03-10.834 9-11.822m0 23.644c-4.97 0-9-4.882-9-10.822m9 11.822c4.97 0 9-4.882 9-10.822M15 12a3 3 0 11-6 0 3 3 0 016 0z" /></svg>,
+    counters: <svg className={smallIconBaseClass} xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0011.667 0l3.182-3.182m0-4.991v4.99" /></svg>,
+    expenses: <svg className={smallIconBaseClass} xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M2.25 8.25h19.5M2.25 9h19.5m-16.5 5.25h6m-6 2.25h3m-3.75 3h15a2.25 2.25 0 002.25-2.25V6.75A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25v10.5A2.25 2.25 0 004.5 19.5z" /></svg>,
+    support: <svg className={iconBaseClass} xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" /></svg>,
+    warehouse: <svg className={iconBaseClass} xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M8.25 21v-4.875c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125V21m0 0h4.5V3.545M12.75 21h7.5V10.75M2.25 21h1.5m18 0h-18M2.25 9l4.5-1.636M18.75 3l-1.5.545m0 6.205l3 1m1.5.5-1.5-.545M3 4.5l4.5 1.636M6.75 6.75l4.5 1.636" /></svg>,
+    asset: <svg className={smallIconBaseClass} xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M12 6.042A8.967 8.967 0 006 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 016 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 016-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0018 18a8.967 8.967 0 00-6 2.292m0-14.25v14.25" /></svg>,
+    payroll: <svg className={iconBaseClass} xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M12 6v12m-3-2.818l.879.659c1.171.879 3.07.879 4.242 0 1.172-.879 1.172-2.303 0-3.182C13.536 12.219 12.768 12 12 12c-.725 0-1.45-.22-2.003-.659-1.106-.879-1.106-2.303 0-3.182s2.9-.879 4.006 0l.415.33M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>,
+    leave: <svg className={iconBaseClass} xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0h18M-4.5 12h22.5" /></svg>,
+    team: <svg className={iconBaseClass} fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M18 18.72a9.094 9.094 0 003.741-.479 3 3 0 00-4.682-2.72m-7.5-2.962a3.75 3.75 0 100-7.5 3.75 3.75 0 000 7.5zM10.5 15.75a3.75 3.75 0 100-7.5 3.75 3.75 0 000 7.5zM15 9.75a3 3 0 11-6 0 3 3 0 016 0z" /></svg>,
+    documents: <svg className={iconBaseClass} xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>,
+    suppliers: <svg className={iconBaseClass} xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M8.25 18.75a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m3 0h6m-9 0H3.375a1.125 1.125 0 01-1.125-1.125V14.25m17.25 4.5a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m3 0h1.125c.621 0 1.125-.504 1.125-1.125V14.25m-17.25 4.5v-1.875a3.375 3.375 0 013.375-3.375h9.75a3.375 3.375 0 013.375 3.375v1.875M16.5 14.25v-1.875a3.375 3.375 0 00-3.375-3.375h-1.5a1.125 1.125 0 01-1.125-1.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m-1.5 0H5.625c-.621 0-1.125.504-1.125 1.125v1.5a1.125 1.125 0 01-1.125 1.125h-1.5m12-9l-3.75 3.75-3.75-3.75" /></svg>,
+    lock: <svg className={iconBaseClass} xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M16.5 10.5V6.75a4.5 4.5 0 10-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 002.25-2.25v-6.75a2.25 2.25 0 00-2.25-2.25H6.75a2.25 2.25 0 00-2.25 2.25v6.75a2.25 2.25 0 002.25 2.25z" /></svg>,
+    calendar: <svg className={smallIconBaseClass} xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0h18M-4.5 12h22.5" /></svg>,
+    gantt: <svg className={smallIconBaseClass} xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25H12" /></svg>,
+    magic: <svg className={smallIconBaseClass} xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M9.75 3.104v5.714a2.25 2.25 0 01-.659 1.591L5 14.5M9.75 3.104c-.251.037-.502.082-.752.132M9.75 3.104a2.25 2.25 0 00-2.25 2.25c0 1.02.623 1.904 1.5 2.21M9.75 3.104a2.25 2.25 0 012.25 2.25c0 1.02-.623 1.904-1.5 2.21M14.25 14.5l-4.25-4.25m4.25 4.25v5.714a2.25 2.25 0 01-2.25 2.25h-1.5a2.25 2.25 0 01-2.25-2.25v-5.714m4.25 4.25c-.251.037-.502.082-.752.132M14.25 14.5a2.25 2.25 0 002.25 2.25h1.5a2.25 2.25 0 002.25-2.25v-5.714m-4.25 4.25a2.25 2.25 0 01-2.25-2.25c0-1.02.623 1.904 1.5-2.21M14.25 14.5c.251.037.502.082.752.132M14.25 14.5a2.25 2.25 0 00-2.25-2.25c0-1.02.623 1.904 1.5-2.21M12 21a9 9 0 110-18 9 9 0 010 18z" /></svg>,
+    starFilled: <svg className={smallIconBaseClass} xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M10 2.5a.75.75 0 01.673.418l1.882 3.815 4.21.612a.75.75 0 01.416 1.279l-3.046 2.97.719 4.192a.75.75 0 01-1.088.791L10 13.347l-3.766 1.98a.75.75 0 01-1.088-.79l.72-4.192-3.047-2.97a.75.75 0 01.416-1.28l4.21-.612L9.327 2.918A.75.75 0 0110 2.5z" clipRule="evenodd" /></svg>,
+    starOutline: <svg className={smallIconBaseClass} xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M11.48 3.499a.562.562 0 011.04 0l2.125 5.111a.563.563 0 00.475.31h5.418a.562.562 0 01.321.988l-4.204 3.602a.563.563 0 00-.182.557l1.285 5.385a.562.562 0 01-.84.61l-4.725-2.885a.563.563 0 00-.586 0L6.982 20.54a.562.562 0 01-.84-.61l1.285-5.386a.562.562 0 00-.182-.557l-4.204-3.602a.563.563 0 01.321-.988H8.88a.563.563 0 00.475-.31L11.48 3.5z" /></svg>,
+    tasks: <svg className={iconBaseClass} xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M9 11H7v2h2v-2zm4 0h-2v2h2v-2zm4 0h-2v2h2v-2zm2-7h-1V2h-2v2H8V2H6v2H5c-1.11 0-2 .9-2 2v14c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 16H5V9h14v11z"/></svg>,
+    filePdf: <svg className={smallIconBaseClass} xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor"><path d="M4.25 2A2.25 2.25 0 002 4.25v11.5A2.25 2.25 0 004.25 18h11.5A2.25 2.25 0 0018 15.75V6.621a2.25 2.25 0 00-.659-1.591l-2.871-2.871A2.25 2.25 0 0013.121 2H4.25zM12 2.5a.5.5 0 01.5.5v2.25a.75.75 0 00.75.75H15.5a.5.5 0 010 1h-7a.5.5 0 010-1h3.75V3a.5.5 0 01.5-.5z" /><path d="M8.5 11.75a.75.75 0 01.75-.75h2a.75.75 0 010 1.5h-2a.75.75 0 01-.75-.75z" /></svg>,
+    fileCsv: <svg className={smallIconBaseClass} xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z" /></svg>,
+    search: <svg className={smallIconBaseClass} xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M9 3.5a5.5 5.5 0 100 11 5.5 5.5 0 000-11zM2 9a7 7 0 1112.452 4.391l3.358 3.358a1 1 0 01-1.414 1.414l-3.358-3.358A7 7 0 012 9z" clipRule="evenodd" /></svg>,
+    notification: <svg className={iconBaseClass} xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M14.857 17.082a23.848 23.848 0 005.454-1.31A8.967 8.967 0 0118 9.75v-.7V9A6 6 0 006 9v.75a8.967 8.967 0 01-2.31 5.632l-1.42 2.13a1.5 1.5 0 001.257 2.257h10.518H17.5" /></svg>,
+    transfer: <svg className={smallIconBaseClass} xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M7.5 21L3 16.5m0 0L7.5 12M3 16.5h13.5m0-13.5L21 7.5m0 0L16.5 12M21 7.5H7.5" /></svg>,
+    adjustment: <svg className={smallIconBaseClass} xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M10.5 6h9.75M10.5 6a1.5 1.5 0 11-3 0m3 0a1.5 1.5 0 10-3 0M3.75 6H7.5m3 12h9.75m-9.75 0a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m-3.75 0H7.5m9-6h3.75m-3.75 0a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m-9.75 0h9.75" /></svg>,
+    receive: <svg className={smallIconBaseClass} xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M20.25 7.5l-.625 10.632a2.25 2.25 0 01-2.247 2.118H6.622a2.25 2.25 0 01-2.247-2.118L3.75 7.5M10 11.25h4M3.375 7.5h17.25c.621 0 1.125-.504 1.125-1.125v-1.5c0-.621-.504-1.125-1.125-1.125H3.375c-.621 0-1.125.504-1.125 1.125v1.5c0 .621.504 1.125 1.125 1.125z" /></svg>,
+    purchaseOrder: <svg className={smallIconBaseClass} xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>,
+    fileWord: <svg className={smallIconBaseClass} xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor"><path d="M4.25 2A2.25 2.25 0 002 4.25v11.5A2.25 2.25 0 004.25 18h11.5A2.25 2.25 0 0018 15.75V6.621a2.25 2.25 0 00-.659-1.591l-2.871-2.871A2.25 2.25 0 0013.121 2H4.25zM12 2.5a.5.5 0 01.5.5v2.25a.75.75 0 00.75.75H15.5a.5.5 0 010 1h-7a.5.5 0 010-1h3.75V3a.5.5 0 01.5-.5z" /><path d="M6.25 11.75a.75.75 0 01.75-.75h1.5a.75.75 0 010 1.5h-1.5a.75.75 0 01-.75-.75zm3.5 0a.75.75 0 01.75-.75h1.5a.75.75 0 010 1.5h-1.5a.75.75 0 01-.75-.75z" /></svg>,
+    fileExcel: <svg className={smallIconBaseClass} xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor"><path d="M4.25 2A2.25 2.25 0 002 4.25v11.5A2.25 2.25 0 004.25 18h11.5A2.25 2.25 0 0018 15.75V6.621a2.25 2.25 0 00-.659-1.591l-2.871-2.871A2.25 2.25 0 0013.121 2H4.25zM12 2.5a.5.5 0 01.5.5v2.25a.75.75 0 00.75.75H15.5a.5.5 0 010 1h-7a.5.5 0 010-1h3.75V3a.5.5 0 01.5-.5z" /><path d="M6.5 11a.5.5 0 01.5.5v.5h.5a.5.5 0 010 1H7v.5a.5.5 0 01-1 0v-2a.5.5 0 01.5-.5zm2.5.5a.5.5 0 000-1h3a.5.5 0 000 1h-3z" /></svg>,
+    fileImage: <svg className={smallIconBaseClass} xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor"><path d="M4.25 2A2.25 2.25 0 002 4.25v11.5A2.25 2.25 0 004.25 18h11.5A2.25 2.25 0 0018 15.75V6.621a2.25 2.25 0 00-.659-1.591l-2.871-2.871A2.25 2.25 0 0013.121 2H4.25zM12 2.5a.5.5 0 01.5.5v2.25a.75.75 0 00.75.75H15.5a.5.5 0 010 1h-7a.5.5 0 010-1h3.75V3a.5.5 0 01.5-.5z" /><path d="M6 11.5a1.5 1.5 0 11-3 0 1.5 1.5 0 013 0zm7.5 2.5a.5.5 0 00-1 0v.5h.5a.5.5 0 000-1h-.5v-.5a.5.5 0 00-1 0v.5a1.5 1.5 0 001.5 1.5v.5a.5.5 0 001 0v-2.5a.5.5 0 00-.5-.5z" /></svg>,
+    fileOther: <svg className={smallIconBaseClass} xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor"><path d="M4.25 2A2.25 2.25 0 002 4.25v11.5A2.25 2.25 0 004.25 18h11.5A2.25 2.25 0 0018 15.75V6.621a2.25 2.25 0 00-.659-1.591l-2.871-2.871A2.25 2.25 0 0013.121 2H4.25zM12 2.5a.5.5 0 01.5.5v2.25a.75.75 0 00.75.75H15.5a.5.5 0 010 1h-7a.5.5 0 010-1h3.75V3a.5.5 0 01.5-.5z" /></svg>,
+    folder: <svg className={smallIconBaseClass} xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor"><path d="M2 6a2 2 0 012-2h5l2 2h5a2 2 0 012 2v6a2 2 0 01-2 2H4a2 2 0 01-2-2V6z" /></svg>,
+    share: <svg className={smallIconBaseClass} xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M7.217 10.907a2.25 2.25 0 100 2.186m0-2.186c.18.324.283.696.283 1.093s-.103.77-.283 1.093m0-2.186l9.566-5.314m-9.566 7.5l9.566 5.314m0 0a2.25 2.25 0 100-2.186m0 2.186c-.18.324-.283.696-.283 1.093s.103.77.283 1.093m0-2.186l-9.566-5.314" /></svg>,
+    saveAndNew: <svg className={smallIconBaseClass} xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M9 13.5l3 3m0 0l3-3m-3 3v-6m1.06-4.19l-2.12-2.12a1.5 1.5 0 00-1.061-.44H4.5A2.25 2.25 0 002.25 6v12a2.25 2.25 0 002.25 2.25h15A2.25 2.25 0 0021.75 18V9a2.25 2.25 0 00-2.25-2.25h-5.379a1.5 1.5 0 01-1.06-.44z" /></svg>,
+    save: <svg className={smallIconBaseClass} xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M16.5 3.75V16.5L12 14.25 7.5 16.5V3.75m9 0H18A2.25 2.25 0 0120.25 6v12A2.25 2.25 0 0118 20.25H6A2.25 2.25 0 013.75 18V6A2.25 2.25 0 016 3.75h1.5m9 0h-9" /></svg>,
+    phoneCall: <svg className={smallIconBaseClass} xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M2.25 6.75c0 8.284 6.716 15 15 15h2.25a2.25 2.25 0 002.25-2.25v-1.372c0-.516-.351-.966-.852-1.091l-4.423-1.106c-.44-.11-.902.055-1.173.417l-.97 1.293c-.282.376-.769.542-1.21.38a12.035 12.035 0 01-7.143-7.143c-.162-.441.004-.928.38-1.21l1.293-.97c.363-.271.527-.734.417-1.173L6.963 3.102a1.125 1.125 0 00-1.091-.852H4.5A2.25 2.25 0 002.25 6.75z" /></svg>,
+    meeting: <svg className={smallIconBaseClass} xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M18 18.72a9.094 9.094 0 003.741-.479 3 3 0 00-4.682-2.72m-7.5-2.962a3.75 3.75 0 100-7.5 3.75 3.75 0 000 7.5zM10.5 15.75a3.75 3.75 0 100-7.5 3.75 3.75 0 000 7.5zM15 9.75a3 3 0 11-6 0 3 3 0 016 0z" /></svg>,
+    email: <svg className={smallIconBaseClass} xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M21.75 6.75v10.5a2.25 2.25 0 01-2.25 2.25h-15a2.25 2.25 0 01-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25m19.5 0v.243a2.25 2.25 0 01-1.07 1.916l-7.5 4.615a2.25 2.25 0 01-2.36 0L3.32 8.91a2.25 2.25 0 01-1.07-1.916V6.75" /></svg>,
+    system: <svg className={smallIconBaseClass} xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M10.343 3.94c.09-.542.56-1.002 1.131-1.002h1.053c.571 0 1.04.46 1.131 1.002l.667 4.004c.026.155.05.309.076.463c.313.978.756 1.855 1.332 2.615c.575.76.825 1.724.825 2.723v.81c0 1.13-.57 2.138-1.465 2.744c-.958.645-2.16.945-3.415.945h-1.054c-1.254 0-2.456-.3-3.415-.945C6.57 16.96 6 15.952 6 14.822v-.81c0-1-.25-1.962.825-2.723c.576-.76 1.02-1.637 1.332-2.615a13.32 13.32 0 01.076-.463l.667-4.004z" /></svg>,
+    note: <svg className={smallIconBaseClass} xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0115.75 21H5.25A2.25 2.25 0 013 18.75V8.25A2.25 2.25 0 015.25 6H10" /></svg>,
+    ellipsisVertical: <svg className={smallIconBaseClass} xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M12 6.75a.75.75 0 110-1.5.75.75 0 010 1.5zM12 12.75a.75.75 0 110-1.5.75.75 0 010 1.5zM12 18.75a.75.75 0 110-1.5.75.75 0 010 1.5z" /></svg>,
+    copy: <svg className={smallIconBaseClass} xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M15.75 17.25v3.375c0 .621-.504 1.125-1.125 1.125h-9.75a1.125 1.125 0 01-1.125-1.125V7.875c0-.621.504-1.125 1.125-1.125H6.75a9.06 9.06 0 011.5.124m7.5 10.376h3.375c.621 0 1.125-.504 1.125-1.125V11.25c0-4.46-3.243-8.161-7.5-8.876a9.06 9.06 0 00-1.5-.124H9.375c-.621 0-1.125.504-1.125 1.125v3.5m7.5 10.375H9.375a2.25 2.25 0 01-2.25-2.25v-9.25m12 6.625v-1.875a3.375 3.375 0 00-3.375-3.375h-1.5a1.125 1.125 0 01-1.125-1.125v-1.5a3.375 3.375 0 00-3.375-3.375H9.75" /></svg>,
+    reverse: <svg className={smallIconBaseClass} xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0011.667 0l3.182-3.182m0-4.991v4.99" /></svg>,
+    budget: <svg className={smallIconBaseClass} xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M2.25 18.75a60.07 60.07 0 0115.797 2.101c.727.198 1.453-.342 1.453-1.096V18.75M3.75 4.5v.75A.75.75 0 013 6h-.75m0 0v-.375c0-.621.504-1.125 1.125-1.125H20.25M2.25 6v9m18-10.5v.75c0 .414.336.75.75.75h.75m-1.5-1.5h.375c.621 0 1.125.504 1.125 1.125v1.5c0 .621-.504 1.125-1.125 1.125h-.375m1.5-3.75h-1.5m-16.5 18.75v-16.5c0-.621.504-1.125 1.125-1.125h16.5c.621 0 1.125.504 1.125 1.125v16.5" /></svg>,
+    trialBalance: <svg className={smallIconBaseClass} xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M12 3v18m8.25-15.75l-4.25 4.25a.75.75 0 01-1.06 0l-4.25-4.25M3.75 12h16.5" /></svg>,
+    balanceSheet: <svg className={smallIconBaseClass} xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor"><path d="M5.5 16.5a1.5 1.5 0 01-1.5-1.5v-10a1.5 1.5 0 011.5-1.5h9a1.5 1.5 0 011.5 1.5v10a1.5 1.5 0 01-1.5-1.5h-9zM5 8.5h4V5H5v3.5zM10.5 8.5H15V5h-4.5v3.5zM5 15h4.5v-3.5H5V15zm5.5 0H15v-3.5h-4.5V15z" /></svg>,
+    incomeStatement: <svg className={smallIconBaseClass} xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M3.75 12h16.5m-16.5 3.75h16.5M3.75 19.5h16.5M5.625 4.5h12.75a1.875 1.875 0 010 3.75H5.625a1.875 1.875 0 010-3.75z" /></svg>,
+    cashFlow: <svg className={smallIconBaseClass} xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M2.25 18L9 11.25l4.306 4.307a11.95 11.95 0 015.814-5.519l2.74-1.22m0 0l-5.94-2.28m5.94 2.28l-2.28 5.941" /></svg>,
+    ledger: <svg className={smallIconBaseClass} xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M12 6.042A8.967 8.967 0 006 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 016 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 016-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0018 18a8.967 8.967 0 00-6 2.292m0-14.25v14.25" /></svg>,
+    arAging: <svg className={smallIconBaseClass} xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0h18M-4.5 12h22.5" /></svg>,
+    profitAndLoss: <svg className={smallIconBaseClass} xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>,
+    salesOrder: <svg className={smallIconBaseClass} xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M15.75 10.5V6a3.75 3.75 0 10-7.5 0v4.5m11.356-1.993l1.263 12c.07.658-.463 1.243-1.117 1.243H4.25a1.125 1.125 0 01-1.12-1.243l1.264-12A1.125 1.125 0 015.513 7.5h12.974c.576 0 1.059.435 1.116 1.007zM8.625 10.5a.375.375 0 11-.75 0 .375.375 0 01.75 0zm7.5 0a.375.375 0 11-.75 0 .375.375 0 01.75 0z" /></svg>,
+    shipment: <svg className={smallIconBaseClass} xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor"><path d="M9 17a2 2 0 11-4 0 2 2 0 014 0zM19 17a2 2 0 11-4 0 2 2 0 014 0z" /><path strokeLinecap="round" strokeLinejoin="round" d="M13 16V6a1 1 0 00-1-1H4a1 1 0 00-1 1v10l2 2h8a1 1 0 001-1z" /><path strokeLinecap="round" strokeLinejoin="round" d="M13 16V6a1 1 0 00-1-1H4a1 1 0 00-1 1v10l2 2h8a1 1 0 001-1z" /><path strokeLinecap="round" strokeLinejoin="round" d="M13 16h2a1 1 0 001-1V7a1 1 0 00-1-1h-2" /></svg>,
+    print: <svg className={smallIconBaseClass} xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M6.72 13.829c-.24.03-.48.062-.72.096m.72-.096a42.415 42.415 0 0110.56 0m-10.56 0L6.34 18m10.94-4.171c.24.03.48.062.72.096m-.72-.096L17.66 18m0 0l.229 2.523a1.125 1.125 0 01-1.12 1.227H7.231c-.662 0-1.18-.568-1.12-1.227L6.34 18m11.318 0h1.091A2.25 2.25 0 0021 15.75V9.456c0-1.081-.768-2.015-1.837-2.175a48.055 48.055 0 00-1.913-.247M6.34 18H5.25A2.25 2.25 0 013 15.75V9.456c0-1.081.768-2.015 1.837-2.175a48.041 48.041 0 011.913-.247m10.5 0a48.536 48.536 0 00-10.5 0m10.5 0V3.375c0-.621-.504-1.125-1.125-1.125h-8.25c-.621 0-1.125.504-1.125 1.125v3.659M18 10.5h.008v.008H18V10.5zm-3 0h.008v.008H15V10.5z" /></svg>,
+    check: <svg className={smallIconBaseClass} xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" /></svg>,
+    pickList: <svg className={iconBaseClass} xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M9 4.5v15m6-15v15m-10.875 0h15.75c.621 0 1.125-.504 1.125-1.125V5.625c0-.621-.504-1.125-1.125-1.125H4.125C3.504 4.5 3 5.004 3 5.625v12.75c0 .621.504 1.125 1.125 1.125z" /></svg>,
+    fileXml: <svg className={smallIconBaseClass} xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M14.25 9.75L16.5 12l-2.25 2.25m-4.5 0L7.5 12l2.25-2.25M6 20.25h12A2.25 2.25 0 0020.25 18V5.75A2.25 2.25 0 0018 3.5H6A2.25 2.25 0 003.75 5.75v12.25A2.25 2.25 0 006 20.25z" /></svg>,
+    filter: <svg className={smallIconBaseClass} xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M12 3c2.755 0 5.455.232 8.083.678.533.09.917.556.917 1.096v1.044a2.25 2.25 0 01-.659 1.591l-5.432 5.432a2.25 2.25 0 00-.659 1.591v2.927a2.25 2.25 0 01-1.244 2.013L9.75 21v-6.572a2.25 2.25 0 00-.659-1.591L3.659 7.409A2.25 2.25 0 013 5.818V4.774c0-.54.384-1.006.917-1.096A48.32 48.32 0 0112 3z" /></svg>,
+    view: <svg className={smallIconBaseClass} xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M2.036 12.322a1.012 1.012 0 010-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178z" /><path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /></svg>,
 };
-
-export const AVAILABLE_WIDGETS: WidgetConfig[] = [
-    { id: 'stat-total-cash', name: 'Toplam Nakit', type: 'StatCard', defaultW: 2, defaultH: 2 },
-    { id: 'stat-net-cash-flow', name: 'Net Nakit Akışı', type: 'StatCard', defaultW: 2, defaultH: 2 },
-    { id: 'stat-total-revenue', name: 'Toplam Gelir', type: 'StatCard', defaultW: 2, defaultH: 2 },
-    { id: 'stat-unpaid-invoices', name: 'Ödenmemiş Faturalar', type: 'StatCard', defaultW: 2, defaultH: 2 },
-    { id: 'stat-active-customers', name: 'Aktif Müşteriler', type: 'StatCard', defaultW: 2, defaultH: 2 },
-    { id: 'stat-open-tickets', name: 'Açık Destek Talepleri', type: 'StatCard', defaultW: 2, defaultH: 2 },
-    { id: 'chart-financial-summary', name: 'Finansal Özet', type: 'Chart', defaultW: 4, defaultH: 4 },
-    { id: 'chart-invoice-status', name: 'Fatura Durumları', type: 'Chart', defaultW: 2, defaultH: 4 },
-    { id: 'list-today-view', name: 'Bugün', type: 'List', defaultW: 3, defaultH: 4 },
-    { id: 'list-my-tasks', name: 'Görevlerim', type: 'List', defaultW: 3, defaultH: 4 },
-    { id: 'list-recent-activities', name: 'Son Aktiviteler', type: 'List', defaultW: 6, defaultH: 4 },
-];
-
-export const MOCK_COMPANY_INFO: CompanyInfo = {
-  name: 'ProFusion Inc.',
-  address: '123 Tech Avenue, Silicon Valley, CA 94043',
-  phone: '+1 (555) 123-4567',
-  email: 'contact@profusion.inc',
-  website: 'www.profusion.inc'
-};
-
-export const MOCK_BRANDING_SETTINGS: BrandingSettings = {
-  logoUrl: '',
-  primaryColor: '#3b82f6'
-};
-
-export const MOCK_SECURITY_SETTINGS: SecuritySettings = {
-  passwordMinLength: 8,
-  passwordRequireUppercase: true,
-  passwordRequireNumber: true,
-  sessionTimeout: 30
-};
-
-export const INITIAL_ROLES: Role[] = [
-    { id: 'admin', name: 'Admin', isSystemRole: true },
-    { id: 'satis', name: 'Satış', isSystemRole: false },
-    { id: 'operasyon', name: 'Operasyon', isSystemRole: false },
-    { id: 'muhasebe', name: 'Muhasebe', isSystemRole: false },
-    { id: 'calisan', name: 'Çalışan', isSystemRole: true },
-];
-
-export const MOCK_EMPLOYEES: Employee[] = [
-  { id: 1, employeeId: 'EMP001', name: 'Ali Veli', department: 'Yönetim', position: 'CEO', email: 'ali.veli@example.com', phone: '555-001', hireDate: '2020-01-15', salary: 150000, avatar: 'https://i.pravatar.cc/150?u=1', role: 'Admin', managerId: undefined, istenCikisTarihi: undefined },
-  { id: 2, employeeId: 'EMP002', name: 'Ayşe Yılmaz', department: 'Satış', position: 'Satış Müdürü', email: 'ayse.yilmaz@example.com', phone: '555-002', hireDate: '2021-03-20', salary: 95000, avatar: 'https://i.pravatar.cc/150?u=2', role: 'Satış', managerId: 1 },
-  { id: 3, employeeId: 'EMP003', name: 'Mehmet Kaya', department: 'Operasyon', position: 'Proje Yöneticisi', email: 'mehmet.kaya@example.com', phone: '555-003', hireDate: '2021-05-10', salary: 85000, avatar: 'https://i.pravatar.cc/150?u=3', role: 'Operasyon', managerId: 1 },
-  { id: 4, employeeId: 'EMP004', name: 'Fatma Demir', department: 'Muhasebe', position: 'Muhasebe Uzmanı', email: 'fatma.demir@example.com', phone: '555-004', hireDate: '2022-08-01', salary: 70000, avatar: 'https://i.pravatar.cc/150?u=4', role: 'Muhasebe', managerId: 1 },
-  { id: 5, employeeId: 'EMP005', name: 'Can Öztürk', department: 'Satış', position: 'Satış Temsilcisi', email: 'can.ozturk@example.com', phone: '555-005', hireDate: '2023-02-11', salary: 60000, avatar: 'https://i.pravatar.cc/150?u=5', role: 'Çalışan', managerId: 2 },
-];
-
-const mockAddress1: Address = {
-  country: 'Türkiye', city: 'İstanbul', district: 'Beşiktaş', streetAddress: 'Teknopark, No: 123', postalCode: '34349',
-  email: 'info@teknoas.com', phone: '212-555-1111', coordinates: { lat: 41.044, lng: 29.002 }
-};
-
-const mockAddress2: Address = {
-  country: 'Türkiye', city: 'Kocaeli', district: 'Gebze', streetAddress: 'GOSB, 100. Yıl Cd.', postalCode: '41400',
-  email: 'contact@lojistik.com', phone: '216-555-2222', coordinates: { lat: 40.793, lng: 29.432 }
-};
-
-const mockAddress3: Address = {
-    country: 'Türkiye', city: 'Ankara', district: 'Yenimahalle', streetAddress: 'Ostim OSB, 1234. Sk', postalCode: '06370',
-    email: 'info@gidasan.com', phone: '312-555-3333', coordinates: { lat: 39.9678, lng: 32.7612 }
-};
-
 
 export const MOCK_CUSTOMERS: Customer[] = [
-  { 
-    id: 1, name: 'Tekno A.Ş.', email: 'info@teknoas.com', company: 'Tekno A.Ş.', phone: '212-555-1111', 
-    lastContact: '2024-07-10', status: 'aktif', avatar: 'https://i.pravatar.cc/150?u=c1', industry: 'Teknoloji', 
-    tags: ['vip', 'yeni-firsat'], assignedToId: 2, healthScore: 85, leadSource: 'Website',
-    accountType: 'Tüzel Kişi', accountCode: 'CUST-001', taxId: '8350051234', taxOffice: 'Beşiktaş V.D.',
-    billingAddress: mockAddress1,
-    shippingAddress: mockAddress1,
-    iban: 'TR330006200004600006297523', openingBalance: 15000, currency: 'TRY', openingDate: '2022-01-10',
-    eInvoiceMailbox: 'default@teknoas.com.tr', eDispatchMailbox: 'default@teknoas.com.tr'
-  },
-  { 
-    id: 2, name: 'Lojistik Ltd.', email: 'contact@lojistik.com', company: 'Lojistik Ltd.', phone: '216-555-2222', 
-    lastContact: '2024-06-25', status: 'aktif', avatar: 'https://i.pravatar.cc/150?u=c2', industry: 'Lojistik', 
-    tags: ['uzun-vadeli'], assignedToId: 5, healthScore: 65, leadSource: 'Referans',
-    accountType: 'Tüzel Kişi', accountCode: 'CUST-002', taxId: '6080084567', taxOffice: 'Gebze V.D.',
-    billingAddress: mockAddress2,
-    shippingAddress: mockAddress2,
-    iban: 'TR330006200004600006297524', openingBalance: 0, currency: 'USD', openingDate: '2023-05-20',
-  },
-  { 
-    id: 3, name: 'Gıda Sanayi', email: 'info@gidasan.com', company: 'Gıda Sanayi', phone: '312-555-3333', 
-    lastContact: '2024-07-12', status: 'potensiyel', avatar: 'https://i.pravatar.cc/150?u=c3', industry: 'Gıda', 
-    tags: [], assignedToId: 2, healthScore: 45, leadSource: 'Fuar',
-    accountType: 'Gerçek Kişi', accountCode: 'CUST-003', taxId: '12345678910', taxOffice: 'Ostim V.D.',
-    billingAddress: mockAddress3,
-    shippingAddress: mockAddress3,
-    iban: 'TR330006200004600006297525', openingBalance: -5000, currency: 'EUR', openingDate: '2024-02-15'
-  },
+    {
+        id: 1, name: "Tekno A.Ş.", company: "Tekno A.Ş.", email: "info@tekno.com", phone: "0212 123 4567", lastContact: "2024-05-10", status: "aktif", avatar: "https://i.pravatar.cc/150?u=c1", industry: "Teknoloji", tags: ["vip", "yeni-fırsat"], assignedToId: 1, leadSource: "Website", priceListId: 1, healthScore: 92,
+        accountType: 'Tüzel Kişi', accountCode: 'C001', taxId: '1234567890', taxOffice: 'Maslak',
+        billingAddress: { country: 'Türkiye', city: 'İstanbul', district: 'Şişli', streetAddress: 'Büyükdere Cd. No: 1', postalCode: '34394', email: 'muhasebe@tekno.com', phone: '0212 123 4567', coordinates: { lat: 41.077, lng: 29.01 } },
+        shippingAddress: { country: 'Türkiye', city: 'İstanbul', district: 'Şişli', streetAddress: 'Büyükdere Cd. No: 1', postalCode: '34394', email: 'operasyon@tekno.com', phone: '0212 123 4568' },
+        iban: 'TR110006200000000006212345', openingBalance: 5000, currency: 'TRY', openingDate: '2023-01-15',
+        eInvoiceMailbox: 'urn:mail:defaultpk@tekno.com'
+    },
+    {
+        id: 2, name: "Lojistik Ltd.", company: "Lojistik Ltd.", email: "info@lojistik.com.tr", phone: "0312 987 6543", lastContact: "2024-04-22", status: "potensiyel", avatar: "https://i.pravatar.cc/150?u=c2", industry: "Lojistik", tags: ["takip", "büyük-anlaşma"], assignedToId: 2, leadSource: "Referans", healthScore: 75,
+        accountType: 'Tüzel Kişi', accountCode: 'C002', taxId: '0987654321', taxOffice: 'Ulus',
+        billingAddress: { country: 'Türkiye', city: 'Ankara', district: 'Çankaya', streetAddress: 'Atatürk Blv. No: 100', postalCode: '06100', email: 'muhasebe@lojistik.com.tr', phone: '0312 987 6543', coordinates: { lat: 39.92, lng: 32.85 } },
+        shippingAddress: { country: 'Türkiye', city: 'Ankara', district: 'Çankaya', streetAddress: 'Atatürk Blv. No: 100', postalCode: '06100', email: '', phone: '' },
+        iban: 'TR220001000000000012345678', openingBalance: 0, currency: 'TRY', openingDate: '2024-03-01',
+    },
+    {
+        id: 3, name: "Gıda Pazarlama", company: "Gıda Pazarlama", email: "info@gidapazarlama.com", phone: "0232 555 1234", lastContact: "2024-05-15", status: "kaybedilmiş", avatar: "https://i.pravatar.cc/150?u=c3", industry: "Gıda", tags: ["fiyat-hassas"], assignedToId: 1, leadSource: "Fuar", healthScore: 34,
+        accountType: 'Tüzel Kişi', accountCode: 'C003', taxId: '1122334455', taxOffice: 'Konak',
+        billingAddress: { country: 'Türkiye', city: 'İzmir', district: 'Konak', streetAddress: 'Gazi Blv. No: 50', postalCode: '35210', email: 'muhasebe@gidapazarlama.com', phone: '0232 555 1234', coordinates: { lat: 38.42, lng: 27.14 } },
+        shippingAddress: { country: 'Türkiye', city: 'İzmir', district: 'Konak', streetAddress: 'Gazi Blv. No: 50', postalCode: '35210', email: '', phone: '' },
+        iban: 'TR330001200000000054321098', openingBalance: -1200, currency: 'TRY', openingDate: '2023-11-20'
+    },
+    {
+        id: 4, name: "İnşaat A.Ş.", company: "İnşaat A.Ş.", email: "info@insaat.com", phone: "0216 444 5566", lastContact: "2024-05-01", status: "aktif", avatar: "https://i.pravatar.cc/150?u=c4", industry: "İnşaat", tags: ["anahtar-müşteri"], assignedToId: 2, leadSource: "Soğuk Arama", healthScore: 88,
+        accountType: 'Tüzel Kişi', accountCode: 'C004', taxId: '9988776655', taxOffice: 'Kadıköy',
+        billingAddress: { country: 'Türkiye', city: 'İstanbul', district: 'Ataşehir', streetAddress: 'Barbaros Mah. Lale Sk. No: 8', postalCode: '34746', email: 'muhasebe@insaat.com', phone: '0216 444 5566', coordinates: { lat: 40.99, lng: 29.1 } },
+        shippingAddress: { country: 'Türkiye', city: 'İstanbul', district: 'Ataşehir', streetAddress: 'Barbaros Mah. Lale Sk. No: 8', postalCode: '34746', email: '', phone: '' },
+        iban: 'TR440006400000112345678901', openingBalance: 0, currency: 'TRY', openingDate: '2023-08-10'
+    }
 ];
 
+export const MOCK_CONTACTS: Contact[] = [
+    { id: 1, customerId: 1, name: "Ahmet Yılmaz", title: "CEO", email: "ahmet.yilmaz@tekno.com", phone: "0532 123 4567" },
+    { id: 2, customerId: 1, name: "Fatma Öztürk", title: "Satın Alma Müdürü", email: "fatma.ozturk@tekno.com", phone: "0533 987 6543" },
+    { id: 3, customerId: 2, name: "Mehmet Kaya", title: "Operasyon Direktörü", email: "mehmet.kaya@lojistik.com.tr", phone: "0542 555 1234" }
+];
 
 export const MOCK_DEALS: Deal[] = [
-    { id: 1, title: 'CRM Entegrasyonu', customerId: 1, customerName: 'Tekno A.Ş.', value: 25000, stage: DealStage.Proposal, closeDate: '2024-08-15', assignedToId: 2, assignedToName: 'Ayşe Yılmaz', lineItems: [{productId: 1, productName: 'Danışmanlık Saati', quantity: 100, price: 250}], lastActivityDate: '2024-07-10' },
-    { id: 2, title: 'Depo Otomasyon Sistemi', customerId: 2, customerName: 'Lojistik Ltd.', value: 75000, stage: DealStage.Won, closeDate: '2024-07-05', assignedToId: 5, assignedToName: 'Can Öztürk', lineItems: [{productId: 2, productName: 'Yazılım Lisansı', quantity: 5, price: 15000}], winReason: 'Fiyat Avantajı', lastActivityDate: '2024-07-01' },
-    { id: 3, title: 'Web Sitesi Yenileme', customerId: 3, customerName: 'Gıda Sanayi', value: 15000, stage: DealStage.Contacted, closeDate: '2024-09-01', assignedToId: 2, assignedToName: 'Ayşe Yılmaz', lineItems: [{productId: 1, productName: 'Danışmanlık Saati', quantity: 60, price: 250}], lastActivityDate: '2024-07-12' },
+    { id: 1, title: "Tekno A.Ş. - CRM Projesi", customerId: 1, customerName: "Tekno A.Ş.", value: 15000, stage: DealStage.Won, closeDate: "2024-04-20", assignedToId: 1, assignedToName: "Ali Veli", lineItems: [], lastActivityDate: '2024-04-18', winReason: 'Ürün Kalitesi' },
+    { id: 2, title: "Lojistik Ltd. - Depo Otomasyonu", customerId: 2, customerName: "Lojistik Ltd.", value: 75000, stage: DealStage.Proposal, closeDate: "2024-06-15", assignedToId: 2, assignedToName: "Ayşe Kaya", lineItems: [], lastActivityDate: '2024-05-10' },
+    { id: 3, title: "Gıda Pazarlama - Raporlama Sistemi", customerId: 3, customerName: "Gıda Pazarlama", value: 8000, stage: DealStage.Lost, closeDate: "2024-05-12", assignedToId: 1, assignedToName: "Ali Veli", lineItems: [], lastActivityDate: '2024-05-11', lossReason: 'Fiyat' },
+    { id: 4, title: "Tekno A.Ş. - Destek Paketi", customerId: 1, customerName: "Tekno A.Ş.", value: 5000, stage: DealStage.Lead, closeDate: "2024-07-01", assignedToId: 1, assignedToName: "Ali Veli", lineItems: [], lastActivityDate: '2024-05-15' }
 ];
 
-export const MOCK_PROJECTS: Project[] = [];
-export const MOCK_TASKS: Task[] = [];
-export const MOCK_NOTIFICATIONS: Notification[] = [];
-export const MOCK_INVOICES: Invoice[] = [];
+export const MOCK_PROJECTS: Project[] = [
+    { id: 1, name: "Tekno A.Ş. CRM Implementasyonu", customerId: 1, client: "Tekno A.Ş.", deadline: "2024-08-30", status: "zamanında", progress: 65, description: "Müşterinin tüm satış süreçlerinin yeni CRM sistemine aktarılması.", startDate: "2024-05-01", teamMemberIds: [1, 3], budget: 20000, spent: 12500, tags: ["crm", "faz-1"] },
+    { id: 2, name: "İnşaat A.Ş. Web Sitesi Yenileme", customerId: 4, client: "İnşaat A.Ş.", deadline: "2024-07-15", status: "riskli", progress: 80, description: "Kurumsal web sitesinin modern standartlara göre yeniden tasarlanması ve geliştirilmesi.", startDate: "2024-04-10", teamMemberIds: [2, 4], budget: 15000, spent: 14000, tags: ["web", "tasarım"] }
+];
+
+export const MOCK_TASKS: Task[] = [
+    { id: 1, title: "Proje planını oluştur", description: "", status: TaskStatus.Completed, priority: TaskPriority.High, dueDate: "2024-05-05", assignedToId: 1, assignedToName: "Ali Veli", relatedEntityType: "project", relatedEntityId: 1, relatedEntityName: "Tekno A.Ş. CRM Implementasyonu", timeSpent: 120, estimatedTime: 180 },
+    { id: 2, title: "Müşteri ile toplantı ayarla", description: "Proje başlangıç toplantısı.", status: TaskStatus.InProgress, priority: TaskPriority.Normal, dueDate: "2024-06-10", assignedToId: 2, assignedToName: "Ayşe Kaya", relatedEntityType: "project", relatedEntityId: 2, relatedEntityName: "İnşaat A.Ş. Web Sitesi Yenileme", isStarred: true },
+    { id: 3, title: "Teklif hazırla", description: "Depo otomasyonu için detaylı teklif.", status: TaskStatus.Todo, priority: TaskPriority.High, dueDate: "2024-06-05", assignedToId: 2, assignedToName: "Ayşe Kaya", relatedEntityType: "deal", relatedEntityId: 2, relatedEntityName: "Lojistik Ltd. - Depo Otomasyonu", dependsOn: [2] },
+    { id: 4, title: "Ana sayfa tasarımını onayla", description: "", status: TaskStatus.Todo, priority: TaskPriority.Normal, dueDate: "2024-06-15", assignedToId: 4, assignedToName: "Zeynep Çelik", parentId: 2 },
+    { id: 5, title: "Aylık Raporları Gönder", description: "Tüm müşterilere aylık aktivite raporlarını gönder.", status: TaskStatus.Todo, priority: TaskPriority.Normal, dueDate: "2024-06-30", assignedToId: 1, assignedToName: "Ali Veli", recurrenceRule: "FREQ=MONTHLY" }
+];
+
+export const MOCK_NOTIFICATIONS: Notification[] = [
+    { id: 1, message: "Ali Veli yeni bir görev atadı: 'Teklif hazırla'", type: "info", read: false, timestamp: "2024-05-16 10:30" },
+    { id: 2, message: "Proje 'Tekno A.Ş. CRM' riskli durumda.", type: "warning", read: false, timestamp: "2024-05-16 09:15" },
+    { id: 3, message: "Fatura #2024-001 ödendi.", type: "success", read: true, timestamp: "2024-05-15 14:00" },
+];
+
+export const MOCK_INVOICES: Invoice[] = [
+    {
+        id: 1, invoiceNumber: "2024-001", customerId: 1, customerName: "Tekno A.Ş.", issueDate: "2024-04-25", dueDate: "2024-05-25", status: InvoiceStatus.Paid,
+        items: [{ id: 1, productId: 1, productName: "CRM Lisans Yıllık", quantity: 1, unitPrice: 10000, discountRate: 0, taxRate: 20, unit: 'Adet', discountAmount: 0, taxAmount: 2000, totalPrice: 10000, vatIncludedPrice: 12000 }],
+        subTotal: 10000, totalDiscount: 0, totalTax: 2000, grandTotal: 12000, amountInWords: 'On iki bin Lira', totalWithholding: 0,
+        customizationId: 'TR1.2', scenario: EInvoiceScenario.EFatura, invoiceType: 'Satış', issueTime: '14:30', documentCurrency: 'TRY'
+    },
+    {
+        id: 2, invoiceNumber: "2024-002", customerId: 4, customerName: "İnşaat A.Ş.", issueDate: "2024-05-10", dueDate: "2024-06-10", status: InvoiceStatus.Sent,
+        items: [{ id: 2, productId: 2, productName: "Web Tasarım Hizmeti", quantity: 1, unitPrice: 8000, discountRate: 10, taxRate: 20, unit: 'Adet', discountAmount: 800, taxAmount: 1440, totalPrice: 7200, vatIncludedPrice: 8640 }],
+        subTotal: 8000, totalDiscount: 800, totalTax: 1440, grandTotal: 8640, amountInWords: 'Sekiz bin altı yüz kırk Lira', totalWithholding: 0,
+        customizationId: 'TR1.2', scenario: EInvoiceScenario.EArsiv, invoiceType: 'Satış', issueTime: '10:00', documentCurrency: 'TRY'
+    }
+];
+
+export const MOCK_BILLS: Bill[] = [
+    { id: 1, supplierId: 1, supplierName: "Sunucu Hizmetleri A.Ş.", billNumber: "SH-2024-556", issueDate: "2024-05-01", dueDate: "2024-05-20", totalAmount: 1200, status: BillStatus.Paid },
+    { id: 2, supplierId: 2, supplierName: "Ofis Malzemeleri Ltd.", billNumber: "OM-890", issueDate: "2024-05-15", dueDate: "2024-06-15", totalAmount: 450, status: BillStatus.Payable }
+];
+
 export const MOCK_PRODUCTS: Product[] = [
-    {id: 1, sku: 'CONS-HOUR', name: 'Danışmanlık Saati', category: 'Hizmet', price: 250, lowStockThreshold: 0, trackBy: 'none' },
-    {id: 2, sku: 'SOFT-LIC', name: 'Yazılım Lisansı', category: 'Yazılım', price: 15000, lowStockThreshold: 0, trackBy: 'none' },
-    {id: 3, sku: 'HW-LAP-01', name: 'Dizüstü Bilgisayar X-Pro', category: 'Donanım', price: 1200, lowStockThreshold: 5, trackBy: 'serial', binLocation: 'A1-01' },
-    {id: 4, sku: 'HW-MOU-05', name: 'Kablosuz Mouse Z-Series', category: 'Aksesuar', price: 45, lowStockThreshold: 20, trackBy: 'batch', binLocation: 'C3-12' },
+    { id: 1, name: "CRM Lisans Yıllık", sku: "CRM-YILLIK-01", price: 10000, category: "Yazılım", productType: ProductType.Hizmet, eInvoiceType: EInvoiceType.Hizmet, unit: Unit.Adet, lowStockThreshold: 0, trackBy: 'none', financials: { purchasePrice: 0, purchaseCurrency: 'TRY', salePrice: 10000, saleCurrency: 'TRY', vatRate: 20 } },
+    { id: 2, name: "Web Tasarım Hizmeti", sku: "WEB-HIZMET-01", price: 8000, category: "Hizmet", productType: ProductType.Hizmet, eInvoiceType: EInvoiceType.Hizmet, unit: Unit.Adet, lowStockThreshold: 0, trackBy: 'none', financials: { purchasePrice: 0, purchaseCurrency: 'TRY', salePrice: 8000, saleCurrency: 'TRY', vatRate: 20 } }
 ];
+
 export const MOCK_SUPPLIERS: Supplier[] = [
-    { id: 1, name: 'TeknoTedarik A.Ş.', contactPerson: 'Ahmet Çelik', email: 'ahmet@teknotedarik.com', phone: '212-111-2233' },
-    { id: 2, name: 'Ofis Malzemeleri Ltd.', contactPerson: 'Zeynep Aydın', email: 'zeynep@ofis.com', phone: '312-444-5566' },
+    {
+        id: 1, name: "Sunucu Hizmetleri A.Ş.", email: "destek@sunucuhizmetleri.com", phone: "0850 123 4567", avatar: "https://i.pravatar.cc/150?u=s1", tags: ["altyapı", "kritik"],
+        accountType: 'Tüzel Kişi', accountCode: 'S001', taxId: '1112223334', taxOffice: 'Büyük Mükellefler',
+        address: { country: 'Türkiye', city: 'İstanbul', district: 'Kağıthane', streetAddress: 'Cendere Cd.', postalCode: '34418', email: '', phone: '' },
+        iban: 'TR110006200000000006298765', openingBalance: 0, currency: 'TRY', openingDate: '2023-02-01'
+    },
+    {
+        id: 2, name: "Ofis Malzemeleri Ltd.", email: "siparis@ofismalzemeleri.com", phone: "0212 555 8899", avatar: "https://i.pravatar.cc/150?u=s2", tags: ["sarf"],
+        accountType: 'Tüzel Kişi', accountCode: 'S002', taxId: '4445556667', taxOffice: 'İkitelli',
+        address: { country: 'Türkiye', city: 'İstanbul', district: 'Başakşehir', streetAddress: 'Sanayi Blv.', postalCode: '34490', email: '', phone: '' },
+        iban: 'TR220001000000000012341234', openingBalance: 0, currency: 'TRY', openingDate: '2023-03-10'
+    }
 ];
+
 export const MOCK_PURCHASE_ORDERS: PurchaseOrder[] = [];
-export const MOCK_LEAVE_REQUESTS: LeaveRequest[] = [];
-export const MOCK_BANK_ACCOUNTS: BankAccount[] = [
-    { id: 1, accountName: 'Merkez Kasa', bankName: 'Nakit', accountNumber: 'KASA-TRY', balance: 50000 },
-    { id: 2, accountName: 'Garanti Bankası Vadesiz', bankName: 'Garanti BBVA', accountNumber: 'TR12...', balance: 250000 },
+
+export const MOCK_EMPLOYEES: Employee[] = [
+    { id: 1, employeeId: "EMP001", name: "Ali Veli", department: "Satış", position: "Satış Müdürü", email: "ali.veli@profusion.com", phone: "0532 111 2233", hireDate: "2022-01-15", salary: 25000, avatar: "https://i.pravatar.cc/150?u=emp1", role: "satis" },
+    { id: 2, employeeId: "EMP002", name: "Ayşe Kaya", department: "Yönetim", position: "Genel Müdür", email: "ayse.kaya@profusion.com", phone: "0533 222 3344", hireDate: "2020-03-10", salary: 40000, avatar: "https://i.pravatar.cc/150?u=emp2", role: "admin" },
+    { id: 3, employeeId: "EMP003", name: "Mehmet Demir", department: "Teknik", position: "Proje Yöneticisi", email: "mehmet.demir@profusion.com", phone: "0542 333 4455", hireDate: "2021-06-01", salary: 30000, avatar: "https://i.pravatar.cc/150?u=emp3", role: "satis" },
+    { id: 4, employeeId: "EMP004", name: "Zeynep Çelik", department: "İK", position: "İK Uzmanı", email: "zeynep.celik@profusion.com", phone: "0535 444 5566", hireDate: "2023-02-20", salary: 22000, avatar: "https://i.pravatar.cc/150?u=emp4", role: "ik", managerId: 2 },
+    { id: 5, employeeId: "EMP005", name: "Mustafa Arslan", department: "Satış", position: "Satış Temsilcisi", email: "mustafa.arslan@profusion.com", phone: "0536 555 6677", hireDate: "2023-08-01", salary: 20000, avatar: "https://i.pravatar.cc/150?u=emp5", role: "calisan", managerId: 2 },
 ];
+
+export const MOCK_LEAVE_REQUESTS: LeaveRequest[] = [
+    { id: 1, employeeId: 4, employeeName: 'Zeynep Çelik', leaveType: LeaveType.Annual, startDate: '2024-06-10', endDate: '2024-06-14', reason: 'Yıllık tatil', status: LeaveStatus.Approved },
+    { id: 2, employeeId: 5, employeeName: 'Mustafa Arslan', leaveType: LeaveType.Annual, startDate: '2024-08-10', endDate: '2024-08-12', reason: 'Aile ziyareti', status: LeaveStatus.Pending },
+];
+
+export const MOCK_BANK_ACCOUNTS: BankAccount[] = [];
 export const MOCK_TRANSACTIONS: Transaction[] = [];
 export const MOCK_TICKETS: SupportTicket[] = [];
-export const INITIAL_ROLES_PERMISSIONS: Record<string, Permission[]> = {};
 export const MOCK_DOCUMENTS: Document[] = [];
-export const INITIAL_DASHBOARD_LAYOUT: DashboardWidget[] = [];
 export const MOCK_COMMENTS: Comment[] = [];
 export const MOCK_COMMUNICATION_LOGS: CommunicationLog[] = [];
 export const MOCK_SAVED_VIEWS: SavedView[] = [];
-export const MOCK_CONTACTS: Contact[] = [];
 export const MOCK_CUSTOM_FIELD_DEFINITIONS: CustomFieldDefinition[] = [];
 export const MOCK_SALES_ACTIVITIES: SalesActivity[] = [];
 export const MOCK_PERFORMANCE_REVIEWS: PerformanceReview[] = [];
@@ -260,57 +276,198 @@ export const MOCK_JOB_OPENINGS: JobOpening[] = [];
 export const MOCK_CANDIDATES: Candidate[] = [];
 export const MOCK_ONBOARDING_TEMPLATES: OnboardingTemplate[] = [];
 export const MOCK_ONBOARDING_WORKFLOWS: OnboardingWorkflow[] = [];
+export const MOCK_COMPANY_INFO: CompanyInfo = { name: "ProFusion Inc.", address: "Teknopark, İstanbul, Türkiye", phone: "0212 555 0000", email: "info@profusion.com", website: "https://profusion.com" };
+export const MOCK_BRANDING_SETTINGS: BrandingSettings = { logoUrl: "", primaryColor: "#3b82f6" };
+export const MOCK_SECURITY_SETTINGS: SecuritySettings = { passwordMinLength: 8, passwordRequireUppercase: true, passwordRequireNumber: true, sessionTimeout: 30 };
 export const MOCK_ACCOUNTS: Account[] = [
-    // Assets
-    { id: 1, accountNumber: '100', name: 'Kasa', type: AccountType.Asset, balance: 50000 },
-    { id: 2, accountNumber: '102', name: 'Bankalar', type: AccountType.Asset, balance: 250000 },
-    { id: 3, accountNumber: '120', name: 'Alıcılar', type: AccountType.Asset, balance: 15000 },
-    { id: 4, accountNumber: '153', name: 'Ticari Mallar', type: AccountType.Asset, balance: 0 },
-    // Liabilities
-    { id: 5, accountNumber: '320', name: 'Satıcılar', type: AccountType.Liability, balance: 0 },
-    { id: 6, accountNumber: '360', name: 'Ödenecek Vergi ve Fonlar', type: AccountType.Liability, balance: 0 },
-    // Equity
-    { id: 7, accountNumber: '500', name: 'Sermaye', type: AccountType.Equity, balance: 315000 },
-    // Revenue
-    { id: 8, accountNumber: '600', name: 'Yurtiçi Satışlar', type: AccountType.Revenue, balance: 0 },
-    // Expense
-    { id: 9, accountNumber: '770', name: 'Genel Yönetim Giderleri', type: AccountType.Expense, balance: 0 },
-    { id: 10, accountNumber: '770.01', name: 'Maaş Giderleri', type: AccountType.Expense, balance: 0, parentId: 9 },
-    { id: 11, accountNumber: '770.02', name: 'Kira Giderleri', type: AccountType.Expense, balance: 0, parentId: 9 },
+    { id: 1, accountNumber: "100", name: "Kasa", type: AccountType.Asset, balance: 15000 },
+    { id: 2, accountNumber: "102", name: "Bankalar", type: AccountType.Asset, balance: 120000 },
+    { id: 3, accountNumber: "120", name: "Alıcılar", type: AccountType.Asset, balance: 45000 },
+    { id: 4, accountNumber: "320", name: "Satıcılar", type: AccountType.Liability, balance: 22000 },
+    { id: 5, accountNumber: "500", name: "Sermaye", type: AccountType.Equity, balance: 100000 },
+    { id: 6, accountNumber: "600", name: "Yurtiçi Satışlar", type: AccountType.Revenue, balance: 250000 },
+    { id: 7, accountNumber: "770", name: "Genel Yönetim Giderleri", type: AccountType.Expense, balance: 20000 },
+    { id: 8, accountNumber: "770.01", name: "Maaş Giderleri", type: AccountType.Expense, balance: 60000, parentId: 7 },
+    { id: 9, accountNumber: "360", name: "Ödenecek Vergi ve Fonlar", type: AccountType.Liability, balance: 0 },
+    { id: 10, accountNumber: "361", name: "Ödenecek Sosyal Güvenlik Kesintileri", type: AccountType.Liability, balance: 0 },
 ];
 export const MOCK_JOURNAL_ENTRIES: JournalEntry[] = [];
 export const MOCK_RECURRING_JOURNAL_ENTRIES: RecurringJournalEntry[] = [];
 export const MOCK_BUDGETS: Budget[] = [];
 export const MOCK_COST_CENTERS: CostCenter[] = [];
 export const MOCK_TAX_RATES: TaxRate[] = [];
-export const INITIAL_SYSTEM_LISTS: SystemLists = { customerStatus: [], dealStage: [], taskStatus: [], taskPriority: [], leadSource: [] };
-export const INITIAL_EMAIL_TEMPLATES: EmailTemplate[] = [];
 export const MOCK_PRICE_LISTS: PriceList[] = [];
 export const MOCK_PRICE_LIST_ITEMS: PriceListItem[] = [];
 export const MOCK_AUTOMATIONS: Automation[] = [];
 export const MOCK_AUTOMATION_LOGS: AutomationLog[] = [];
-export const MOCK_WAREHOUSES: Warehouse[] = [
-    { id: 1, name: 'Merkez Depo', location: 'İstanbul', isDefault: true },
-    { id: 2, name: 'Ankara Bölge Depo', location: 'Ankara', isDefault: false },
-];
+export const MOCK_WAREHOUSES: Warehouse[] = [];
 export const MOCK_STOCK_MOVEMENTS: StockMovement[] = [];
 export const MOCK_INVENTORY_TRANSFERS: InventoryTransfer[] = [];
 export const MOCK_INVENTORY_ADJUSTMENTS: InventoryAdjustment[] = [];
 export const MOCK_SALES_ORDERS: SalesOrder[] = [];
 export const MOCK_SHIPMENTS: Shipment[] = [];
+export const MOCK_STOCK_ITEMS: StockItem[] = [];
 export const MOCK_PICK_LISTS: PickList[] = [];
+export const MOCK_PAYROLL_RUNS: PayrollRun[] = [];
 export const MOCK_PAYSLIPS: Payslip[] = [];
-export const PROJECT_HOURLY_RATE = 100;
+export const MOCK_TASK_TEMPLATES: TaskTemplate[] = [];
+export const MOCK_SCHEDULED_TASKS: ScheduledTask[] = [];
+export const MOCK_BOMS: BillOfMaterials[] = [];
+export const MOCK_WORK_ORDERS: WorkOrder[] = [];
+export const MOCK_EXPENSES: Expense[] = [
+    {
+        id: 1,
+        employeeId: 5,
+        employeeName: 'Mustafa Arslan',
+        submissionDate: '2024-07-28',
+        description: 'Ankara müşteri ziyareti taksi ücreti',
+        category: 'Seyahat',
+        amount: 150,
+        status: ExpenseStatus.Pending,
+        attachments: [],
+    },
+];
+export const MOCK_ASSETS: Asset[] = [
+     { id: 1, name: 'Dell XPS 15', category: 'Laptop', serialNumber: 'SN12345DELL', purchaseDate: '2023-01-10', assignedToId: 5, assignmentDate: '2023-08-01', status: AssetStatus.InUse },
+];
+export const MOCK_COUNTERS_SETTINGS: CountersSettings = { prefix: 'FAT-', nextNumber: 3, padding: 5 };
+export const INITIAL_ROLES: Role[] = [
+  { id: "admin", name: "Yönetici", isSystemRole: true },
+  { id: "satis", name: "Satış", isSystemRole: true },
+  { id: "ik", name: "İK", isSystemRole: true },
+  { id: "muhasebe", name: "Muhasebe", isSystemRole: false },
+  { id: "calisan", name: "Çalışan", isSystemRole: false },
+];
+export const INITIAL_ROLES_PERMISSIONS: Record<string, Permission[]> = {
+    "admin": [
+        "dashboard:goruntule", "dashboard:duzenle",
+        "musteri:goruntule", "musteri:yonet",
+        "anlasma:goruntule", "anlasma:yonet",
+        "proje:goruntule", "proje:yonet",
+        "gorev:goruntule", "gorev:yonet",
+        "fatura:goruntule", "fatura:yonet",
+        "takvim:goruntule", "rapor:goruntule",
+        "envanter:goruntule", "envanter:yonet",
+        "depo:yonet", "stok-hareketi:goruntule", "stok-sayimi:yap",
+        "satis-siparis:goruntule", "satis-siparis:yonet",
+        "sevkiyat:goruntule", "sevkiyat:yonet",
+        "toplama-listesi:goruntule", "toplama-listesi:yonet",
+        "ik:goruntule", "ik:maas-goruntule", "ik:izin-yonet", "ik:performans-yonet", "ik:ise-alim-goruntule", "ik:ise-alim-yonet", "ik:oryantasyon-goruntule", "ik:oryantasyon-yonet", "ik:bordro-yonet", "ik:rapor-goruntule", "ik:masraf-yonet", "ik:varlik-yonet",
+        "finans:goruntule", "finans:yonet",
+        "destek:goruntule", "destek:yonet",
+        "aktivite:goruntule", "dokuman:goruntule", "dokuman:yonet", "yorum:yonet",
+        "kullanici:yonet", "ayarlar:goruntule", "ayarlar:genel-yonet", "ayarlar:roller-yonet", "ayarlar:guvenlik-yonet", "ayarlar:muhasebe-yonet", "ayarlar:maliyet-merkezi-yonet", "ayarlar:vergi-yonet", "ayarlar:ik-bordro-yonet",
+        "muhasebe:goruntule", "muhasebe:yonet", "muhasebe:mutabakat-yap", "muhasebe:defteri-kebir-goruntule", "muhasebe:bilanco-goruntule", "muhasebe:gelir-tablosu-goruntule", "muhasebe:nakit-akis-goruntule", "muhasebe:alacak-yaslandirma-goruntule", "muhasebe:kar-zarar-goruntule", "muhasebe:tekrarlanan-yonet", "muhasebe:butce-yonet",
+        "otomasyon:goruntule", "otomasyon:yonet"
+    ],
+    "satis": [
+        "dashboard:goruntule", "musteri:goruntule", "musteri:yonet", "anlasma:goruntule", "anlasma:yonet",
+        "proje:goruntule", "gorev:goruntule", "gorev:yonet", "fatura:goruntule", "takvim:goruntule",
+        "rapor:goruntule", "dokuman:goruntule", "yorum:yonet"
+    ],
+    "ik": [
+        "dashboard:goruntule", "takvim:goruntule",
+        "ik:goruntule", "ik:maas-goruntule", "ik:izin-yonet", "ik:performans-yonet", "ik:ise-alim-goruntule", "ik:ise-alim-yonet", "ik:oryantasyon-goruntule", "ik:oryantasyon-yonet", "ik:bordro-yonet", "ik:rapor-goruntule", "ik:masraf-yonet", "ik:varlik-yonet",
+        "dokuman:goruntule"
+    ],
+    "muhasebe": [
+        "dashboard:goruntule", "fatura:goruntule", "fatura:yonet", "rapor:goruntule",
+        "finans:goruntule", "finans:yonet",
+        "muhasebe:goruntule", "muhasebe:yonet", "muhasebe:mutabakat-yap", "muhasebe:defteri-kebir-goruntule", "muhasebe:bilanco-goruntule", "muhasebe:gelir-tablosu-goruntule", "muhasebe:nakit-akis-goruntule", "muhasebe:alacak-yaslandirma-goruntule", "muhasebe:kar-zarar-goruntule", "muhasebe:tekrarlanan-yonet", "muhasebe:butce-yonet"
+    ],
+    "calisan": [] // Portal user, no standard permissions
+};
 
-export const MOCK_BILLS: Bill[] = [];
-export const MOCK_STOCK_ITEMS: StockItem[] = [
-    { id: 1, productId: 3, warehouseId: 1, serialNumber: 'SN-A123', status: StockItemStatus.Available },
-    { id: 2, productId: 3, warehouseId: 1, serialNumber: 'SN-A124', status: StockItemStatus.Available },
-    { id: 3, productId: 4, warehouseId: 1, batchNumber: 'BATCH-001', expiryDate: '2025-12-31', quantity: 50, status: StockItemStatus.Available },
+// FIX: Add missing exports
+export const AVAILABLE_WIDGETS: WidgetConfig[] = [
+    { id: 'stat-total-revenue', name: 'Toplam Gelir', type: 'StatCard', defaultW: 1, defaultH: 1 },
+    { id: 'stat-unpaid-invoices', name: 'Ödenmemiş Faturalar', type: 'StatCard', defaultW: 1, defaultH: 1 },
+    { id: 'stat-active-customers', name: 'Aktif Müşteriler', type: 'StatCard', defaultW: 1, defaultH: 1 },
+    { id: 'stat-open-tickets', name: 'Açık Destek Talepleri', type: 'StatCard', defaultW: 1, defaultH: 1 },
+    { id: 'stat-total-cash', name: 'Toplam Nakit', type: 'StatCard', defaultW: 1, defaultH: 1 },
+    { id: 'stat-net-cash-flow', name: 'Net Nakit Akışı (30g)', type: 'StatCard', defaultW: 1, defaultH: 1 },
+    { id: 'chart-financial-summary', name: 'Finansal Özet', type: 'Chart', defaultW: 3, defaultH: 2 },
+    { id: 'chart-invoice-status', name: 'Fatura Durumları', type: 'Chart', defaultW: 3, defaultH: 2 },
+    { id: 'list-my-tasks', name: 'Görevlerim', type: 'List', defaultW: 2, defaultH: 2 },
+    { id: 'list-today-view', name: 'Bugün', type: 'List', defaultW: 2, defaultH: 2 },
+    { id: 'list-recent-activities', name: 'Son Aktiviteler', type: 'List', defaultW: 2, defaultH: 2 },
 ];
-export const MOCK_PAYROLL_RUNS: PayrollRun[] = [
-    { id: 1, payPeriod: "Haziran 2024", runDate: "2024-06-30", status: 'Muhasebeleşti', employeeCount: 4, totalGrossPay: 390000, totalDeductions: 120000, totalNetPay: 270000, totalEmployerSgk: 85000, journalEntryId: 1 }
+export const INITIAL_DASHBOARD_LAYOUT: DashboardWidget[] = [
+    { id: 'w1', widgetId: 'stat-total-revenue', w: 1, h: 1, x:0, y:0 },
+    { id: 'w2', widgetId: 'stat-unpaid-invoices', w: 1, h: 1, x:1, y:0 },
+    { id: 'w3', widgetId: 'stat-active-customers', w: 1, h: 1, x:2, y:0 },
+    { id: 'w4', widgetId: 'stat-open-tickets', w: 1, h: 1, x:3, y:0 },
+    { id: 'w5', widgetId: 'chart-financial-summary', w: 4, h: 2, x:0, y:1 },
+    { id: 'w6', widgetId: 'list-my-tasks', w: 2, h: 2, x:4, y:1 },
+    { id: 'w7', widgetId: 'list-recent-activities', w: 2, h: 2, x:4, y:3 },
 ];
+
+export const INITIAL_SYSTEM_LISTS: SystemLists = {
+    customerStatus: [
+        { id: 'potensiyel', label: 'Potansiyel', color: '#3b82f6' },
+        { id: 'aktif', label: 'Aktif', color: '#22c55e' },
+        { id: 'kaybedilmiş', label: 'Kaybedilmiş', color: '#64748b' }
+    ],
+    dealStage: [], // these come from DealStage enum
+    taskStatus: [], // from TaskStatus enum
+    taskPriority: [], // from TaskPriority enum
+    leadSource: [
+        { id: 'Website', label: 'Website' },
+        { id: 'Referans', label: 'Referans' },
+        { id: 'Fuar', label: 'Fuar' },
+        { id: 'Soğuk Arama', label: 'Soğuk Arama' }
+    ]
+};
+
+export const INITIAL_EMAIL_TEMPLATES: EmailTemplate[] = [
+    { id: 'invoice', name: 'Fatura Gönderimi', subject: 'Yeni Faturanız: {{invoiceNumber}}', body: 'Merhaba {{customerName}},\n\n... faturanız ektedir.', variables: ['invoiceNumber', 'customerName'] },
+    { id: 'newUser', name: 'Yeni Kullanıcı Karşılama', subject: 'ProFusion\'a Hoş Geldiniz!', body: 'Merhaba {{userName}},\n\n...', variables: ['userName'] },
+    { id: 'taskAssigned', name: 'Görev Ataması', subject: 'Yeni Görev: {{taskTitle}}', body: 'Merhaba,\n\nSize yeni bir görev atandı: {{taskTitle}}', variables: ['taskTitle'] }
+];
+
+export const DEFAULT_TURKISH_PAYROLL_PARAMS_2025: HrParameters = {
+    MINIMUM_WAGE_GROSS: 25000.80,
+    SGK_CEILING: 187506.00,
+    EMPLOYEE_SGK_RATE: 0.14,
+    EMPLOYEE_UNEMPLOYMENT_RATE: 0.01,
+    EMPLOYER_SGK_RATE: 0.205,
+    EMPLOYER_UNEMPLOYMENT_RATE: 0.02,
+    EMPLOYER_SGK_INCENTIVE_RATE: 0.05,
+    STAMP_DUTY_RATE: 0.00759,
+    INCOME_TAX_EXEMPTION_BASE: 25000.80,
+    INCOME_TAX_BRACKETS: [
+        { limit: 110000, rate: 0.15 },
+        { limit: 230000, rate: 0.20 },
+        { limit: 870000, rate: 0.27 },
+        { limit: 3000000, rate: 0.35 },
+        { limit: Infinity, rate: 0.40 }
+    ],
+    SEVERANCE_CEILING: 35058.58
+};
+
+export const MOCK_SALES_RETURNS: any[] = [];
+
+export const CINSIYET_OPTIONS: Cinsiyet[] = ['Erkek', 'Kadın'];
+export const CALISMA_STATUSU_OPTIONS: CalismaStatusu[] = ['Tam Zamanlı', 'Yarı Zamanlı', 'Geçici', 'Stajyer'];
+export const SIGORTA_KOLU_OPTIONS: SigortaKolu[] = ['4A', '4B', '4C'];
+export const MEDENI_DURUM_OPTIONS: MedeniDurum[] = ['Bekar', 'Evli'];
+export const EGITIM_SEVIYELERI: EgitimSeviyesi[] = ['İlköğretim', 'Lise', 'Ön Lisans', 'Lisans', 'Yüksek Lisans', 'Doktora'];
+export const SGK_TERMINATION_CODES = [ { code: '03', description: 'İstifa' }, { code: '04', description: 'İşverenin haklı nedenle feshi' } ];
+export const SGK_PROFESSION_CODES_SAMPLE = [ { code: '2512.04', description: 'Yazılım Geliştiricisi' }, { code: '2421.01', description: 'Yönetim Danışmanı' } ];
+export const SGK_INCENTIVE_CODES = [{ code: '5510', description: '5 Puanlık İndirim' }];
+export const SGK_MISSING_DAY_REASONS = [{ code: '01', description: 'İstirahat' }];
+
+export const REPORT_CARDS: ReportCardInfo[] = [
+    { title: 'Satış Performansı', description: 'Anlaşma değerleri, kazanma oranları ve satış hunisi analizi.', link: '/reports/sales', icon: ICONS.sales },
+    { title: 'Fatura Durum Raporu', description: 'Ödenmiş, ödenmemiş ve gecikmiş faturaların takibi.', link: '/reports/invoices', icon: ICONS.invoices },
+    { title: 'Gider Analizi', description: 'Giderlerin kategori bazında dağılımını inceleyin.', link: '/reports/expenses', icon: ICONS.expenses },
+];
+
+export const HR_REPORT_CARDS: ReportCardInfo[] = [
+    { title: 'Personel Devir Oranı (Turnover)', description: 'Belirli bir dönemdeki personel giriş-çıkışlarını analiz edin.', link: '/hr/reports/turnover', icon: ICONS.hr },
+];
+
+export const PROJECT_HOURLY_RATE = 75;
 
 export const DEAL_STAGE_PROBABILITIES: { [key in DealStage]: number } = {
     [DealStage.Lead]: 0.1,
@@ -320,163 +477,80 @@ export const DEAL_STAGE_PROBABILITIES: { [key in DealStage]: number } = {
     [DealStage.Lost]: 0,
 };
 
-export const WIN_REASONS = ['Fiyat Avantajı', 'Ürün Kalitesi', 'Hızlı Teslimat', 'İyi İlişkiler', 'Diğer'];
-export const LOSS_REASONS = ['Fiyat Yüksek', 'Rakip Tercihi', 'İhtiyaç Değişikliği', 'Zamanlama', 'Diğer'];
+export const WIN_REASONS = ['Fiyat', 'Ürün Kalitesi', 'Hizmet', 'Referans', 'Diğer'];
+export const LOSS_REASONS = ['Fiyat', 'Rakip Ürün', 'İhtiyaç Yok', 'Zamanlama', 'Diğer'];
 
-export const REPORT_CARDS: ReportCardInfo[] = [
-    { title: "Satış Performansı", description: "Anlaşma kazanma oranları, gelir ve satış hattı performansını analiz edin.", link: "/reports/sales", icon: ICONS.sales },
-    { title: "Fatura Durumu", description: "Ödenmiş, gecikmiş ve taslak faturaların durumunu ve toplam tutarlarını görün.", link: "/reports/invoices", icon: ICONS.invoices },
-    { title: "Gider Analizi", description: "Giderlerinizi kategoriye göre inceleyin ve maliyetleri kontrol altında tutun.", link: "/reports/expenses", icon: ICONS.transactions },
-];
-
-export const PERMISSION_DESCRIPTIONS: Record<Permission, string> = {
-    'dashboard:goruntule': 'Kontrol panelini görüntüleme',
-    'dashboard:duzenle': 'Kontrol panelini düzenleme',
-    'musteri:goruntule': 'Müşteri kayıtlarını görüntüleme',
-    'musteri:yonet': 'Müşteri ekleme, düzenleme, silme',
-    'anlasma:goruntule': 'Satış anlaşmalarını görüntüleme',
-    'anlasma:yonet': 'Anlaşma ekleme, düzenleme, silme',
-    'proje:goruntule': 'Projeleri görüntüleme',
-    'proje:yonet': 'Proje ekleme, düzenleme, silme',
-    'gorev:goruntule': 'Görevleri görüntüleme',
-    'gorev:yonet': 'Görev ekleme, düzenleme, silme',
-    'fatura:goruntule': 'Faturaları görüntüleme',
-    'fatura:yonet': 'Fatura ekleme, düzenleme, silme',
-    'takvim:goruntule': 'Takvimi görüntüleme',
-    'rapor:goruntule': 'Raporları görüntüleme',
-    'envanter:goruntule': 'Envanter modülünü görüntüleme',
-    'envanter:yonet': 'Envanter yönetimi (ürün ekleme vb.)',
-    'depo:yonet': 'Depo yönetimi',
-    'stok-hareketi:goruntule': 'Stok hareketlerini görüntüleme',
-    'stok-sayimi:yap': 'Stok sayımı yapabilme',
-    'satis-siparis:goruntule': 'Satış siparişlerini görüntüleme',
-    'satis-siparis:yonet': 'Satış siparişlerini yönetme',
-    'sevkiyat:goruntule': 'Sevkiyatları görüntüleme',
-    'sevkiyat:yonet': 'Sevkiyatları yönetme',
-    'toplama-listesi:goruntule': 'Toplama listelerini görüntüleme',
-    'toplama-listesi:yonet': 'Toplama listelerini yönetme',
-    'ik:goruntule': 'İK modülünü görüntüleme',
-    'ik:maas-goruntule': 'Maaş bilgilerini görüntüleme',
-    'ik:izin-yonet': 'İzin taleplerini yönetme',
-    'ik:performans-yonet': 'Performans değerlendirmelerini yönetme',
-    'ik:ise-alim-goruntule': 'İşe alım modülünü görüntüleme',
-    'ik:ise-alim-yonet': 'İşe alım modülünü yönetme',
-    'ik:oryantasyon-goruntule': 'Oryantasyon iş akışlarını görüntüleme',
-    'ik:oryantasyon-yonet': 'Oryantasyon iş akışlarını yönetme',
-    'ik:bordro-yonet': 'Bordro yönetimi',
-    'finans:goruntule': 'Finans modülünü (banka hesapları vb.) görüntüleme',
-    'finans:yonet': 'Finans modülünü yönetme',
-    'destek:goruntule': 'Destek taleplerini görüntüleme',
-    'destek:yonet': 'Destek taleplerini yönetme',
-    'aktivite:goruntule': 'Aktivite kayıtlarını görüntüleme',
-    'dokuman:goruntule': 'Dokümanları görüntüleme',
-    'dokuman:yonet': 'Dokümanları yönetme (ekleme, silme vb.)',
-    'yorum:yonet': 'Yorum ekleme, düzenleme',
-    'kullanici:yonet': 'Kullanıcıları yönetme (ekleme, rol atama vb.)',
-    'ayarlar:goruntule': 'Ayarlar sayfasını görüntüleme',
-    'ayarlar:genel-yonet': 'Genel ayarları yönetme',
-    'ayarlar:roller-yonet': 'Rol ve izinleri yönetme',
-    'ayarlar:guvenlik-yonet': 'Güvenlik ayarlarını yönetme',
-    'ayarlar:muhasebe-yonet': 'Muhasebe ayarlarını yönetme',
-    'ayarlar:maliyet-merkezi-yonet': 'Maliyet merkezlerini yönetme',
-    'ayarlar:vergi-yonet': 'Vergi oranlarını yönetme',
-    'muhasebe:goruntule': 'Muhasebe modülünü görüntüleme',
-    'muhasebe:yonet': 'Muhasebe kayıtlarını yönetme',
-    'muhasebe:mutabakat-yap': 'Banka mutabakatı yapma',
-    'muhasebe:defteri-kebir-goruntule': 'Defter-i Kebir görüntüleme',
-    'muhasebe:bilanco-goruntule': 'Bilanço görüntüleme',
-    'muhasebe:gelir-tablosu-goruntule': 'Gelir tablosu görüntüleme',
-    'muhasebe:nakit-akis-goruntule': 'Nakit akış tablosu görüntüleme',
-    'muhasebe:alacak-yaslandirma-goruntule': 'Alacak yaşlandırma raporunu görüntüleme',
-    'muhasebe:kar-zarar-goruntule': 'Kâr-zarar raporunu görüntüleme',
-    'muhasebe:tekrarlanan-yonet': 'Tekrarlanan yevmiye kayıtlarını yönetme',
-    'muhasebe:butce-yonet': 'Bütçeleri yönetme',
-    'otomasyon:goruntule': 'Otomasyonları görüntüleme',
-    'otomasyon:yonet': 'Otomasyonları yönetme',
+export const PERMISSION_DESCRIPTIONS: { [key in Permission]: string } = {
+    'dashboard:goruntule': 'Kontrol panelini görüntüleme izni.',
+    'dashboard:duzenle': 'Kontrol panelini düzenleme izni.',
+    'musteri:goruntule': 'Müşterileri görüntüleme izni.',
+    'musteri:yonet': 'Müşteri ekleme, düzenleme, silme izni.',
+    'anlasma:goruntule': 'Anlaşmaları görüntüleme izni.',
+    'anlasma:yonet': 'Anlaşma ekleme, düzenleme, silme izni.',
+    'proje:goruntule': 'Projeleri görüntüleme izni.',
+    'proje:yonet': 'Proje ekleme, düzenleme, silme izni.',
+    'gorev:goruntule': 'Görevleri görüntüleme izni.',
+    'gorev:yonet': 'Görev ekleme, düzenleme, silme izni.',
+    'fatura:goruntule': 'Faturaları görüntüleme izni.',
+    'fatura:yonet': 'Fatura ekleme, düzenleme, silme izni.',
+    'takvim:goruntule': 'Takvimi görüntüleme izni.',
+    'rapor:goruntule': 'Raporları görüntüleme izni.',
+    'envanter:goruntule': 'Envanteri görüntüleme izni.',
+    'envanter:yonet': 'Envanter yönetimi (ürün ekleme, silme vb).',
+    'depo:yonet': 'Depo yönetimi.',
+    'stok-hareketi:goruntule': 'Stok hareketlerini görüntüleme.',
+    'stok-sayimi:yap': 'Stok sayımı yapma izni.',
+    'satis-siparis:goruntule': 'Satış siparişlerini görüntüleme.',
+    'satis-siparis:yonet': 'Satış siparişlerini yönetme.',
+    'sevkiyat:goruntule': 'Sevkiyatları görüntüleme.',
+    'sevkiyat:yonet': 'Sevkiyatları yönetme.',
+    'toplama-listesi:goruntule': 'Toplama listelerini görüntüleme.',
+    'toplama-listesi:yonet': 'Toplama listelerini yönetme.',
+    'ik:goruntule': 'İK modülünü görüntüleme.',
+    'ik:maas-goruntule': 'Maaş bilgilerini görüntüleme.',
+    'ik:izin-yonet': 'İzin taleplerini yönetme.',
+    'ik:performans-yonet': 'Performans değerlendirmelerini yönetme.',
+    'ik:ise-alim-goruntule': 'İşe alım modülünü görüntüleme.',
+    'ik:ise-alim-yonet': 'İşe alım modülünü yönetme.',
+    'ik:oryantasyon-goruntule': 'Oryantasyon modülünü görüntüleme.',
+    'ik:oryantasyon-yonet': 'Oryantasyon modülünü yönetme.',
+    'ik:bordro-yonet': 'Bordro yönetimi.',
+    'ik:rapor-goruntule': 'İK raporlarını görüntüleme.',
+    'ik:masraf-yonet': 'Masraf taleplerini yönetme.',
+    'ik:varlik-yonet': 'Varlıkları (zimmet) yönetme.',
+    'finans:goruntule': 'Finans modülünü görüntüleme.',
+    'finans:yonet': 'Finansal işlemleri yönetme.',
+    'destek:goruntule': 'Destek taleplerini görüntüleme.',
+    'destek:yonet': 'Destek taleplerini yönetme.',
+    'aktivite:goruntule': 'Aktivite kayıtlarını görüntüleme.',
+    'dokuman:goruntule': 'Dokümanları görüntüleme.',
+    'dokuman:yonet': 'Dokümanları yönetme.',
+    'yorum:yonet': 'Yorum ekleme, düzenleme, silme.',
+    'kullanici:yonet': 'Kullanıcıları yönetme.',
+    'ayarlar:goruntule': 'Ayarları görüntüleme.',
+    'ayarlar:genel-yonet': 'Genel ayarları yönetme.',
+    'ayarlar:roller-yonet': 'Rolleri ve izinleri yönetme.',
+    'ayarlar:guvenlik-yonet': 'Güvenlik ayarlarını yönetme.',
+    'ayarlar:muhasebe-yonet': 'Muhasebe ayarlarını yönetme.',
+    'ayarlar:maliyet-merkezi-yonet': 'Maliyet merkezlerini yönetme.',
+    'ayarlar:vergi-yonet': 'Vergi ayarlarını yönetme.',
+    'ayarlar:ik-bordro-yonet': 'İK ve bordro ayarlarını yönetme.',
+    'muhasebe:goruntule': 'Muhasebe modülünü görüntüleme.',
+    'muhasebe:yonet': 'Muhasebe kayıtlarını yönetme.',
+    'muhasebe:mutabakat-yap': 'Banka mutabakatı yapma.',
+    'muhasebe:defteri-kebir-goruntule': 'Defter-i kebir görüntüleme.',
+    'muhasebe:bilanco-goruntule': 'Bilanço görüntüleme.',
+    'muhasebe:gelir-tablosu-goruntule': 'Gelir tablosu görüntüleme.',
+    'muhasebe:nakit-akis-goruntule': 'Nakit akış tablosu görüntüleme.',
+    'muhasebe:alacak-yaslandirma-goruntule': 'Alacak yaşlandırma raporu görüntüleme.',
+    'muhasebe:kar-zarar-goruntule': 'Kar/zarar raporu görüntüleme.',
+    'muhasebe:tekrarlanan-yonet': 'Tekrarlanan yevmiye kayıtlarını yönetme.',
+    'muhasebe:butce-yonet': 'Bütçe yönetimi.',
+    'otomasyon:goruntule': 'Otomasyonları görüntüleme.',
+    'otomasyon:yonet': 'Otomasyonları yönetme.'
 };
 
-export const SGK_TERMINATION_CODES = [
-    { code: '3', description: 'Belirsiz süreli iş sözleşmesinin işçi tarafından feshi (istifa)' },
-    { code: '4', description: 'Belirsiz süreli iş sözleşmesinin işveren tarafından haklı sebep bildirilmeden feshi' },
-    { code: '22', description: 'Askerlik' },
-    { code: '25', description: 'İşverenin haklı nedenle derhal feshi' },
-];
-
-export const SGK_PROFESSION_CODES_SAMPLE = [
-    { code: '2511.01', description: 'Yazılım Geliştiricisi' },
-    { code: '2421.05', description: 'Pazarlama Uzmanı' },
-    { code: '3322.01', description: 'Muhasebe Meslek Elemanı' },
-    { code: '1211.01', description: 'İnsan Kaynakları Müdürü' },
-];
-
-export const SGK_MISSING_DAY_REASONS = [
-    { code: '1', description: 'İstirahat' },
-    { code: '7', description: 'Puantaj Kayıtları' },
-    { code: '12', description: 'Birden Fazla' },
-    { code: '13', description: 'Diğer' },
-];
-
-export const CINSIYET_OPTIONS: Cinsiyet[] = ['Erkek', 'Kadın'];
-export const CALISMA_STATUSU_OPTIONS: CalismaStatusu[] = ['Tam Zamanlı', 'Yarı Zamanlı', 'Geçici', 'Stajyer'];
-export const SIGORTA_KOLU_OPTIONS: SigortaKolu[] = ['4A', '4B', '4C'];
-export const MEDENI_DURUM_OPTIONS: MedeniDurum[] = ['Bekar', 'Evli'];
-export const EGITIM_SEVIYELERI: EgitimSeviyesi[] = ['İlköğretim', 'Lise', 'Ön Lisans', 'Lisans', 'Yüksek Lisans', 'Doktora'];
-
-
-export const MOCK_TASK_TEMPLATES: TaskTemplate[] = [
-    {
-        id: 1,
-        name: "Yeni Müşteri Oryantasyonu",
-        description: "Yeni bir müşteri kazanıldığında standart olarak oluşturulacak görevler.",
-        items: [
-            { id: 'item-1', taskName: "Karşılama e-postası gönder", dueDaysAfterStart: 0, priority: TaskPriority.High, estimatedTime: 30, defaultAssigneeRoleId: 'satis', parentId: null },
-            { id: 'item-2', taskName: "Proje başlangıç toplantısı ayarla", dueDaysAfterStart: 1, priority: TaskPriority.High, estimatedTime: 60, defaultAssigneeRoleId: 'operasyon', parentId: null },
-            { id: 'item-3', taskName: "Müşteri gereksinimlerini analiz et", dueDaysAfterStart: 2, priority: TaskPriority.Normal, estimatedTime: 240, defaultAssigneeRoleId: 'operasyon', parentId: 'item-2' },
-            { id: 'item-4', taskName: "İlk taslak/çözüm sunumu hazırla", dueDaysAfterStart: 5, priority: TaskPriority.Normal, estimatedTime: 180, defaultAssigneeRoleId: 'operasyon', parentId: 'item-2' },
-            { id: 'item-5', taskName: "Müşteriden geri bildirim al", dueDaysAfterStart: 7, priority: TaskPriority.High, estimatedTime: 60, defaultAssigneeRoleId: 'satis', parentId: null },
-        ]
-    },
-    {
-        id: 2,
-        name: "Aylık Raporlama Süreci",
-        description: "Her ayın başında tekrarlanan finansal ve operasyonel raporlama görevleri.",
-        items: [
-            { id: 'item-6', taskName: "Satış verilerini topla ve analiz et", dueDaysAfterStart: 1, priority: TaskPriority.Normal, estimatedTime: 120, defaultAssigneeRoleId: 'satis', parentId: null },
-            { id: 'item-7', taskName: "Gider raporlarını oluştur", dueDaysAfterStart: 2, priority: TaskPriority.Normal, estimatedTime: 90, defaultAssigneeRoleId: 'muhasebe', parentId: null },
-            { id: 'item-8', taskName: "Aylık P&L tablosunu hazırla", dueDaysAfterStart: 3, priority: TaskPriority.High, estimatedTime: 180, defaultAssigneeRoleId: 'muhasebe', parentId: null },
-            { id: 'item-9', taskName: "Yönetim sunumunu hazırla", dueDaysAfterStart: 4, priority: TaskPriority.High, estimatedTime: 120, defaultAssigneeRoleId: 'admin', parentId: 'item-8' },
-        ]
-    }
-];
-
-export const MOCK_SCHEDULED_TASKS: ScheduledTask[] = [
-    {
-        id: 1,
-        name: "Aylık Raporlama Süreci",
-        taskTemplateId: 2, // "Aylık Raporlama Süreci"
-        rrule: 'FREQ=MONTHLY;BYMONTHDAY=20',
-        startDate: '2024-01-01',
-        nextRunDate: '2024-08-20',
-        lastRunDate: '2024-07-20',
-        enabled: true,
-    }
-];
-
-export const TURKISH_PAYROLL_PARAMS_2025 = {
-    SGK_CEILING: 150189.00,
-    EMPLOYEE_SGK_RATE: 0.14,
-    EMPLOYEE_UNEMPLOYMENT_RATE: 0.01,
-    EMPLOYER_SGK_RATE: 0.205,
-    EMPLOYER_UNEMPLOYMENT_RATE: 0.02,
-    INCOME_TAX_EXEMPTION_BASE: 20002.50, // Asgari Ücret
-    STAMP_DUTY_EXEMPTION_BASE: 20002.50, // Asgari Ücret
-    STAMP_DUTY_RATE: 0.00759,
-    BES_RATE: 0.03, // Otomatik Katılım
-    INCOME_TAX_BRACKETS: [
-        { limit: 110000, rate: 0.15 },
-        { limit: 230000, rate: 0.20 },
-        { limit: 870000, rate: 0.27 },
-        { limit: 3000000, rate: 0.35 },
-        { limit: Infinity, rate: 0.40 },
-    ],
-};
+export const INVOICE_TYPE_OPTIONS: InvoiceType[] = ['Satış', 'İade', 'Tevkifat', 'İstisna', 'Özel Matrah'];
+export const PAYMENT_METHODS = ['Nakit', 'Banka Havalesi', 'Kredi Kartı'];
+export const KDV_MUAFİYET_KODLARI = [{ code: '301', description: 'Mal İhracatı' }];
+export const TEVKIFAT_KODLARI = [{ code: '601', description: 'Yapım İşleri (2/10)', rate: 0.2 }];

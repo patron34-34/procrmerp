@@ -187,8 +187,9 @@ const ReceiveStockModal: React.FC<ReceiveStockModalProps> = ({ isOpen, onClose, 
 
 
 const PurchaseOrders: React.FC = () => {
-    const { purchaseOrders, hasPermission } = useApp();
+    const { purchaseOrders, hasPermission, updatePurchaseOrderStatus, createBillFromPO, deletePurchaseOrder, bills, journalEntries } = useApp();
     const [poToReceive, setPoToReceive] = useState<PurchaseOrder | null>(null);
+    const [poToDelete, setPoToDelete] = useState<PurchaseOrder | null>(null);
 
     const canManageInventory = hasPermission('envanter:yonet');
     
@@ -202,6 +203,13 @@ const PurchaseOrders: React.FC = () => {
             [PurchaseOrderStatus.Cancelled]: 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200',
         };
         return <span className={`px-2 py-1 text-xs font-medium rounded-full ${styles[status]}`}>{status}</span>;
+    };
+
+    const handleDeleteConfirm = () => {
+        if (poToDelete) {
+            deletePurchaseOrder(poToDelete.id);
+            setPoToDelete(null);
+        }
     };
 
 
@@ -219,17 +227,21 @@ const PurchaseOrders: React.FC = () => {
                                     <th className="p-4 font-semibold">Sipariş No</th>
                                     <th className="p-4 font-semibold">Tedarikçi</th>
                                     <th className="p-4 font-semibold">Sipariş Tarihi</th>
-                                    <th className="p-4 font-semibold">Toplam Tutar</th>
-                                    <th className="p-4 font-semibold">Teslimat Durumu</th>
                                     <th className="p-4 font-semibold">Durum</th>
+                                    <th className="p-4 font-semibold">Fatura No</th>
+                                    <th className="p-4 font-semibold">Yevmiye No</th>
                                     {canManageInventory && <th className="p-4 font-semibold">Eylemler</th>}
                                 </tr>
                             </thead>
                             <tbody>
                                 {purchaseOrders.map((po) => {
-                                    const totalOrdered = po.items.reduce((sum, i) => sum + i.quantity, 0);
-                                    const totalReceived = po.items.reduce((sum, i) => sum + (i.receivedQuantity || 0), 0);
+                                    const isDraft = po.status === PurchaseOrderStatus.Draft;
                                     const isReceivable = [PurchaseOrderStatus.Ordered, PurchaseOrderStatus.Shipped, PurchaseOrderStatus.PartiallyReceived].includes(po.status);
+                                    const isBillable = po.status === PurchaseOrderStatus.Received && !po.billId;
+
+                                    const bill = po.billId ? bills.find(b => b.id === po.billId) : null;
+                                    const journalEntry = po.journalEntryId ? journalEntries.find(j => j.id === po.journalEntryId) : null;
+
                                     return (
                                     <tr key={po.id} className="border-b border-slate-200 hover:bg-slate-50 dark:border-dark-border dark:hover:bg-slate-800/50">
                                         <td className="p-4 font-medium">
@@ -239,12 +251,18 @@ const PurchaseOrders: React.FC = () => {
                                         </td>
                                         <td className="p-4 text-text-secondary dark:text-dark-text-secondary">{po.supplierName}</td>
                                         <td className="p-4 text-text-secondary dark:text-dark-text-secondary">{po.orderDate}</td>
-                                        <td className="p-4 font-semibold text-text-main dark:text-dark-text-main">${po.totalAmount.toLocaleString()}</td>
-                                        <td className="p-4 text-text-secondary dark:text-dark-text-secondary">{totalReceived} / {totalOrdered}</td>
                                         <td className="p-4">{getStatusBadge(po.status)}</td>
+                                        <td className="p-4 font-mono">{bill ? <Link to="/finance/bills" className="text-primary-600 hover:underline">{bill.billNumber}</Link> : '-'}</td>
+                                        <td className="p-4 font-mono">{journalEntry ? <Link to={`/accounting/journal-entries/${journalEntry.id}`} className="text-primary-600 hover:underline">{journalEntry.entryNumber}</Link> : '-'}</td>
                                         {canManageInventory && <td className="p-4">
-                                            <div className="flex items-center gap-3">
-                                                {isReceivable && <Button onClick={() => setPoToReceive(po)} className="!px-2 !py-1 text-xs"><span className="flex items-center gap-1">{ICONS.receive} Mal Kabul</span></Button>}
+                                            <div className="flex items-center gap-2">
+                                                 {isDraft && <Button onClick={() => updatePurchaseOrderStatus(po.id, PurchaseOrderStatus.Ordered)} size="sm">Onayla</Button>}
+                                                 {isReceivable && <Button onClick={() => setPoToReceive(po)} size="sm"><span className="flex items-center gap-1">{ICONS.receive} Mal Kabul</span></Button>}
+                                                 {isBillable && <Button onClick={() => createBillFromPO(po.id)} size="sm">Gider Faturası Oluştur</Button>}
+                                                 <Link to={`/inventory/purchase-orders/${po.id}/edit`} className="p-2 rounded-lg hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-500 hover:text-primary-600 dark:hover:text-primary-400" title={isDraft ? "Düzenle" : "Görüntüle"}>
+                                                    {isDraft ? ICONS.edit : <svg className="h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M2.036 12.322a1.012 1.012 0 010-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178z" /><path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /></svg>}
+                                                </Link>
+                                                {isDraft && <button onClick={() => setPoToDelete(po)} className="p-2 rounded-lg hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-500 hover:text-red-600 dark:hover:text-red-500" title="Sil">{ICONS.trash}</button>}
                                             </div>
                                         </td>}
                                     </tr>
@@ -267,6 +285,16 @@ const PurchaseOrders: React.FC = () => {
                     isOpen={!!poToReceive}
                     onClose={() => setPoToReceive(null)}
                     purchaseOrder={poToReceive}
+                />
+            )}
+            
+            {poToDelete && (
+                <ConfirmationModal
+                    isOpen={!!poToDelete}
+                    onClose={() => setPoToDelete(null)}
+                    onConfirm={handleDeleteConfirm}
+                    title="Satın Alma Siparişini Sil"
+                    message={`'${poToDelete?.poNumber}' numaralı siparişi kalıcı olarak silmek istediğinizden emin misiniz? Bu işlem geri alınamaz.`}
                 />
             )}
         </>

@@ -1,9 +1,9 @@
-
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { useApp } from '../../context/AppContext';
 import { SalesOrder, StockItem, Product, StockItemStatus } from '../../types';
 import Modal from '../ui/Modal';
 import Button from '../ui/Button';
+import { useNotification } from '../../context/NotificationContext';
 
 interface AllocateStockModalProps {
   isOpen: boolean;
@@ -13,7 +13,14 @@ interface AllocateStockModalProps {
 
 const AllocateStockModal: React.FC<AllocateStockModalProps> = ({ isOpen, onClose, salesOrder }) => {
     const { stockItems, products, allocateStockToSalesOrder } = useApp();
+    const { addToast } = useNotification();
     const [selectedItems, setSelectedItems] = useState<Record<number, Set<number>>>({});
+
+    useEffect(() => {
+        if(isOpen) {
+            setSelectedItems({});
+        }
+    }, [isOpen]);
 
     const availableStock = useMemo(() => {
         const stockByProduct: Record<number, StockItem[]> = {};
@@ -31,10 +38,18 @@ const AllocateStockModal: React.FC<AllocateStockModalProps> = ({ isOpen, onClose
             if (!newSelection[productId]) {
                 newSelection[productId] = new Set();
             }
-            if (newSelection[productId].has(stockItemId)) {
-                newSelection[productId].delete(stockItemId);
+            const productSet = newSelection[productId];
+            const orderItem = salesOrder.items.find(i => i.productId === productId)!;
+            const needToAllocate = orderItem.quantity - orderItem.committedStockItemIds.length;
+
+            if (productSet.has(stockItemId)) {
+                productSet.delete(stockItemId);
             } else {
-                newSelection[productId].add(stockItemId);
+                if(productSet.size < needToAllocate) {
+                    productSet.add(stockItemId);
+                } else {
+                    addToast("Bu ürün için gerekenden fazla stok ayıramazsınız.", "warning");
+                }
             }
             return newSelection;
         });
@@ -56,9 +71,7 @@ const AllocateStockModal: React.FC<AllocateStockModalProps> = ({ isOpen, onClose
                     const product = products.find(p => p.id === orderItem.productId);
                     if (!product) return null;
 
-                    const required = orderItem.quantity;
-                    const alreadyCommitted = orderItem.committedStockItemIds.length;
-                    const needToAllocate = required - alreadyCommitted;
+                    const needToAllocate = orderItem.quantity - orderItem.committedStockItemIds.length;
                     const selectedCount = selectedItems[product.id]?.size || 0;
 
                     if (needToAllocate <= 0) return null;
@@ -72,20 +85,19 @@ const AllocateStockModal: React.FC<AllocateStockModalProps> = ({ isOpen, onClose
                                 </span>
                             </div>
                             <div className="max-h-48 overflow-y-auto space-y-2 pr-2">
-                                {availableStock[product.id]?.map(stockItem => (
+                                {availableStock[product.id]?.length > 0 ? availableStock[product.id]?.map(stockItem => (
                                     <label key={stockItem.id} className="flex items-center p-2 rounded-md bg-slate-50 dark:bg-slate-800/50 cursor-pointer">
                                         <input
                                             type="checkbox"
                                             checked={selectedItems[product.id]?.has(stockItem.id)}
                                             onChange={() => handleSelect(product.id, stockItem.id)}
-                                            disabled={selectedCount >= needToAllocate && !selectedItems[product.id]?.has(stockItem.id)}
                                             className="h-4 w-4 rounded border-slate-300 text-primary-600 focus:ring-primary-500"
                                         />
                                         <span className="ml-3 text-sm font-mono">
                                             {stockItem.serialNumber || `${stockItem.batchNumber} (Miktar: ${stockItem.quantity || 1})`}
                                         </span>
                                     </label>
-                                ))}
+                                )) : <p className="text-sm text-center text-text-secondary">Bu ürün için stokta kullanılabilir kalem yok.</p>}
                             </div>
                         </div>
                     );

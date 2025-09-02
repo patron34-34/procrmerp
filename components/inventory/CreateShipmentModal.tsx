@@ -1,4 +1,3 @@
-
 import React, { useState, useMemo, useEffect } from 'react';
 import { useApp } from '../../context/AppContext';
 import { SalesOrder, StockItem } from '../../types';
@@ -18,7 +17,11 @@ const CreateShipmentModal: React.FC<CreateShipmentModalProps> = ({ isOpen, onClo
     const committedStockByProduct = useMemo(() => {
         const stockByProduct: Record<number, StockItem[]> = {};
         salesOrder.items.forEach(orderItem => {
+            const shippedItems = stockItems.filter(si => si.status === 'Sevk Edildi' && orderItem.committedStockItemIds.includes(si.id));
+            const shippedItemIds = new Set(shippedItems.map(si => si.id));
+            
             stockByProduct[orderItem.productId] = orderItem.committedStockItemIds
+                .filter(id => !shippedItemIds.has(id)) // Exclude already shipped items from this order's commitment list
                 .map(id => stockItems.find(si => si.id === id))
                 .filter((si): si is StockItem => !!si);
         });
@@ -29,10 +32,11 @@ const CreateShipmentModal: React.FC<CreateShipmentModalProps> = ({ isOpen, onClo
         if (isOpen) {
             const initialItems: Record<number, { quantity: number, selectedStockItemIds: Set<number>}> = {};
             salesOrder.items.forEach(item => {
-                if(item.committedStockItemIds.length > item.shippedQuantity) {
-                    initialItems[item.productId] = {
-                        quantity: item.committedStockItemIds.length - item.shippedQuantity,
-                        selectedStockItemIds: new Set(item.committedStockItemIds)
+                const committedForThisItem = committedStockByProduct[item.productId] || [];
+                if(committedForThisItem.length > 0) {
+                     initialItems[item.productId] = {
+                        quantity: committedForThisItem.length,
+                        selectedStockItemIds: new Set(committedForThisItem.map(si => si.id))
                     };
                 }
             });
@@ -59,17 +63,17 @@ const CreateShipmentModal: React.FC<CreateShipmentModalProps> = ({ isOpen, onClo
     return (
         <Modal isOpen={isOpen} onClose={onClose} title={`Sevkiyat Oluştur: ${salesOrder.orderNumber}`}>
             <div className="space-y-4">
+                <p className="text-sm text-text-secondary">Aşağıdaki ayrılmış ürünler için bir sevkiyat oluşturulacak.</p>
                 {salesOrder.items.map(orderItem => {
                     const committedForThisItem = committedStockByProduct[orderItem.productId] || [];
-                    const remainingToShip = orderItem.quantity - orderItem.shippedQuantity;
                     
-                    if(remainingToShip <= 0 || committedForThisItem.length === 0) return null;
+                    if(committedForThisItem.length === 0) return null;
 
                     return (
                         <div key={orderItem.productId} className="p-3 border rounded-md dark:border-dark-border">
                             <h4 className="font-bold">{orderItem.productName}</h4>
                             <p className="text-sm text-text-secondary">Sipariş: {orderItem.quantity} | Sevk Edilen: {orderItem.shippedQuantity}</p>
-                            <p className="text-sm text-text-secondary">Gönderilmeye Hazır (Ayrılmış): {committedForThisItem.length}</p>
+                            <p className="text-sm text-green-600 font-semibold">Gönderilecek Miktar: {committedForThisItem.length}</p>
                             
                             <div className="text-xs text-slate-500 mt-1 space-y-1">
                                 <p className="font-semibold">Ayrılan Seri/Parti Numaraları:</p>

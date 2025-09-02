@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Employee, SeveranceCalculationResult } from '../../types';
 import { useApp } from '../../context/AppContext';

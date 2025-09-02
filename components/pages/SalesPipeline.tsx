@@ -1,4 +1,3 @@
-
 import React, { useState, useMemo } from 'react';
 import { useApp } from '../../context/AppContext';
 import { Deal, DealStage } from '../../types';

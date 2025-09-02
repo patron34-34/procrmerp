@@ -279,7 +279,7 @@ const JournalEntryForm: React.FC = () => {
                     </div>
                      <div>
                         <label className="block text-sm font-medium">Yevmiye No</label>
-                        <input type="text" value={entryNumber} disabled className="mt-1 w-full p-2 border rounded-md bg-slate-100 dark:bg-slate-800 dark:border-dark-border"/>
+                        <input type="text" value={entryNumber || 'Yeni Fiş'} disabled className="mt-1 w-full p-2 border rounded-md bg-slate-100 dark:bg-slate-800 dark:border-dark-border"/>
                     </div>
                     <div>
                         <label className="block text-sm font-medium">Fiş Türü *</label>
@@ -321,7 +321,7 @@ const JournalEntryForm: React.FC = () => {
                             }}
                         >
                             <div data-cell-index="0" onFocus={() => handleFocus(index)}>
-                               <AccountSelector accounts={accounts} value={item.accountId!} onChange={accId => handleItemChange(index, 'accountId', accId)} />
+                               <AccountSelector accounts={accounts} value={item.accountId || 0} onChange={accId => handleItemChange(index, 'accountId', accId)} />
                             </div>
                             <input
                                 type="text"

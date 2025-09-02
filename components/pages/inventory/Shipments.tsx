@@ -80,7 +80,7 @@ const Shipments: React.FC = () => {
                     </table>
                 ) : (
                     <EmptyState
-                        icon={ICONS.shipment!}
+                        icon={ICONS.shipment}
                         title="Henüz Sevkiyat Yok"
                         description="Satış siparişlerinden sevkiyat oluşturulduğunda burada listelenecektir."
                     />

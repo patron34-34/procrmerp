@@ -88,7 +88,7 @@ const TaxSettings: React.FC = () => {
                     </table>
                 ) : (
                     <EmptyState
-                        icon={ICONS.tax!}
+                        icon={ICONS.tax}
                         title="Henüz Vergi Oranı Tanımlanmamış"
                         description="İlk vergi oranını ekleyerek başlayın."
                         action={canManage ? <Button onClick={openModalForNew}>Vergi Oranı Ekle</Button> : undefined}

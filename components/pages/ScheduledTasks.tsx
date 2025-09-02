@@ -89,7 +89,7 @@ const ScheduledTasks: React.FC = () => {
                         </table>
                     ) : (
                         <EmptyState
-                            icon={ICONS.automations}
+                            icon={ICONS.planner}
                             title="Henüz Planlanmış Görev Yok"
                             description="Tekrarlayan iş akışlarınızı otomatikleştirmek için ilk planınızı oluşturun."
                             action={canManage ? <Button onClick={openModalForNew}>Plan Oluştur</Button> : undefined}

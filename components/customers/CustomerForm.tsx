@@ -4,6 +4,7 @@ import { Customer, Address } from '../../types';
 import Modal from '../ui/Modal';
 import Button from '../ui/Button';
 import TagInput from '../ui/TagInput';
+import { ICONS } from '../../constants';
 
 interface CustomerFormProps {
   isOpen: boolean;
@@ -101,22 +102,27 @@ const CustomerForm: React.FC<CustomerFormProps> = ({ isOpen, onClose, customer }
         return Object.keys(newErrors).length === 0;
     };
 
-    const handleSubmit = (e: React.FormEvent) => {
+    const handleSubmit = (e: React.FormEvent, saveAndNew = false) => {
         e.preventDefault();
         if (validate()) {
             const customerData = { ...formData, company: formData.company || formData.name };
             if (customer) {
                 updateCustomer({ ...customer, ...customerData });
+                onClose();
             } else {
                 addCustomer(customerData);
+                if (saveAndNew) {
+                    setFormData(initialFormData);
+                } else {
+                    onClose();
+                }
             }
-            onClose();
         }
     };
 
     return (
         <Modal isOpen={isOpen} onClose={onClose} title={customer ? "Müşteriyi Düzenle" : "Yeni Müşteri Ekle"} size="3xl">
-            <form onSubmit={handleSubmit} className="space-y-4">
+            <form onSubmit={(e) => handleSubmit(e, false)} className="space-y-4">
                 <div className="max-h-[70vh] overflow-y-auto pr-4">
                     <AccordionSection title="Temel Bilgiler">
                         <div className="grid grid-cols-2 gap-4">
@@ -145,7 +151,7 @@ const CustomerForm: React.FC<CustomerFormProps> = ({ isOpen, onClose, customer }
                             <div><label>Vergi Dairesi</label><input name="taxOffice" value={formData.taxOffice} onChange={handleInputChange} className="mt-1 w-full p-2 border rounded-md dark:bg-slate-700 dark:border-dark-border"/></div>
                             <div><label>Vergi/TC Kimlik No</label><input name="taxId" value={formData.taxId} onChange={handleInputChange} className="mt-1 w-full p-2 border rounded-md dark:bg-slate-700 dark:border-dark-border"/></div>
                             <div><label>IBAN</label><input name="iban" value={formData.iban} onChange={handleInputChange} className="mt-1 w-full p-2 border rounded-md dark:bg-slate-700 dark:border-dark-border"/></div>
-                            <div><label>IBAN 2</label><input name="iban2" value={formData.iban2} onChange={handleInputChange} className="mt-1 w-full p-2 border rounded-md dark:bg-slate-700 dark:border-dark-border"/></div>
+                            <div><label>IBAN 2</label><input name="iban2" value={formData.iban2 || ''} onChange={handleInputChange} className="mt-1 w-full p-2 border rounded-md dark:bg-slate-700 dark:border-dark-border"/></div>
                             <div><label>Açılış Bakiyesi</label><input type="number" step="0.01" name="openingBalance" value={formData.openingBalance} onChange={handleInputChange} className="mt-1 w-full p-2 border rounded-md dark:bg-slate-700 dark:border-dark-border"/></div>
                             <div><label>Para Birimi</label><select name="currency" value={formData.currency} onChange={handleInputChange} className="mt-1 w-full p-2 border rounded-md dark:bg-slate-700 dark:border-dark-border"><option value="TRY">TRY</option><option value="USD">USD</option><option value="EUR">EUR</option></select></div>
                             <div><label>Açılış Tarihi</label><input type="date" name="openingDate" value={formData.openingDate} onChange={handleInputChange} className="mt-1 w-full p-2 border rounded-md dark:bg-slate-700 dark:border-dark-border"/></div>
@@ -154,8 +160,8 @@ const CustomerForm: React.FC<CustomerFormProps> = ({ isOpen, onClose, customer }
 
                     <AccordionSection title="Diğer Bilgiler">
                         <div className="grid grid-cols-2 gap-4">
-                            <div><label>e-Fatura Posta Kutusu</label><input name="eInvoiceMailbox" value={formData.eInvoiceMailbox} onChange={handleInputChange} className="mt-1 w-full p-2 border rounded-md dark:bg-slate-700 dark:border-dark-border"/></div>
-                            <div><label>e-İrsaliye Posta Kutusu</label><input name="eDispatchMailbox" value={formData.eDispatchMailbox} onChange={handleInputChange} className="mt-1 w-full p-2 border rounded-md dark:bg-slate-700 dark:border-dark-border"/></div>
+                            <div><label>e-Fatura Posta Kutusu</label><input name="eInvoiceMailbox" value={formData.eInvoiceMailbox || ''} onChange={handleInputChange} className="mt-1 w-full p-2 border rounded-md dark:bg-slate-700 dark:border-dark-border"/></div>
+                            <div><label>e-İrsaliye Posta Kutusu</label><input name="eDispatchMailbox" value={formData.eDispatchMailbox || ''} onChange={handleInputChange} className="mt-1 w-full p-2 border rounded-md dark:bg-slate-700 dark:border-dark-border"/></div>
                             <div><label>Sorumlu</label><select name="assignedToId" value={formData.assignedToId} onChange={handleInputChange} className="mt-1 w-full p-2 border rounded-md dark:bg-slate-700 dark:border-dark-border">{employees.map(e => <option key={e.id} value={e.id}>{e.name}</option>)}</select></div>
                             <div><label>Kaynak</label><select name="leadSource" value={formData.leadSource} onChange={handleInputChange} className="mt-1 w-full p-2 border rounded-md dark:bg-slate-700 dark:border-dark-border">{systemLists.leadSource.map(s => <option key={s.id} value={s.id}>{s.label}</option>)}</select></div>
                         </div>
@@ -164,7 +170,14 @@ const CustomerForm: React.FC<CustomerFormProps> = ({ isOpen, onClose, customer }
                 </div>
                 <div className="flex justify-end pt-4 gap-2 border-t dark:border-dark-border">
                     <Button type="button" variant="secondary" onClick={onClose}>İptal</Button>
-                    <Button type="submit">Kaydet</Button>
+                    {!customer && (
+                        <Button type="button" variant="secondary" onClick={(e) => handleSubmit(e, true)}>
+                            <span className="flex items-center gap-2">{ICONS.saveAndNew} Kaydet ve Yeni</span>
+                        </Button>
+                    )}
+                    <Button type="submit">
+                        <span className="flex items-center gap-2">{ICONS.save} Kaydet</span>
+                    </Button>
                 </div>
             </form>
         </Modal>

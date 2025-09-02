@@ -20,7 +20,7 @@ const Automations: React.FC = () => {
             title: "Otomasyon Kuralları (Eski)",
             description: "Belirli bir olay gerçekleştiğinde (örn: anlaşma aşaması değiştiğinde) otomatik eylemler tetikleyin.",
             link: "/automations/rules", // This would be the old page, if you decide to keep it separate. For now, let's assume it's just a conceptual split.
-            icon: ICONS.automations,
+            icon: ICONS.magic,
             permission: true
         }
     ];
@@ -37,7 +37,7 @@ const Automations: React.FC = () => {
                     <Link key={type.link} to={type.link}>
                         <Card className="h-full hover:shadow-lg hover:border-primary-500 transition-all duration-300 transform hover:-translate-y-1">
                             <div className="flex items-start gap-4">
-                                <div className="flex-shrink-0 text-primary-600">
+                                <div className="flex-shrink-0 text-primary-600 w-6 h-6">
                                     {type.icon}
                                 </div>
                                 <div>

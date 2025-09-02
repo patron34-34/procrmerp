@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useApp } from '../../../context/AppContext';
 import { Warehouse } from '../../../types';
@@ -33,6 +32,8 @@ const Warehouses: React.FC = () => {
             setWarehouseToDelete(null);
         }
     };
+    
+    const actionButtonClasses = "p-2 rounded-lg text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors";
 
     return (
         <>
@@ -55,9 +56,9 @@ const Warehouses: React.FC = () => {
                                         <td className="p-3 font-medium">{wh.name}</td>
                                         <td className="p-3">{wh.location}</td>
                                         <td className="p-3">{wh.isDefault ? 'Evet' : 'Hayır'}</td>
-                                        {canManage && <td className="p-3"><div className="flex items-center gap-3">
-                                            <button onClick={() => openModalForEdit(wh)} className="text-slate-500 hover:text-primary-600">{ICONS.edit}</button>
-                                            {!wh.isDefault && <button onClick={() => setWarehouseToDelete(wh)} className="text-slate-500 hover:text-red-600">{ICONS.trash}</button>}
+                                        {canManage && <td className="p-3"><div className="flex items-center gap-1">
+                                            <button onClick={() => openModalForEdit(wh)} className={`${actionButtonClasses} hover:text-primary-600`}>{ICONS.edit}</button>
+                                            <button onClick={() => setWarehouseToDelete(wh)} disabled={wh.isDefault} className={`${actionButtonClasses} hover:text-red-600 disabled:opacity-50 disabled:cursor-not-allowed`}>{ICONS.trash}</button>
                                         </div></td>}
                                     </tr>
                                 ))}
@@ -65,7 +66,7 @@ const Warehouses: React.FC = () => {
                         </table>
                     ) : (
                         <EmptyState
-                            icon={ICONS.warehouse!}
+                            icon={ICONS.warehouse}
                             title="Henüz Depo Oluşturulmamış"
                             description="İlk deponuzu ekleyerek envanterinizi farklı konumlarda yönetmeye başlayın."
                             action={canManage ? <Button onClick={openModalForNew}>Depo Ekle</Button> : undefined}
@@ -86,7 +87,7 @@ const Warehouses: React.FC = () => {
                     onClose={() => setWarehouseToDelete(null)}
                     onConfirm={handleDeleteConfirm}
                     title="Depoyu Sil"
-                    message={`'${warehouseToDelete?.name}' adlı depoyu kalıcı olarak silmek istediğinizden emin misiniz? Bu depoda stoğu bulunan ürünler etkilenecektir.`}
+                    message={`'${warehouseToDelete?.name}' adlı depoyu kalıcı olarak silmek istediğinizden emin misiniz? Bu depoda stok varsa işlem başarısız olacaktır.`}
                 />
             )}
         </>

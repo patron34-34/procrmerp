@@ -18,15 +18,17 @@ const AutomationDetail: React.FC = () => {
 
     return (
         <div className="space-y-6">
+            <div className="mb-4">
+                <Link to="/automations" className="flex items-center gap-2 text-sm text-text-secondary hover:text-text-main">
+                    &larr; Otomasyonlara Geri Dön
+                </Link>
+            </div>
             <Card>
                 <div className="flex justify-between items-start">
                     <div>
                         <h2 className="text-2xl font-bold">{automation.name}</h2>
                         <p className="text-text-secondary">{automation.triggerType}</p>
                     </div>
-                    <Link to="/automations">
-                        <Button variant="secondary">&larr; Listeye Dön</Button>
-                    </Link>
                 </div>
             </Card>
 

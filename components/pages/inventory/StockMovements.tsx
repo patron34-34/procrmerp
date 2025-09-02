@@ -54,7 +54,7 @@ const StockMovements: React.FC = () => {
                 <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
                      <div className="md:col-span-2">
                         <label className="text-sm font-medium">Ürün</label>
-                        <ProductSelector products={products} value={filters.productId} onChange={handleProductFilterChange} />
+                        <ProductSelector products={[{id: 0, name: 'Tüm Ürünler', sku: '', price: 0, category: '', productType: 'Ticari Mal'} as any, ...products]} value={filters.productId} onChange={handleProductFilterChange} />
                      </div>
                      <div>
                         <label className="text-sm font-medium">Depo</label>

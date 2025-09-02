@@ -13,7 +13,7 @@ const Card: React.FC<CardProps> = ({ children, className = '', title, action, st
 
   return (
     <div 
-      className={`bg-card dark:bg-dark-card rounded-lg border border-border dark:border-dark-border shadow-sm transition-shadow duration-300 hover:shadow-lg ${className}`}
+      className={`bg-card dark:bg-dark-card rounded-xl border border-border dark:border-dark-border shadow-sm ${className}`}
       style={style}
     >
       {hasTitle ? (
