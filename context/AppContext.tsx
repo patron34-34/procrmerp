@@ -7,8 +7,22 @@ import * as C from '../constants';
 const AppContext = createContext<T.AppContextType | undefined>(undefined);
 
 export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
-    const customerHookData = useCustomers(C.MOCK_CUSTOMERS);
+    // Customer State (Moved from CustomerContext)
+    const { 
+        customers, 
+        setCustomers,
+        addCustomer: originalAddCustomer,
+        updateCustomer: originalUpdateCustomer,
+        updateCustomerStatus: originalUpdateCustomerStatus,
+        deleteCustomer: originalDeleteCustomer,
+        deleteMultipleCustomers: originalDeleteMultipleCustomers,
+        importCustomers: originalImportCustomers,
+     } = useCustomers(C.MOCK_CUSTOMERS);
     const [contacts, setContacts] = useLocalStorageState<T.Contact[]>('contacts', C.MOCK_CONTACTS);
+    const [communicationLogs, setCommunicationLogs] = useLocalStorageState<T.CommunicationLog[]>('communicationLogs', C.MOCK_COMMUNICATION_LOGS);
+    const [savedViews, setSavedViews] = useLocalStorageState<T.SavedView[]>('savedViews', C.MOCK_SAVED_VIEWS);
+
+    // Existing App State
     const [deals, setDeals] = useLocalStorageState<T.Deal[]>('deals', C.MOCK_DEALS);
     const [projects, setProjects] = useLocalStorageState<T.Project[]>('projects', C.MOCK_PROJECTS);
     const [tasks, setTasks] = useLocalStorageState<T.Task[]>('tasks', C.MOCK_TASKS);
@@ -33,9 +47,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     const [documents, setDocuments] = useLocalStorageState<T.Document[]>('documents', C.MOCK_DOCUMENTS);
     const [comments, setComments] = useLocalStorageState<T.Comment[]>('comments', C.MOCK_COMMENTS);
     const [salesActivities, setSalesActivities] = useLocalStorageState<T.SalesActivity[]>('salesActivities', C.MOCK_SALES_ACTIVITIES);
-    const [communicationLogs, setCommunicationLogs] = useLocalStorageState<T.CommunicationLog[]>('communicationLogs', C.MOCK_COMMUNICATION_LOGS);
     const [activityLogs, setActivityLogs] = useLocalStorageState<T.ActivityLog[]>('activityLogs', []);
-    const [savedViews, setSavedViews] = useLocalStorageState<T.SavedView[]>('savedViews', C.MOCK_SAVED_VIEWS);
     const [customFieldDefinitions, setCustomFieldDefinitions] = useLocalStorageState<T.CustomFieldDefinition[]>('customFieldDefinitions', C.MOCK_CUSTOM_FIELD_DEFINITIONS);
     const [dashboardLayout, setDashboardLayout] = useLocalStorageState<T.DashboardWidget[]>('dashboardLayout', C.INITIAL_DASHBOARD_LAYOUT);
     const [companyInfo, setCompanyInfo] = useLocalStorageState<T.CompanyInfo>('companyInfo', C.MOCK_COMPANY_INFO);
@@ -75,7 +87,9 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     const [assets, setAssets] = useLocalStorageState<T.Asset[]>('assets', C.MOCK_ASSETS);
     const [hrParameters, setHrParameters] = useLocalStorageState<T.HrParameters>('hrParameters', C.DEFAULT_TURKISH_PAYROLL_PARAMS_2025);
     const [salesReturns, setSalesReturns] = useLocalStorageState<T.SalesReturn[]>('salesReturns', C.MOCK_SALES_RETURNS);
-
+    const [quotations, setQuotations] = useLocalStorageState<T.Quotation[]>('quotations', C.MOCK_QUOTATIONS);
+    const [leads, setLeads] = useLocalStorageState<T.Lead[]>('leads', C.MOCK_LEADS);
+    const [commissionRecords, setCommissionRecords] = useLocalStorageState<T.CommissionRecord[]>('commissionRecords', C.MOCK_COMMISSION_RECORDS);
 
     const logActivity = useCallback((actionType: T.ActionType, details: string, entityType?: T.EntityType, entityId?: number) => {
         const newLog: T.ActivityLog = {
@@ -92,13 +106,50 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         setActivityLogs(prev => [newLog, ...prev].slice(0, 200)); // Keep last 200 logs
     }, [setActivityLogs, currentUser]);
 
+    // Customer Functions (with logging)
+    const customersWithAssignee = useMemo(() => {
+        return customers.map(customer => ({
+            ...customer,
+            assignedToName: employees.find(e => e.id === customer.assignedToId)?.name || 'Atanmamış'
+        }));
+    }, [customers, employees]);
+
+    const addCustomer = useCallback((customerData: Omit<T.Customer, 'id' | 'avatar'>): T.Customer => {
+        const newCustomer = originalAddCustomer(customerData);
+        logActivity(T.ActionType.CREATED, `Müşteri '${newCustomer.name}' oluşturuldu.`, 'customer', newCustomer.id);
+        return newCustomer;
+    }, [originalAddCustomer, logActivity]);
+    
+    const importCustomers = useCallback((customersData: Omit<T.Customer, 'id' | 'avatar'>[]): T.Customer[] => {
+        const newCustomers = originalImportCustomers(customersData);
+        logActivity(T.ActionType.CREATED, `${newCustomers.length} müşteri içeri aktarıldı.`, 'customer');
+        return newCustomers;
+    }, [originalImportCustomers, logActivity]);
+
+    const assignCustomersToEmployee = useCallback((customerIds: number[], employeeId: number) => {
+        setCustomers(prev => prev.map(c => customerIds.includes(c.id) ? { ...c, assignedToId: employeeId } : c));
+        const employeeName = employees.find(e => e.id === employeeId)?.name || 'Bilinmeyen';
+        logActivity(T.ActionType.UPDATED, `${customerIds.length} müşteri toplu olarak '${employeeName}' sorumlusuna atandı.`, 'customer');
+    }, [setCustomers, employees, logActivity]);
+
+    const addTagsToCustomers = useCallback((customerIds: number[], tags: string[]) => {
+        setCustomers(prev => prev.map(c => {
+            if (customerIds.includes(c.id)) {
+                const newTags = [...new Set([...c.tags, ...tags])];
+                return { ...c, tags: newTags };
+            }
+            return c;
+        }));
+        logActivity(T.ActionType.UPDATED, `${customerIds.length} müşteriye toplu olarak '${tags.join(', ')}' etiketleri eklendi.`, 'customer');
+    }, [setCustomers, logActivity]);
+    
+    const bulkUpdateCustomerStatus = useCallback((customerIds: number[], newStatus: string) => {
+        setCustomers(prev => prev.map(c => customerIds.includes(c.id) ? { ...c, status: newStatus } : c));
+        logActivity(T.ActionType.STATUS_CHANGED, `${customerIds.length} müşterinin durumu '${newStatus}' olarak güncellendi.`, 'customer');
+    }, [setCustomers, logActivity]);
+
     const addSavedView = useCallback((name: string, filters: T.SavedView['filters'], sortConfig: T.SortConfig) => {
-        const newView: T.SavedView = {
-            id: Date.now(),
-            name,
-            filters,
-            sortConfig,
-        };
+        const newView: T.SavedView = { id: Date.now(), name, filters, sortConfig };
         setSavedViews(prev => [...prev, newView]);
     }, [setSavedViews]);
 
@@ -112,25 +163,17 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
 
     const addCommunicationLog = useCallback((customerId: number, type: T.CommunicationLogType, content: string) => {
         const newLog: T.CommunicationLog = {
-            id: Date.now(),
-            customerId,
-            type,
-            content,
-            timestamp: new Date().toISOString(),
-            userId: currentUser.id,
-            userName: currentUser.name,
+            id: Date.now(), customerId, type, content,
+            timestamp: new Date().toISOString(), userId: currentUser.id, userName: currentUser.name,
         };
         setCommunicationLogs(prev => [newLog, ...prev]);
-        logActivity(T.ActionType.COMMENT_ADDED, `Communication logged for customer #${customerId}.`, 'customer', customerId);
+        logActivity(T.ActionType.COMMENT_ADDED, `${type} for customer #${customerId}.`, 'customer', customerId);
     }, [setCommunicationLogs, currentUser, logActivity]);
 
     const addContact = useCallback((contactData: Omit<T.Contact, 'id'>) => {
-        const newContact: T.Contact = {
-            id: Date.now(),
-            ...contactData,
-        };
+        const newContact: T.Contact = { id: Date.now(), ...contactData };
         setContacts(prev => [newContact, ...prev]);
-        logActivity(T.ActionType.CREATED, `Contact '${newContact.name}' created for customer #${contactData.customerId}.`, 'customer', contactData.customerId);
+        logActivity(T.ActionType.CREATED, `Contact '${newContact.name}' created.`, 'customer', contactData.customerId);
     }, [setContacts, logActivity]);
 
     const updateContact = useCallback((contactToUpdate: T.Contact) => {
@@ -145,220 +188,354 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
             logActivity(T.ActionType.DELETED, `Contact '${contactToDelete.name}' deleted.`, 'customer', contactToDelete.customerId);
         }
     }, [setContacts, contacts, logActivity]);
-    
-    // START: Dummy implementations for all functions from AppContextType.
-    // In a real app, these would contain business logic.
-    
-    // SalesReturns
-    const addSalesReturn = useCallback((returnData: Omit<T.SalesReturn, 'id' | 'returnNumber' | 'customerName'>) => {
-        const customer = customerHookData.customers.find(c => c.id === returnData.customerId);
-        if (!customer) return undefined;
-        const newReturn: T.SalesReturn = {
+
+    const addInvoice = useCallback((invoiceData: Omit<T.Invoice, 'id' | 'invoiceNumber' | 'customerName'>): T.Invoice => {
+        const customer = customers.find(c => c.id === invoiceData.customerId);
+        if (!customer) {
+            console.error("Fatura oluşturmak için müşteri bulunamadı.");
+            return {} as T.Invoice;
+        }
+
+        const newInvoiceNumber = `${counters.prefix}${String(counters.nextNumber).padStart(counters.padding, '0')}`;
+        
+        const newInvoice: T.Invoice = {
+            ...invoiceData,
             id: Date.now(),
-            returnNumber: `RT-${Date.now()}`,
+            invoiceNumber: newInvoiceNumber,
             customerName: customer.name,
-            ...returnData
         };
-        setSalesReturns(prev => [...prev, newReturn]);
-        logActivity(T.ActionType.CREATED, `Sales return ${newReturn.returnNumber} created.`, 'sales_return', newReturn.id);
-        return newReturn;
-    }, [setSalesReturns, customerHookData.customers, logActivity]);
+
+        setInvoices(prev => [newInvoice, ...prev]);
+        setCounters(prev => ({ ...prev, nextNumber: prev.nextNumber + 1 }));
+        logActivity(T.ActionType.CREATED, `Fatura #${newInvoiceNumber} oluşturuldu.`, 'invoice', newInvoice.id);
+        
+        return newInvoice;
+    }, [setInvoices, counters, setCounters, logActivity, customers]);
+
+    const updateInvoice = useCallback((invoiceToUpdate: T.Invoice) => {
+        const customer = customers.find(c => c.id === invoiceToUpdate.customerId);
+        setInvoices(prev => prev.map(inv => {
+            if (inv.id === invoiceToUpdate.id) {
+                return { ...invoiceToUpdate, customerName: customer?.name || inv.customerName };
+            }
+            return inv;
+        }));
+        logActivity(T.ActionType.UPDATED, `Fatura #${invoiceToUpdate.invoiceNumber} güncellendi.`, 'invoice', invoiceToUpdate.id);
+    }, [setInvoices, logActivity, customers]);
+
+    const bulkUpdateInvoiceStatus = useCallback((invoiceIds: number[], newStatus: T.InvoiceStatus) => {
+        setInvoices(prev => prev.map(inv => invoiceIds.includes(inv.id) ? { ...inv, status: newStatus } : inv));
+        logActivity(T.ActionType.STATUS_CHANGED, `${invoiceIds.length} faturanın durumu '${newStatus}' olarak güncellendi.`, 'invoice');
+    }, [setInvoices, logActivity]);
     
-    const updateSalesReturn = useCallback((salesReturn: T.SalesReturn) => {
-        setSalesReturns(prev => prev.map(sr => sr.id === salesReturn.id ? salesReturn : sr));
-        logActivity(T.ActionType.UPDATED, `Sales return ${salesReturn.returnNumber} updated.`, 'sales_return', salesReturn.id);
-    }, [setSalesReturns, logActivity]);
+    const deleteInvoice = useCallback((id: number) => {
+        setInvoices(prev => prev.filter(i => i.id !== id));
+        logActivity(T.ActionType.DELETED, `Invoice #${id} deleted.`, 'invoice', id);
+    }, [setInvoices, logActivity]);
+    
+    const addDeal = useCallback((dealData: Omit<T.Deal, 'id' | 'customerName' | 'assignedToName' | 'value' | 'lastActivityDate'>): T.Deal => {
+        const customer = customers.find(c => c.id === dealData.customerId);
+        const assignee = employees.find(e => e.id === dealData.assignedToId);
+        const value = dealData.lineItems.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+        
+        const newDeal: T.Deal = {
+            ...dealData,
+            id: Date.now(),
+            customerName: customer?.name || 'Bilinmeyen Müşteri',
+            assignedToName: assignee?.name || 'Atanmamış',
+            value: value,
+            lastActivityDate: new Date().toISOString().split('T')[0]
+        };
+        setDeals(prev => [newDeal, ...prev]);
+        logActivity(T.ActionType.CREATED, `Anlaşma '${newDeal.title}' oluşturuldu.`, 'deal', newDeal.id);
+        return newDeal;
+    }, [setDeals, employees, customers, logActivity]);
 
-    const deleteSalesReturn = useCallback((id: number) => {
-        setSalesReturns(prev => prev.filter(sr => sr.id !== id));
-        logActivity(T.ActionType.DELETED, `Sales return #${id} deleted.`, 'sales_return', id);
-    }, [setSalesReturns, logActivity]);
+    const createCommissionRecord = useCallback((deal: T.Deal): T.CommissionRecord => {
+        // Simple 5% commission logic for demo
+        const commissionAmount = deal.value * 0.05;
+        const newRecord: T.CommissionRecord = {
+            id: Date.now(),
+            employeeId: deal.assignedToId,
+            dealId: deal.id,
+            dealValue: deal.value,
+            commissionAmount,
+            earnedDate: new Date().toISOString().split('T')[0],
+        };
+        setCommissionRecords(prev => [newRecord, ...prev]);
+        logActivity(T.ActionType.CREATED, `'${deal.title}' anlaşması için komisyon kaydı oluşturuldu.`, 'commission', newRecord.id);
+        return newRecord;
+    }, [setCommissionRecords, logActivity]);
 
+    const updateDealStage = useCallback((dealId: number, newStage: T.DealStage) => {
+        const deal = deals.find(d => d.id === dealId);
+        if (!deal) return;
+    
+        setDeals(prev => prev.map(d => 
+            d.id === dealId 
+                ? { ...d, stage: newStage, lastActivityDate: new Date().toISOString().split('T')[0] } 
+                : d
+        ));
+    
+        logActivity(T.ActionType.STATUS_CHANGED, `Anlaşma '${deal.title}' durumu '${newStage}' olarak değiştirildi.`, 'deal', dealId);
+    
+        if (newStage === T.DealStage.Won) {
+            createCommissionRecord({ ...deal, stage: newStage });
+        }
+    }, [deals, setDeals, logActivity, createCommissionRecord]);
 
-    const isManager = useCallback((employeeId: number): boolean => {
-        return employees.some(e => e.managerId === employeeId);
-    }, [employees]);
+    const addProject = useCallback((projectData: Omit<T.Project, 'id' | 'client'>) => {
+        const customer = customers.find(c => c.id === projectData.customerId);
+        const newProject: T.Project = {
+            ...projectData,
+            id: Date.now(),
+            client: customer?.name || 'Bilinmeyen Müşteri'
+        };
+        setProjects(prev => [newProject, ...prev]);
+        logActivity(T.ActionType.PROJECT_CREATED, `Proje '${newProject.name}' oluşturuldu.`, 'project', newProject.id);
+    }, [setProjects, customers, logActivity]);
 
-    const itemCount = useMemo(() => cartItems.reduce((sum, item) => sum + item.quantity, 0), [cartItems]);
-    const addToCart = (product: T.Product, quantity: number) => {/* not implemented */};
-    const removeFromCart = (productId: number) => {/* not implemented */};
-    const updateCartQuantity = (productId: number, quantity: number) => {/* not implemented */};
-    const clearCart = () => {/* not implemented */};
-    const createSalesOrderFromCart = (customerId: number) => {/* not implemented */};
-    const addScheduledTask = (schedule: Omit<T.ScheduledTask, "id">) => {/* not implemented */};
-    const updateScheduledTask = (schedule: T.ScheduledTask) => {/* not implemented */};
-    const deleteScheduledTask = (scheduleId: number) => {/* not implemented */};
-    const runScheduledTasksCheck = () => {/* not implemented */};
-    const addTaskTemplate = (templateData: Omit<T.TaskTemplate, "id">) => {/* not implemented */};
-    const updateTaskTemplate = (template: T.TaskTemplate) => {/* not implemented */};
-    const deleteTaskTemplate = (templateId: number) => {/* not implemented */};
-    const addBom = (bomData: Omit<T.BillOfMaterials, "id" | "productName">) => {/* not implemented */};
-    const updateBom = (bom: T.BillOfMaterials) => {/* not implemented */};
-    const addWorkOrder = (woData: Omit<T.WorkOrder, "id" | "workOrderNumber" | "productName">) => { return undefined; };
-    const updateWorkOrderStatus = (workOrderId: number, newStatus: T.WorkOrderStatus) => {/* not implemented */};
-    const getProductStockInfo = (productId: number) => { return { physical: 0, committed: 0, available: 0 }; };
-    const getProductStockByWarehouse = (productId: number, warehouseId: number) => { return { physical: 0, committed: 0, available: 0 }; };
-    const addSalesOrder = (orderData: Omit<T.SalesOrder, "id" | "orderNumber" | "customerName">) => {/* not implemented */};
-    const updateSalesOrder = (order: T.SalesOrder) => {/* not implemented */};
-    const deleteSalesOrder = (orderId: number) => {/* not implemented */};
-    const updateSalesOrderStatus = (orderId: number, newStatus: T.SalesOrderStatus) => {/* not implemented */};
-    const convertOrderToInvoice = (orderId: number) => {/* not implemented */};
-    const confirmPickList = (pickListId: number) => {/* not implemented */};
-    const addProduct = (productData: Omit<T.Product, "id">, initialStock?: { warehouseId: number, quantity: number }) => {/* not implemented */};
-    const updateProduct = (product: T.Product) => {/* not implemented */};
-    const deleteProduct = (id: number) => {/* not implemented */};
-    const addWarehouse = (warehouseData: Omit<T.Warehouse, "id">) => {/* not implemented */};
-    const updateWarehouse = (warehouse: T.Warehouse) => {/* not implemented */};
-    const deleteWarehouse = (id: number) => {/* not implemented */};
-    const addInventoryTransfer = (transferData: Omit<T.InventoryTransfer, "id" | "transferNumber" | "status">) => {/* not implemented */};
-    const addInventoryAdjustment = (adjustmentData: Omit<T.InventoryAdjustment, "id" | "adjustmentNumber" | "status">) => {/* not implemented */};
-    const receivePurchaseOrderItems = (poId: number, itemsToReceive: { productId: number, quantity: number, details: (string | { batch: string, expiry: string })[] }[], warehouseId: number) => {/* not implemented */};
-    const addPurchaseOrder = (poData: Omit<T.PurchaseOrder, "id" | "poNumber" | "supplierName">) => {/* not implemented */};
-    const updatePurchaseOrder = (po: T.PurchaseOrder) => {/* not implemented */};
-    const updatePurchaseOrderStatus = (poId: number, status: T.PurchaseOrderStatus) => {/* not implemented */};
-    const createBillFromPO = (poId: number) => {/* not implemented */};
-    const convertDealToSalesOrder = (deal: T.Deal) => {/* not implemented */};
-    const allocateStockToSalesOrder = (soId: number, allocations: { [productId: string]: number[] }) => {/* not implemented */};
-    const createShipmentFromSalesOrder = (soId: number, itemsToShip: T.ShipmentItem[]) => {/* not implemented */};
-    const createPickList = (shipmentIds: number[]) => {/* not implemented */};
-    const addAutomation = (auto: Omit<T.Automation, "id" | "lastRun">) => {/* not implemented */};
-    const updateAutomation = (auto: T.Automation) => {/* not implemented */};
-    const deleteAutomation = (autoId: number) => {/* not implemented */};
-    const updateSystemList = (key: T.SystemListKey, items: T.SystemListItem[]) => {/* not implemented */};
-    const updateEmailTemplate = (template: T.EmailTemplate) => {/* not implemented */};
-    const addPriceList = (list: Omit<T.PriceList, "id">) => {/* not implemented */};
-    const updatePriceList = (list: T.PriceList) => {/* not implemented */};
-    const deletePriceList = (listId: number) => {/* not implemented */};
-    const updatePriceListItems = (listId: number, items: T.PriceListItem[]) => {/* not implemented */};
-    const addTaxRate = (rate: Omit<T.TaxRate, "id">) => {/* not implemented */};
-    const updateTaxRate = (rate: T.TaxRate) => {/* not implemented */};
-    const deleteTaxRate = (rateId: number) => {/* not implemented */};
-    const addAccount = (account: Omit<T.Account, "id">) => {/* not implemented */};
-    const updateAccount = (account: T.Account) => {/* not implemented */};
-    const addJournalEntry = (entryData: Omit<T.JournalEntry, 'id' | 'entryNumber'>) => { return {} as T.JournalEntry; };
-    const updateJournalEntry = (entry: T.JournalEntry) => {/* not implemented */};
-    const deleteJournalEntry = (entryId: number) => {/* not implemented */};
-    const reverseJournalEntry = (entryId: number) => { return undefined; };
-    const addRecurringJournalEntry = (template: Omit<T.RecurringJournalEntry, 'id'>) => {/* not implemented */};
-    const updateRecurringJournalEntry = (template: T.RecurringJournalEntry) => {/* not implemented */};
-    const deleteRecurringJournalEntry = (templateId: number) => {/* not implemented */};
-    const generateEntryFromRecurringTemplate = async (templateId: number) => { return undefined; };
-    const addBudget = (budget: Omit<T.Budget, 'id'>) => {/* not implemented */};
-    const updateBudget = (budget: T.Budget) => {/* not implemented */};
-    const deleteBudget = (budgetId: number) => {/* not implemented */};
-    const addCostCenter = (costCenter: Omit<T.CostCenter, 'id'>) => {/* not implemented */};
-    const updateCostCenter = (costCenter: T.CostCenter) => {/* not implemented */};
-    const deleteCostCenter = (costCenterId: number) => {/* not implemented */};
-    const addWidgetToDashboard = (widgetId: string) => {/* not implemented */};
-    const removeWidgetFromDashboard = (id: string) => {/* not implemented */};
-    const hasPermission = (permission: T.Permission) => { return true; };
-    const addDeal = (dealData: Omit<T.Deal, 'id' | 'customerName' | 'assignedToName' | 'value' | 'lastActivityDate'>) => {/* not implemented */};
-    const updateDeal = (deal: T.Deal) => {/* not implemented */};
-    const updateDealStage = (dealId: number, newStage: T.DealStage) => {/* not implemented */};
-    const updateDealWinLossReason = (dealId: number, stage: T.DealStage.Won | T.DealStage.Lost, reason: string) => {/* not implemented */};
-    const deleteDeal = (id: number) => {/* not implemented */};
-    const addProject = (projectData: Omit<T.Project, 'id' | 'client'>) => {/* not implemented */};
-    const updateProject = (project: T.Project) => {/* not implemented */};
-    const deleteProject = (id: number) => {/* not implemented */};
-    const addTask = (taskData: Omit<T.Task, 'id' | 'assignedToName' | 'relatedEntityName'>, subtaskTitles?: string[]) => { return undefined; };
-    const updateTask = (task: T.Task, options?: { silent?: boolean }) => {/* not implemented */};
-    const updateRecurringTask = (task: T.Task, updateData: Partial<T.Task>, scope: 'this' | 'all', options?: { silent?: boolean }) => {/* not implemented */};
-    const deleteTask = (id: number) => {/* not implemented */};
-    const updateTaskStatus = (taskId: number, newStatus: T.TaskStatus) => {/* not implemented */};
-    const addSubtask = (parentId: number, title: string) => {/* not implemented */};
-    const addTaskDependency = (taskId: number, dependsOnId: number) => {/* not implemented */};
-    const removeTaskDependency = (taskId: number, dependsOnId: number) => {/* not implemented */};
-    const deleteMultipleTasks = (taskIds: number[]) => {/* not implemented */};
-    const logTimeOnTask = (taskId: number, minutes: number) => {/* not implemented */};
-    const toggleTaskStar = (taskId: number) => {/* not implemented */};
-    const createTasksFromTemplate = (templateId: number, startDate: string, relatedEntityType?: 'customer' | 'project' | 'deal', relatedEntityId?: number) => {/* not implemented */};
-    const addAttachmentToTask = (taskId: number, attachment: T.Attachment) => {/* not implemented */};
-    const deleteAttachmentFromTask = (taskId: number, attachmentId: number) => {/* not implemented */};
-    const addInvoice = (invoiceData: Omit<T.Invoice, 'id' | 'invoiceNumber' | 'customerName'>) => { return {} as T.Invoice; };
-    const updateInvoice = (invoice: T.Invoice) => {/* not implemented */};
-    const bulkUpdateInvoiceStatus = (invoiceIds: number[], newStatus: T.InvoiceStatus) => {/* not implemented */};
-    const deleteInvoice = (id: number) => {/* not implemented */};
-    const addBill = (bill: Omit<T.Bill, 'id'>) => { return undefined; };
-    const updateBill = (bill: T.Bill) => {/* not implemented */};
-    const bulkUpdateBillStatus = (billIds: number[], newStatus: T.BillStatus) => {/* not implemented */};
-    const addSupplier = (supplierData: Omit<T.Supplier, "id" | "avatar">) => {/* not implemented */};
-    const updateSupplier = (supplier: T.Supplier) => {/* not implemented */};
-    const deleteSupplier = (id: number) => {/* not implemented */};
-    const deletePurchaseOrder = (id: number) => {/* not implemented */};
-    const addEmployee = (employeeData: Omit<T.Employee, "id" | "avatar" | "employeeId">) => {/* not implemented */};
-    const updateEmployee = (employee: T.Employee) => {/* not implemented */};
-    const deleteEmployee = (id: number) => {/* not implemented */};
-    const addLeaveRequest = (requestData: Omit<T.LeaveRequest, "id" | "employeeName" | "status">) => {/* not implemented */};
-    const updateLeaveRequestStatus = (requestId: number, newStatus: T.LeaveStatus) => {/* not implemented */};
-    const addBankAccount = (accountData: Omit<T.BankAccount, "id">) => {/* not implemented */};
-    const updateBankAccount = (account: T.BankAccount) => {/* not implemented */};
-    const deleteBankAccount = (id: number) => {/* not implemented */};
-    const addTransaction = (transactionData: Omit<T.Transaction, "id">) => {/* not implemented */};
-    const updateTransaction = (transaction: T.Transaction) => {/* not implemented */};
-    const deleteTransaction = (id: number) => {/* not implemented */};
-    const addTicket = (ticketData: Omit<T.SupportTicket, "id" | "ticketNumber" | "customerName" | "assignedToName" | "createdDate">) => {/* not implemented */};
-    const updateTicket = (ticket: T.SupportTicket) => {/* not implemented */};
-    const deleteTicket = (id: number) => {/* not implemented */};
-    const addDocument = (docData: Omit<T.Document, "id" | "uploadedByName">) => {/* not implemented */};
-    const renameDocument = (docId: number, newName: string) => {/* not implemented */};
-    const deleteDocument = (id: number) => {/* not implemented */};
-    const deleteMultipleDocuments = (ids: number[]) => {/* not implemented */};
-    const addFolder = (folderName: string, parentId: number | null) => {/* not implemented */};
-    const moveDocuments = (docIds: number[], targetFolderId: number | null) => {/* not implemented */};
-    const toggleDocumentStar = (docId: number) => {/* not implemented */};
-    const shareDocument = (docId: number, shares: T.DocumentShare[]) => {/* not implemented */};
-    const addComment = (text: string, entityType: 'customer' | 'project' | 'deal' | 'task' | 'ticket' | 'sales_order', entityId: number) => {/* not implemented */};
-    const updateComment = (comment: T.Comment) => {/* not implemented */};
-    const deleteComment = (commentId: number) => {/* not implemented */};
-    const updateCommunicationLog = (log: T.CommunicationLog) => {/* not implemented */};
-    const deleteCommunicationLog = (logId: number) => {/* not implemented */};
-    const addSalesActivity = (activityData: Omit<T.SalesActivity, "id" | "userName" | "userAvatar" | "timestamp">) => {/* not implemented */};
-    const addPerformanceReview = (reviewData: Omit<T.PerformanceReview, "id" | "employeeName" | "reviewerName">) => {/* not implemented */};
-    const updatePerformanceReview = (review: T.PerformanceReview) => {/* not implemented */};
-    const addJobOpening = (jobData: Omit<T.JobOpening, "id">) => {/* not implemented */};
-    const updateJobOpening = (job: T.JobOpening) => {/* not implemented */};
-    const addCandidate = (candidateData: Omit<T.Candidate, "id">) => {/* not implemented */};
-    const updateCandidate = (candidate: T.Candidate) => {/* not implemented */};
-    const updateCandidateStage = (candidateId: number, newStage: T.CandidateStage) => {/* not implemented */};
-    const addOnboardingTemplate = (templateData: Omit<T.OnboardingTemplate, "id">) => {/* not implemented */};
-    const updateOnboardingTemplate = (template: T.OnboardingTemplate) => {/* not implemented */};
-    const startOnboardingWorkflow = (data: { employeeId: number, templateId: number }) => {/* not implemented */};
-    const updateOnboardingWorkflowStatus = (workflowId: number, itemIndex: number, isCompleted: boolean) => {/* not implemented */};
-    const addPayrollRun = (payPeriod: string) => { return undefined; };
-    const updatePayrollRunStatus = (runId: number, status: T.PayrollRun['status'], journalEntryId?: number) => {/* not implemented */};
-    const postPayrollRunToJournal = (runId: number) => {/* not implemented */};
-    const exportPayrollRunToAphbXml = (runId: number) => {/* not implemented */};
-    const updatePayslip = (payslip: Partial<T.Payslip> & { id: number; }) => {/* not implemented */};
-    const calculateTerminationPayments = (employeeId: number, terminationDate: string, additionalGrossPay: number, additionalBonuses: number, usedAnnualLeave: number) => { return null; };
-    const calculateAnnualLeaveBalance = (employeeId: number) => { return { entitled: 0, used: 0, balance: 0 }; };
-    const calculatePayrollCost = (grossSalary: number) => { return {} as T.PayrollSimulationResult; };
-    const updateCompanyInfo = (info: T.CompanyInfo) => {/* not implemented */};
-    const updateBrandingSettings = (settings: T.BrandingSettings) => {/* not implemented */};
-    const updateSecuritySettings = (settings: T.SecuritySettings) => {/* not implemented */};
-    const updateCounters = (settings: T.CountersSettings) => {/* not implemented */};
-    const addRole = (roleData: Omit<T.Role, "id" | "isSystemRole">, cloneFromRoleId?: string) => {/* not implemented */};
-    const updateRolePermissions = (roleId: string, permissions: T.Permission[]) => {/* not implemented */};
-    const deleteRole = (roleId: string) => {/* not implemented */};
-    const addCustomField = (fieldData: Omit<T.CustomFieldDefinition, "id">) => {/* not implemented */};
-    const updateCustomField = (field: T.CustomFieldDefinition) => {/* not implemented */};
-    const deleteCustomField = (id: number) => {/* not implemented */};
-    const markNotificationAsRead = (id: number) => {/* not implemented */};
-    const clearAllNotifications = () => {/* not implemented */};
-    const createProjectFromDeal = (deal: T.Deal) => {/* not implemented */};
-    const createTasksFromDeal = (deal: T.Deal) => {/* not implemented */};
-    const updateAccountingLockDate = (date: string | null) => {/* not implemented */};
-    const addStockMovement = (productId: number, warehouseId: number, type: T.StockMovementType, quantityChange: number, notes?: string, relatedDocumentId?: number) => {/* not implemented */};
-    const addExpense = (expenseData: Omit<T.Expense, 'id' | 'employeeName' | 'status'>) => {/* not implemented */};
-    const updateExpenseStatus = (expenseId: number, status: T.ExpenseStatus) => {/* not implemented */};
-    const addAsset = (assetData: Omit<T.Asset, 'id'>) => {/* not implemented */};
-    const updateAsset = (asset: T.Asset) => {/* not implemented */};
-    const updateHrParameters = (params: T.HrParameters) => {/* not implemented */};
+    const addTask = useCallback((taskData: Omit<T.Task, 'id' | 'assignedToName' | 'relatedEntityName'>, subtaskTitles: string[] = []): T.Task | undefined => {
+        const assignee = employees.find(e => e.id === taskData.assignedToId);
+        let relatedEntityName = '';
+        if (taskData.relatedEntityType && taskData.relatedEntityId) {
+            switch (taskData.relatedEntityType) {
+                case 'customer': relatedEntityName = customers.find(c => c.id === taskData.relatedEntityId)?.name || ''; break;
+                case 'project': relatedEntityName = projects.find(p => p.id === taskData.relatedEntityId)?.name || ''; break;
+                case 'deal': relatedEntityName = deals.find(d => d.id === taskData.relatedEntityId)?.title || ''; break;
+            }
+        }
+        
+        const newTask: T.Task = {
+            ...taskData,
+            id: Date.now(),
+            assignedToName: assignee?.name || 'Atanmamış',
+            relatedEntityName
+        };
+        
+        const newSubtasks: T.Task[] = subtaskTitles.map((title, i) => ({
+            id: Date.now() + i + 1,
+            title,
+            description: '',
+            status: T.TaskStatus.Todo,
+            priority: T.TaskPriority.Normal,
+            dueDate: newTask.dueDate,
+            assignedToId: newTask.assignedToId,
+            assignedToName: newTask.assignedToName,
+            parentId: newTask.id,
+        }));
+        
+        setTasks(prev => [newTask, ...newSubtasks, ...prev]);
+        logActivity(T.ActionType.TASK_CREATED, `Görev '${newTask.title}' oluşturuldu.`, 'task', newTask.id);
+        
+        return newTask;
+    }, [setTasks, employees, projects, deals, customers, logActivity]);
+    
+    const addTicket = useCallback((ticketData: Omit<T.SupportTicket, 'id' | 'ticketNumber' | 'customerName' | 'assignedToName' | 'createdDate'>) => {
+        const customer = customers.find(c => c.id === ticketData.customerId);
+        const assignee = employees.find(e => e.id === ticketData.assignedToId);
+        
+        const newTicket: T.SupportTicket = {
+            ...ticketData,
+            id: Date.now(),
+            ticketNumber: `TICKET-${Date.now()}`,
+            customerName: customer?.name || 'Bilinmeyen Müşteri',
+            assignedToName: assignee?.name || 'Atanmamış',
+            createdDate: new Date().toISOString().split('T')[0]
+        };
+        
+        setTickets(prev => [newTicket, ...prev]);
+        logActivity(T.ActionType.CREATED, `Destek talebi '${newTicket.subject}' oluşturuldu.`, 'ticket', newTicket.id);
+    }, [setTickets, employees, customers, logActivity]);
+    
+    const addSalesOrder = useCallback((orderData: Omit<T.SalesOrder, "id" | "orderNumber" | "customerName">) => {
+        const customer = customers.find(c => c.id === orderData.customerId);
+        const newOrder: T.SalesOrder = {
+            ...orderData,
+            id: Date.now(),
+            orderNumber: `SO-${Date.now()}`,
+            customerName: customer?.name || 'Bilinmeyen Müşteri'
+        };
+        setSalesOrders(prev => [newOrder, ...prev]);
+        logActivity(T.ActionType.CREATED, `Satış Siparişi '${newOrder.orderNumber}' oluşturuldu.`, 'sales_order', newOrder.id);
+    }, [setSalesOrders, customers, logActivity]);
 
-    // END: Dummy implementations
+    const addQuotation = useCallback((quotationData: Omit<T.Quotation, 'id' | 'quotationNumber' | 'customerName'>): T.Quotation => {
+        const customer = customers.find(c => c.id === quotationData.customerId);
+        const newQuotation: T.Quotation = {
+            ...quotationData,
+            id: Date.now(),
+            quotationNumber: `QT-${Date.now()}`,
+            customerName: customer?.name || 'Bilinmeyen Müşteri',
+        };
+        setQuotations(prev => [newQuotation, ...prev]);
+        logActivity(T.ActionType.CREATED, `Teklif #${newQuotation.quotationNumber} oluşturuldu.`, 'quotation', newQuotation.id);
+        return newQuotation;
+    }, [setQuotations, customers, logActivity]);
 
-    const value: T.AppContextType = {
-        ...customerHookData,
+    const updateQuotation = useCallback((quotation: T.Quotation) => {
+        setQuotations(prev => prev.map(q => q.id === quotation.id ? quotation : q));
+        logActivity(T.ActionType.UPDATED, `Teklif #${quotation.quotationNumber} güncellendi.`, 'quotation', quotation.id);
+    }, [setQuotations, logActivity]);
+
+    const deleteQuotation = useCallback((id: number) => {
+        const quotation = quotations.find(q => q.id === id);
+        if (quotation) {
+            setQuotations(prev => prev.filter(q => q.id !== id));
+            logActivity(T.ActionType.DELETED, `Teklif #${quotation.quotationNumber} silindi.`, 'quotation', id);
+        }
+    }, [quotations, setQuotations, logActivity]);
+
+    const convertQuotationToSalesOrder = useCallback((quotationId: number): T.SalesOrder | undefined => {
+        const quotation = quotations.find(q => q.id === quotationId);
+        if (!quotation) {
+            console.error(`Quotation with id ${quotationId} not found.`);
+            return undefined;
+        }
+
+        const customer = customers.find(c => c.id === quotation.customerId);
+        if (!customer) {
+            console.error(`Customer with id ${quotation.customerId} not found for quotation.`);
+            return undefined;
+        }
+
+        const orderItems: T.SalesOrderItem[] = quotation.items.map(item => ({
+            productId: item.productId,
+            productName: item.productName,
+            quantity: item.quantity,
+            price: item.unitPrice,
+            discountRate: item.discountRate,
+            taxRate: item.taxRate,
+            committedStockItemIds: [],
+            shippedQuantity: 0,
+        }));
+        
+        const newOrder: T.SalesOrder = {
+            id: Date.now(),
+            orderNumber: `SO-${Date.now()}`,
+            customerId: quotation.customerId,
+            customerName: customer.name,
+            orderDate: new Date().toISOString().split('T')[0],
+            items: orderItems,
+            status: T.SalesOrderStatus.OnayBekliyor,
+            shippingAddress: customer.shippingAddress,
+            billingAddress: customer.billingAddress,
+            notes: `Teklif #${quotation.quotationNumber} üzerinden oluşturuldu.`,
+            subTotal: quotation.subTotal,
+            totalDiscount: quotation.totalDiscount,
+            totalTax: quotation.totalTax,
+            shippingCost: 0, // Assuming no shipping cost from quotation
+            grandTotal: quotation.grandTotal,
+            dealId: quotation.dealId,
+        };
+        
+        setSalesOrders(prev => [newOrder, ...prev]);
+        
+        // Mark quotation as converted
+        updateQuotation({ ...quotation, status: T.QuotationStatus.Accepted, salesOrderId: newOrder.id });
+
+        logActivity(T.ActionType.CREATED, `Teklif #${quotation.quotationNumber} satış siparişine dönüştürüldü: #${newOrder.orderNumber}.`, 'sales_order', newOrder.id);
+        
+        return newOrder;
+    }, [quotations, updateQuotation, customers, setSalesOrders, logActivity]);
+    
+    const addLead = useCallback((leadData: Omit<T.Lead, 'id'>): T.Lead => {
+        const newLead: T.Lead = { id: Date.now(), ...leadData };
+        setLeads(prev => [newLead, ...prev]);
+        logActivity(T.ActionType.CREATED, `Potansiyel müşteri '${newLead.name}' oluşturuldu.`, 'lead', newLead.id);
+        return newLead;
+    }, [setLeads, logActivity]);
+
+    const convertLead = useCallback((leadId: number): { customer: T.Customer; contact: T.Contact; deal: T.Deal } | undefined => {
+        const lead = leads.find(l => l.id === leadId);
+        if (!lead) return undefined;
+
+        // Create Customer
+        const newCustomerData: Omit<T.Customer, 'id' | 'avatar'> = {
+            name: lead.company || lead.name,
+            company: lead.company || lead.name,
+            email: lead.email,
+            phone: lead.phone,
+            lastContact: new Date().toISOString().split('T')[0],
+            status: 'potensiyel',
+            industry: 'Bilinmiyor',
+            tags: ['dönüştürüldü'],
+            assignedToId: lead.assignedToId,
+            leadSource: lead.source,
+            accountType: 'Tüzel Kişi',
+            accountCode: `C${Date.now()}`,
+            taxId: '',
+            taxOffice: '',
+            billingAddress: { country: 'Türkiye', city: '', district: '', streetAddress: '', postalCode: '', email: lead.email, phone: lead.phone, coordinates: { lat: 0, lng: 0 } },
+            shippingAddress: { country: 'Türkiye', city: '', district: '', streetAddress: '', postalCode: '', email: lead.email, phone: lead.phone, coordinates: { lat: 0, lng: 0 } },
+            iban: '',
+            openingBalance: 0,
+            currency: 'TRY',
+            openingDate: new Date().toISOString().split('T')[0],
+        };
+        const newCustomer = addCustomer(newCustomerData);
+
+        // Create Contact
+        const newContactData: Omit<T.Contact, 'id'> = {
+            customerId: newCustomer.id,
+            name: lead.name,
+            title: 'İlgili Kişi',
+            email: lead.email,
+            phone: lead.phone,
+        };
+        addContact(newContactData);
+        
+        // Create Deal
+        const newDealData: Omit<T.Deal, 'id' | 'customerName' | 'assignedToName' | 'value' | 'lastActivityDate'> = {
+            title: `${lead.company || lead.name} Anlaşması`,
+            customerId: newCustomer.id,
+            stage: T.DealStage.Lead,
+            closeDate: new Date(new Date().setDate(new Date().getDate() + 30)).toISOString().split('T')[0],
+            assignedToId: lead.assignedToId,
+            lineItems: [],
+        };
+        const newDeal = addDeal(newDealData);
+
+        // Update lead status (or delete it)
+        setLeads(prev => prev.filter(l => l.id !== leadId));
+        logActivity(T.ActionType.LEAD_CONVERTED, `Potansiyel müşteri '${lead.name}' müşteriye dönüştürüldü.`, 'lead', lead.id);
+        const newContact = contacts.find(c => c.customerId === newCustomer.id && c.name === lead.name) || ({} as T.Contact);
+
+        return { customer: newCustomer, contact: newContact, deal: newDeal };
+    }, [leads, setLeads, addCustomer, addContact, addDeal, contacts, logActivity]);
+    
+    const hasPermission = useCallback((permission: T.Permission) => {
+        const userRole = currentUser.role;
+        if (!userRole || !rolesPermissions[userRole]) {
+            return false;
+        }
+        if (userRole === 'admin') return true; // Admins have all permissions
+        return rolesPermissions[userRole].includes(permission);
+    }, [currentUser, rolesPermissions]);
+
+    const value: T.AppContextType = useMemo(() => ({
+        customers: customersWithAssignee,
+        addCustomer,
+        updateCustomer: originalUpdateCustomer,
+        updateCustomerStatus: originalUpdateCustomerStatus,
+        bulkUpdateCustomerStatus,
+        assignCustomersToEmployee,
+        addTagsToCustomers,
+        deleteCustomer: originalDeleteCustomer,
+        deleteMultipleCustomers: originalDeleteMultipleCustomers,
+        importCustomers,
         contacts,
+        addContact,
+        updateContact,
+        deleteContact,
+        communicationLogs,
+        addCommunicationLog,
+        updateCommunicationLog: (log) => setCommunicationLogs(prev => prev.map(l => l.id === log.id ? log : l)),
+        deleteCommunicationLog: (logId) => setCommunicationLogs(prev => prev.filter(l => l.id !== logId)),
+        savedViews,
+        addSavedView,
+        deleteSavedView,
+        loadSavedView,
         deals,
         projects,
         tasks,
@@ -383,11 +560,9 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         documents,
         comments,
         salesActivities,
-        communicationLogs,
         activityLogs,
-        savedViews,
         customFieldDefinitions,
-        dashboardLayout, setDashboardLayout,
+        dashboardLayout,
         companyInfo,
         brandingSettings,
         securitySettings,
@@ -420,195 +595,278 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         budgets,
         costCenters,
         accountingLockDate,
-        currentUser, setCurrentUser,
+        currentUser,
         expenses,
         assets,
         hrParameters,
-        salesReturns, addSalesReturn, updateSalesReturn, deleteSalesReturn,
-        isManager,
-        itemCount,
-        addToCart,
-        removeFromCart,
-        updateCartQuantity,
-        clearCart,
-        createSalesOrderFromCart,
-        addScheduledTask,
-        updateScheduledTask,
-        deleteScheduledTask,
-        runScheduledTasksCheck,
-        addTaskTemplate,
-        updateTaskTemplate,
-        deleteTaskTemplate,
-        addBom,
-        updateBom,
-        addWorkOrder,
-        updateWorkOrderStatus,
-        getProductStockInfo,
-        getProductStockByWarehouse,
+        salesReturns,
+        addSalesReturn: (returnData: Omit<T.SalesReturn, 'id' | 'returnNumber' | 'customerName'>) => {
+            const customer = customers.find(c => c.id === returnData.customerId);
+            if (!customer) return undefined;
+            const newReturn: T.SalesReturn = {
+                ...returnData,
+                id: Date.now(),
+                returnNumber: `RTN-${Date.now()}`,
+                customerName: customer.name
+            };
+            setSalesReturns(prev => [...prev, newReturn]);
+            return newReturn;
+        },
+        updateSalesReturn: (salesReturn: T.SalesReturn) => setSalesReturns(prev => prev.map(sr => sr.id === salesReturn.id ? salesReturn : sr)),
+        deleteSalesReturn: (id: number) => setSalesReturns(prev => prev.filter(sr => sr.id !== id)),
+        quotations,
+        addQuotation,
+        updateQuotation,
+        deleteQuotation,
+        convertQuotationToSalesOrder,
+        leads,
+        addLead,
+        convertLead,
+        commissionRecords,
+        createCommissionRecord,
+        setCurrentUser,
+        isManager: (employeeId: number) => employees.some(e => e.managerId === employeeId),
+        itemCount: cartItems.reduce((sum, item) => sum + item.quantity, 0),
+        addToCart: (product, quantity) => {
+            setCartItems(prev => {
+                const existingItem = prev.find(item => item.productId === product.id);
+                if (existingItem) {
+                    return prev.map(item => item.productId === product.id ? { ...item, quantity: item.quantity + quantity } : item);
+                }
+                return [...prev, { productId: product.id, productName: product.name, quantity, price: product.price, sku: product.sku }];
+            });
+        },
+        removeFromCart: (productId) => setCartItems(prev => prev.filter(item => item.productId !== productId)),
+        updateCartQuantity: (productId, quantity) => setCartItems(prev => prev.map(item => item.productId === productId ? { ...item, quantity: Math.max(0, quantity) } : item).filter(item => item.quantity > 0)),
+        clearCart: () => setCartItems([]),
+        createSalesOrderFromCart: (customerId: number) => {
+            if (cartItems.length === 0) {
+                console.warn("Cart is empty, cannot create sales order.");
+                return;
+            }
+            const customer = customers.find(c => c.id === customerId);
+            if (!customer) {
+                console.error("Customer not found for sales order creation.");
+                return;
+            }
+    
+            const orderItems: T.SalesOrderItem[] = cartItems.map(item => {
+                const product = products.find(p => p.id === item.productId);
+                return {
+                    productId: item.productId,
+                    productName: item.productName,
+                    quantity: item.quantity,
+                    price: item.price,
+                    discountRate: 0,
+                    taxRate: product?.financials.vatRate || 20,
+                    committedStockItemIds: [],
+                    shippedQuantity: 0,
+                };
+            });
+    
+            const subTotal = orderItems.reduce((sum, item) => sum + item.quantity * item.price, 0);
+            const totalDiscount = 0;
+            const totalTax = orderItems.reduce((sum, item) => {
+                const lineTotal = item.quantity * item.price;
+                return sum + (lineTotal * (item.taxRate / 100));
+            }, 0);
+            const shippingCost = 0;
+            const grandTotal = subTotal + totalTax + shippingCost;
+            
+            const newOrderData: Omit<T.SalesOrder, "id" | "orderNumber" | "customerName"> = {
+                customerId: customerId,
+                orderDate: new Date().toISOString().split('T')[0],
+                items: orderItems,
+                status: T.SalesOrderStatus.OnayBekliyor,
+                shippingAddress: customer.shippingAddress,
+                billingAddress: customer.billingAddress,
+                notes: 'Sepetten oluşturuldu.',
+                subTotal,
+                totalDiscount,
+                totalTax,
+                shippingCost,
+                grandTotal,
+            };
+            
+            addSalesOrder(newOrderData);
+            setCartItems([]);
+            logActivity(T.ActionType.CREATED, `Sepetten ${customer.name} için yeni bir satış siparişi oluşturuldu.`, 'sales_order');
+        },
+        addScheduledTask: (schedule) => setScheduledTasks(prev => [...prev, { ...schedule, id: Date.now() }]),
+        updateScheduledTask: (schedule) => setScheduledTasks(prev => prev.map(s => s.id === schedule.id ? schedule : s)),
+        deleteScheduledTask: (scheduleId) => setScheduledTasks(prev => prev.filter(s => s.id !== scheduleId)),
+        runScheduledTasksCheck: () => {}, // Mock implementation
+        addTaskTemplate: (templateData) => setTaskTemplates(prev => [...prev, { ...templateData, id: Date.now() }]),
+        updateTaskTemplate: (template) => setTaskTemplates(prev => prev.map(t => t.id === template.id ? template : t)),
+        deleteTaskTemplate: (templateId) => setTaskTemplates(prev => prev.filter(t => t.id !== templateId)),
+        addBom: (bomData) => setBoms(prev => [...prev, { ...bomData, id: Date.now(), productName: products.find(p => p.id === bomData.productId)?.name || '' }]),
+        updateBom: (bom) => setBoms(prev => prev.map(b => b.id === bom.id ? bom : b)),
+        addWorkOrder: (woData) => {
+             const newWO = { ...woData, id: Date.now(), workOrderNumber: `WO-${Date.now()}`, productName: products.find(p => p.id === woData.productId)?.name || '' };
+             setWorkOrders(prev => [...prev, newWO]);
+             return newWO;
+        },
+        updateWorkOrderStatus: (workOrderId, newStatus) => setWorkOrders(prev => prev.map(wo => wo.id === workOrderId ? { ...wo, status: newStatus } : wo)),
+        getProductStockInfo: (productId) => ({ physical: 0, committed: 0, available: 0 }), // Mock
+        getProductStockByWarehouse: (productId, warehouseId) => ({ physical: 0, committed: 0, available: 0 }), // Mock
         addSalesOrder,
-        updateSalesOrder,
-        deleteSalesOrder,
-        updateSalesOrderStatus,
-        convertOrderToInvoice,
-        confirmPickList,
-        addProduct,
-        updateProduct,
-        deleteProduct,
-        addWarehouse,
-        updateWarehouse,
-        deleteWarehouse,
-        addInventoryTransfer,
-        addInventoryAdjustment,
-        receivePurchaseOrderItems,
-        addPurchaseOrder,
-        updatePurchaseOrder,
-        updatePurchaseOrderStatus,
-        createBillFromPO,
-        convertDealToSalesOrder,
-        allocateStockToSalesOrder,
-        createShipmentFromSalesOrder,
-        createPickList,
-        addAutomation,
-        updateAutomation,
-        deleteAutomation,
-        updateSystemList,
-        updateEmailTemplate,
-        addPriceList,
-        updatePriceList,
-        deletePriceList,
-        updatePriceListItems,
-        addTaxRate,
-        updateTaxRate,
-        deleteTaxRate,
-        addAccount,
-        updateAccount,
-        addJournalEntry,
-        updateJournalEntry,
-        deleteJournalEntry,
-        reverseJournalEntry,
-        addRecurringJournalEntry,
-        updateRecurringJournalEntry,
-        deleteRecurringJournalEntry,
-        generateEntryFromRecurringTemplate,
-        addBudget,
-        updateBudget,
-        deleteBudget,
-        addCostCenter,
-        updateCostCenter,
-        deleteCostCenter,
-        addWidgetToDashboard,
-        removeWidgetFromDashboard,
+        updateSalesOrder: (order) => setSalesOrders(prev => prev.map(o => o.id === order.id ? order : o)),
+        deleteSalesOrder: (orderId) => setSalesOrders(prev => prev.filter(o => o.id !== orderId)),
+        updateSalesOrderStatus: (orderId, newStatus) => setSalesOrders(prev => prev.map(o => o.id === orderId ? { ...o, status: newStatus } : o)),
+        convertOrderToInvoice: (orderId) => {}, // Mock
+        confirmPickList: (pickListId) => {}, // Mock
+        addProduct: (productData, initialStock) => setProducts(prev => [...prev, { ...productData, id: Date.now() }]),
+        updateProduct: (product) => setProducts(prev => prev.map(p => p.id === product.id ? product : p)),
+        deleteProduct: (id) => setProducts(prev => prev.filter(p => p.id !== id)),
+        addWarehouse: (warehouseData) => setWarehouses(prev => [...prev, { ...warehouseData, id: Date.now() }]),
+        updateWarehouse: (warehouse) => setWarehouses(prev => prev.map(w => w.id === warehouse.id ? warehouse : w)),
+        deleteWarehouse: (id) => setWarehouses(prev => prev.filter(w => w.id !== id)),
+        addInventoryTransfer: (transferData) => {}, // Mock
+        addInventoryAdjustment: (adjustmentData) => {}, // Mock
+        receivePurchaseOrderItems: (poId, itemsToReceive, warehouseId) => {}, // Mock
+        addPurchaseOrder: (poData) => {}, // Mock
+        updatePurchaseOrder: (po) => {}, // Mock
+        updatePurchaseOrderStatus: (poId, status) => {}, // Mock
+        createBillFromPO: (poId) => {}, // Mock
+        convertDealToSalesOrder: (deal) => {}, // Mock
+        allocateStockToSalesOrder: (soId, allocations) => {}, // Mock
+        createShipmentFromSalesOrder: (soId, itemsToShip) => {}, // Mock
+        createPickList: (shipmentIds) => {}, // Mock
+        addAutomation: (auto) => {}, // Mock
+        updateAutomation: (auto) => {}, // Mock
+        deleteAutomation: (autoId) => {}, // Mock
+        updateSystemList: (key, items) => {}, // Mock
+        updateEmailTemplate: (template) => {}, // Mock
+        addPriceList: (list) => {}, // Mock
+        updatePriceList: (list) => {}, // Mock
+        deletePriceList: (listId) => {}, // Mock
+        updatePriceListItems: (listId, items) => {}, // Mock
+        addTaxRate: (rate) => {}, // Mock
+        updateTaxRate: (rate) => {}, // Mock
+        deleteTaxRate: (rateId) => {}, // Mock
+        addAccount: (account) => {}, // Mock
+        updateAccount: (account) => {}, // Mock
+        addJournalEntry: (entryData) => { return {} as T.JournalEntry; }, // Mock
+        updateJournalEntry: (entry) => {}, // Mock
+        deleteJournalEntry: (entryId) => {}, // Mock
+        reverseJournalEntry: (entryId) => { return undefined; }, // Mock
+        addRecurringJournalEntry: (template) => {}, // Mock
+        updateRecurringJournalEntry: (template) => {}, // Mock
+        deleteRecurringJournalEntry: (templateId) => {}, // Mock
+        generateEntryFromRecurringTemplate: async (templateId) => { return undefined; }, // Mock
+        addBudget: (budget) => {}, // Mock
+        updateBudget: (budget) => {}, // Mock
+        deleteBudget: (budgetId) => {}, // Mock
+        addCostCenter: (costCenter) => {}, // Mock
+        updateCostCenter: (costCenter) => {}, // Mock
+        deleteCostCenter: (costCenterId) => {}, // Mock
+        setDashboardLayout,
+        addWidgetToDashboard: (widgetId: string) => {}, // Mock
+        removeWidgetFromDashboard: (id: string) => {}, // Mock
         hasPermission,
-        addSavedView,
-        deleteSavedView,
-        loadSavedView,
-        addContact,
-        updateContact,
-        deleteContact,
         addDeal,
-        updateDeal,
+        updateDeal: (deal) => setDeals(prev => prev.map(d => d.id === deal.id ? deal : d)),
         updateDealStage,
-        updateDealWinLossReason,
-        deleteDeal,
+        updateDealWinLossReason: (dealId, stage, reason) => {}, // Mock
+        deleteDeal: (id) => setDeals(prev => prev.filter(d => d.id !== id)),
         addProject,
-        updateProject,
-        deleteProject,
+        updateProject: (project) => setProjects(prev => prev.map(p => p.id === project.id ? project : p)),
+        deleteProject: (id) => setProjects(prev => prev.filter(p => p.id !== id)),
         addTask,
-        updateTask,
-        updateRecurringTask,
-        deleteTask,
-        updateTaskStatus,
-        addSubtask,
-        addTaskDependency,
-        removeTaskDependency,
-        deleteMultipleTasks,
-        logTimeOnTask,
-        toggleTaskStar,
-        createTasksFromTemplate,
-        addAttachmentToTask,
-        deleteAttachmentFromTask,
+        updateTask: (task, options) => setTasks(prev => prev.map(t => t.id === task.id ? task : t)),
+        updateRecurringTask: (task, updateData, scope, options) => {}, // Mock
+        deleteTask: (id) => setTasks(prev => prev.filter(t => t.id !== id)),
+        updateTaskStatus: (taskId, newStatus) => setTasks(prev => prev.map(t => t.id === taskId ? { ...t, status: newStatus } : t)),
+        addSubtask: (parentId, title) => {}, // Mock
+        addTaskDependency: (taskId, dependsOnId) => {}, // Mock
+        removeTaskDependency: (taskId, dependsOnId) => {}, // Mock
+        deleteMultipleTasks: (taskIds) => {}, // Mock
+        logTimeOnTask: (taskId, minutes) => {}, // Mock
+        toggleTaskStar: (taskId) => {}, // Mock
+        createTasksFromTemplate: (templateId, startDate, relatedEntityType, relatedEntityId) => {}, // Mock
+        addAttachmentToTask: (taskId, attachment) => {}, // Mock
+        deleteAttachmentFromTask: (taskId, attachmentId) => {}, // Mock
         addInvoice,
         updateInvoice,
         bulkUpdateInvoiceStatus,
         deleteInvoice,
-        addBill,
-        updateBill,
-        bulkUpdateBillStatus,
-        addSupplier,
-        updateSupplier,
-        deleteSupplier,
-        deletePurchaseOrder,
-        addEmployee,
-        updateEmployee,
-        deleteEmployee,
-        addLeaveRequest,
-        updateLeaveRequestStatus,
-        addBankAccount,
-        updateBankAccount,
-        deleteBankAccount,
-        addTransaction,
-        updateTransaction,
-        deleteTransaction,
+        addBill: (bill) => { return undefined; }, // Mock
+        updateBill: (bill) => {}, // Mock
+        bulkUpdateBillStatus: (billIds, newStatus) => {}, // Mock
+        addSupplier: (supplierData) => {}, // Mock
+        updateSupplier: (supplier) => {}, // Mock
+        deleteSupplier: (id) => {}, // Mock
+        deletePurchaseOrder: (id) => {}, // Mock
+        addEmployee: (employeeData) => {}, // Mock
+        updateEmployee: (employee) => {}, // Mock
+        deleteEmployee: (id) => {}, // Mock
+        addLeaveRequest: (requestData) => {}, // Mock
+        updateLeaveRequestStatus: (requestId, newStatus) => {}, // Mock
+        addBankAccount: (accountData) => {}, // Mock
+        updateBankAccount: (account) => {}, // Mock
+        deleteBankAccount: (id) => {}, // Mock
+        addTransaction: (transactionData) => {}, // Mock
+        updateTransaction: (transaction) => {}, // Mock
+        deleteTransaction: (id) => {}, // Mock
         addTicket,
-        updateTicket,
-        deleteTicket,
-        addDocument,
-        renameDocument,
-        deleteDocument,
-        deleteMultipleDocuments,
-        addFolder,
-        moveDocuments,
-        toggleDocumentStar,
-        shareDocument,
-        addComment,
-        updateComment,
-        deleteComment,
-        addCommunicationLog,
-        updateCommunicationLog,
-        deleteCommunicationLog,
-        addSalesActivity,
-        addPerformanceReview,
-        updatePerformanceReview,
-        addJobOpening,
-        updateJobOpening,
-        addCandidate,
-        updateCandidate,
-        updateCandidateStage,
-        addOnboardingTemplate,
-        updateOnboardingTemplate,
-        startOnboardingWorkflow,
-        updateOnboardingWorkflowStatus,
-        addPayrollRun,
-        updatePayrollRunStatus,
-        postPayrollRunToJournal,
-        exportPayrollRunToAphbXml,
-        updatePayslip,
-        calculateTerminationPayments,
-        calculateAnnualLeaveBalance,
-        calculatePayrollCost,
-        updateCompanyInfo,
-        updateBrandingSettings,
-        updateSecuritySettings,
-        updateCounters,
-        addRole,
-        updateRolePermissions,
-        deleteRole,
-        addCustomField,
-        updateCustomField,
-        deleteCustomField,
-        markNotificationAsRead,
-        clearAllNotifications,
-        createProjectFromDeal,
-        createTasksFromDeal,
+        updateTicket: (ticket) => {}, // Mock
+        deleteTicket: (id) => {}, // Mock
+        addDocument: (docData) => {}, // Mock
+        renameDocument: (docId, newName) => {}, // Mock
+        deleteDocument: (id) => {}, // Mock
+        deleteMultipleDocuments: (ids) => {}, // Mock
+        addFolder: (folderName, parentId) => {}, // Mock
+        moveDocuments: (docIds, targetFolderId) => {}, // Mock
+        toggleDocumentStar: (docId) => {}, // Mock
+        shareDocument: (docId, shares) => {}, // Mock
+        addComment: (text, entityType, entityId) => {}, // Mock
+        updateComment: (comment) => {}, // Mock
+        deleteComment: (commentId) => {}, // Mock
+        addSalesActivity: (activityData) => {}, // Mock
+        addPerformanceReview: (reviewData) => {}, // Mock
+        updatePerformanceReview: (review) => {}, // Mock
+        addJobOpening: (jobData) => {}, // Mock
+        updateJobOpening: (job) => {}, // Mock
+        addCandidate: (candidateData) => {}, // Mock
+        updateCandidate: (candidate) => {}, // Mock
+        updateCandidateStage: (candidateId, newStage) => {}, // Mock
+        addOnboardingTemplate: (templateData) => {}, // Mock
+        updateOnboardingTemplate: (template) => {}, // Mock
+        startOnboardingWorkflow: (data) => {}, // Mock
+        updateOnboardingWorkflowStatus: (workflowId, itemIndex, isCompleted) => {}, // Mock
+        addPayrollRun: (payPeriod) => { return undefined; }, // Mock
+        updatePayrollRunStatus: (runId, status, journalEntryId) => {}, // Mock
+        postPayrollRunToJournal: (runId) => {}, // Mock
+        exportPayrollRunToAphbXml: (runId) => {}, // Mock
+        updatePayslip: (payslip) => {}, // Mock
+        calculateTerminationPayments: (employeeId, terminationDate, additionalGrossPay, additionalBonuses, usedAnnualLeave) => { return null; }, // Mock
+        calculateAnnualLeaveBalance: (employeeId) => ({ entitled: 0, used: 0, balance: 0 }), // Mock
+        calculatePayrollCost: (grossSalary) => ({} as T.PayrollSimulationResult), // Mock
+        updateCompanyInfo: setCompanyInfo,
+        updateBrandingSettings: setBrandingSettings,
+        updateSecuritySettings: setSecuritySettings,
+        updateCounters: setCounters,
+        addRole: (roleData, cloneFromRoleId) => {}, // Mock
+        updateRolePermissions: (roleId, permissions) => {}, // Mock
+        deleteRole: (roleId) => {}, // Mock
+        addCustomField: (fieldData) => {}, // Mock
+        updateCustomField: (field) => {}, // Mock
+        deleteCustomField: (id) => {}, // Mock
+        markNotificationAsRead: (id) => {}, // Mock
+        clearAllNotifications: () => {}, // Mock
+        createProjectFromDeal: (deal) => {}, // Mock
+        createTasksFromDeal: (deal) => {}, // Mock
         logActivity,
-        updateAccountingLockDate,
-        addStockMovement,
-        addExpense,
-        updateExpenseStatus,
-        addAsset,
-        updateAsset,
-        updateHrParameters,
-    };
+        updateAccountingLockDate: setAccountingLockDate,
+        addStockMovement: (productId, warehouseId, type, quantityChange, notes, relatedDocumentId) => {}, // Mock
+        addExpense: (expenseData) => {}, // Mock
+        updateExpenseStatus: (expenseId, status) => {}, // Mock
+        addAsset: (assetData) => {}, // Mock
+        updateAsset: (asset) => {}, // Mock
+        updateHrParameters: setHrParameters,
+    }), [
+        customers, projects, tasks, notifications, invoices, bills, products, suppliers, purchaseOrders, employees, leaveRequests, performanceReviews, jobOpenings, candidates, onboardingTemplates, onboardingWorkflows, payrollRuns, payslips, bankAccounts, transactions, tickets, documents, comments, salesActivities, activityLogs, customFieldDefinitions, dashboardLayout, companyInfo, brandingSettings, securitySettings, roles, rolesPermissions, taxRates, systemLists, emailTemplates, priceLists, priceListItems, automations, automationLogs, taskTemplates, scheduledTasks, counters, cartItems, warehouses, stockMovements, inventoryTransfers, inventoryAdjustments, salesOrders, shipments, stockItems, pickLists, boms, workOrders, accounts, journalEntries, recurringJournalEntries, budgets, costCenters, accountingLockDate, currentUser, expenses, assets, hrParameters, salesReturns, setSalesReturns, quotations, setQuotations, addQuotation, updateQuotation, deleteQuotation, convertQuotationToSalesOrder, setCurrentUser, logActivity, setActivityLogs, setDeals, setBills, setSuppliers, setPurchaseOrders, setEmployees, setLeaveRequests, setPerformanceReviews, setJobOpenings, setCandidates, setOnboardingTemplates, setOnboardingWorkflows, setPayrollRuns, setPayslips, setBankAccounts, setTransactions, setTickets, setDocuments, setComments, setSalesActivities, setRoles, setRolesPermissions, setTaxRates, setSystemLists, setEmailTemplates, setPriceLists, setPriceListItems, setAutomations, setAutomationLogs, setTaskTemplates, setScheduledTasks, setWarehouses, setStockMovements, setInventoryTransfers, setInventoryAdjustments, setSalesOrders, setShipments, setStockItems, setPickLists, setBoms, setWorkOrders, setAccounts, setJournalEntries, setRecurringJournalEntries, setBudgets, setCostCenters, setDashboardLayout, setExpenses, setAssets, setHrParameters, addDeal, updateDealStage, addProject, addTask, addTicket, addSalesOrder, addInvoice, updateInvoice, bulkUpdateInvoiceStatus, deleteInvoice, customersWithAssignee, addCustomer, originalUpdateCustomer, originalUpdateCustomerStatus, bulkUpdateCustomerStatus, assignCustomersToEmployee, addTagsToCustomers, originalDeleteCustomer, originalDeleteMultipleCustomers, importCustomers, contacts, addContact, updateContact, deleteContact, setContacts, communicationLogs, addCommunicationLog, setCommunicationLogs, savedViews, addSavedView, deleteSavedView, loadSavedView, setSavedViews, leads, addLead, convertLead, commissionRecords, createCommissionRecord, setLeads, setCommissionRecords
+    ]);
 
     return <AppContext.Provider value={value}>{children}</AppContext.Provider>;
 };
@@ -616,7 +874,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
 export const useApp = (): T.AppContextType => {
     const context = useContext(AppContext);
     if (context === undefined) {
-        throw new Error('useApp must be used within a AppProvider');
+        throw new Error('useApp must be used within an AppProvider');
     }
     return context;
 };

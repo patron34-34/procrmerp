@@ -9,20 +9,21 @@ import { ICONS } from '../../constants';
 import HealthScoreIndicator from './HealthScoreIndicator';
 
 interface CustomerListViewProps {
-    customers: (Customer & { assignedToName: string })[];
+    customers: (Customer & { assignedToName: string, healthScoreBreakdown?: string[] })[];
     onEdit: (customer: Customer) => void;
     onUpdate: (customer: Customer) => void;
     onSelectionChange: (selectedIds: number[]) => void;
+    sortConfig: SortConfig;
+    onSort: (config: SortConfig) => void;
 }
 
 const CustomerListView: React.FC<CustomerListViewProps> = (props) => {
   const { employees, deleteCustomer, hasPermission, systemLists } = useApp();
-  const { customers, onEdit, onUpdate, onSelectionChange } = props;
+  const { customers, onEdit, onUpdate, onSelectionChange, sortConfig, onSort } = props;
   
   const [customerToDelete, setCustomerToDelete] = useState<Customer | null>(null);
   const [selectedIds, setSelectedIds] = useState<number[]>([]);
   const [editingCell, setEditingCell] = useState<{ id: number; key: 'status' | 'assignedToId' } | null>(null);
-  const [sortConfig, setSortConfig] = useState<SortConfig>({ key: 'name', direction: 'ascending' });
   
   const canManageCustomers = hasPermission('musteri:yonet');
   
@@ -38,22 +39,10 @@ const CustomerListView: React.FC<CustomerListViewProps> = (props) => {
     setCurrentPage(1);
   }, [customers]);
 
-  const sortedAndPaginatedCustomers = useMemo(() => {
-    let sorted = [...customers];
-    if (sortConfig !== null) {
-      sorted.sort((a, b) => {
-        const key = sortConfig.key as keyof typeof a;
-        const valA = a[key] ?? '';
-        const valB = b[key] ?? '';
-        
-        if (valA < valB) return sortConfig.direction === 'ascending' ? -1 : 1;
-        if (valA > valB) return sortConfig.direction === 'ascending' ? 1 : -1;
-        return 0;
-      });
-    }
+  const paginatedCustomers = useMemo(() => {
     const startIndex = (currentPage - 1) * itemsPerPage;
-    return sorted.slice(startIndex, startIndex + itemsPerPage);
-  }, [customers, currentPage, itemsPerPage, sortConfig]);
+    return customers.slice(startIndex, startIndex + itemsPerPage);
+  }, [customers, currentPage, itemsPerPage]);
   
   const totalPages = Math.ceil(customers.length / itemsPerPage);
   
@@ -66,7 +55,7 @@ const CustomerListView: React.FC<CustomerListViewProps> = (props) => {
 
   const handleSelectAll = (e: React.ChangeEvent<HTMLInputElement>) => {
     if(e.target.checked) {
-        const newSelectedIds = sortedAndPaginatedCustomers.map(c => c.id)
+        const newSelectedIds = paginatedCustomers.map(c => c.id)
         setSelectedIds(newSelectedIds);
     } else {
         setSelectedIds([]);
@@ -98,8 +87,13 @@ const CustomerListView: React.FC<CustomerListViewProps> = (props) => {
     const isSorted = sortConfig?.key === columnKey;
     const directionIcon = sortConfig?.direction === 'ascending' ? '▲' : '▼';
 
+    const handleSort = () => {
+        const direction = isSorted && sortConfig.direction === 'ascending' ? 'descending' : 'ascending';
+        onSort({ key: columnKey, direction });
+    };
+
     return (
-        <th className="p-3 font-semibold cursor-pointer" onClick={() => setSortConfig({ key: columnKey, direction: isSorted && sortConfig.direction === 'ascending' ? 'descending' : 'ascending' })}>
+        <th className="p-3 font-semibold cursor-pointer" onClick={handleSort}>
             <div className="flex items-center gap-2">
                 {title}
                 {isSorted && <span className="text-xs">{directionIcon}</span>}
@@ -114,7 +108,7 @@ const CustomerListView: React.FC<CustomerListViewProps> = (props) => {
       {customers.length > 0 ? (
           <table className="w-full text-left">
           <thead className="border-b dark:border-dark-border"><tr className="bg-slate-50 dark:bg-slate-900/50 text-xs uppercase text-text-secondary">
-              {canManageCustomers && <th className="p-3"><input type="checkbox" onChange={handleSelectAll} checked={selectedIds.length === sortedAndPaginatedCustomers.length && sortedAndPaginatedCustomers.length > 0} /></th>}
+              {canManageCustomers && <th className="p-3"><input type="checkbox" onChange={handleSelectAll} checked={selectedIds.length === paginatedCustomers.length && paginatedCustomers.length > 0} /></th>}
               <SortableHeader columnKey="company" title="Müşteri Adı" />
               <SortableHeader columnKey="assignedToName" title="Sorumlu" />
               <SortableHeader columnKey="lastContact" title="Son İletişim" />
@@ -123,7 +117,7 @@ const CustomerListView: React.FC<CustomerListViewProps> = (props) => {
               {canManageCustomers && <th className="p-3 font-semibold">Eylemler</th>}
           </tr></thead>
           <tbody>
-              {sortedAndPaginatedCustomers.map((customer) => (
+              {paginatedCustomers.map((customer) => (
               <tr key={customer.id} className="odd:bg-slate-50 dark:odd:bg-slate-800/50">
                   {canManageCustomers && <td className="p-4"><input type="checkbox" checked={selectedIds.includes(customer.id)} onChange={(e) => handleSelectOne(e, customer.id)} /></td>}
                   <td className="p-4 flex items-center gap-4">
@@ -149,7 +143,7 @@ const CustomerListView: React.FC<CustomerListViewProps> = (props) => {
                     )}
                   </td>
                   <td className="p-4 text-text-secondary">{customer.lastContact}</td>
-                  <td className="p-4"><HealthScoreIndicator score={customer.healthScore || 0} /></td>
+                  <td className="p-4"><HealthScoreIndicator score={customer.healthScore || 0} breakdown={customer.healthScoreBreakdown} /></td>
                   <td className="p-4" onClick={() => canManageCustomers && setEditingCell({ id: customer.id, key: 'status' })}>
                     {editingCell?.id === customer.id && editingCell.key === 'status' ? (
                          <select

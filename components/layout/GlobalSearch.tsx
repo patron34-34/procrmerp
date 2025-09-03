@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef } from 'react';
 import { useApp } from '../../context/AppContext';
 import { ICONS } from '../../constants';
@@ -22,7 +21,7 @@ type SearchResult =
 
 
 const GlobalSearch: React.FC = () => {
-    const { customers, deals, projects, tasks, invoices, products, suppliers, purchaseOrders, employees, bankAccounts, transactions, tickets, documents } = useApp();
+    const { deals, projects, tasks, invoices, products, suppliers, purchaseOrders, employees, bankAccounts, transactions, tickets, documents, customers } = useApp();
     const [query, setQuery] = useState('');
     const [results, setResults] = useState<SearchResult[]>([]);
     const [isFocused, setIsFocused] = useState(false);
@@ -52,18 +51,30 @@ const GlobalSearch: React.FC = () => {
         const ticketResults: SearchResult[] = tickets.filter(t => t.subject.toLowerCase().includes(lowerCaseQuery) || t.ticketNumber.toLowerCase().includes(lowerCaseQuery)).map(item => ({ type: 'Destek', item }));
 
 
-        setResults([...customerResults, ...dealResults, ...projectResults, ...taskResults, ...documentResults, ...invoiceResults, ...productResults, ...supplierResults, ...poResults, ...employeeResults, ...accountResults, ...transactionResults, ...ticketResults]);
+        setResults([...customerResults, ...dealResults, ...projectResults, ...taskResults, ...documentResults, ...invoiceResults, ...productResults, ...supplierResults, ...poResults, ...employeeResults, ...accountResults, ...transactionResults, ...ticketResults].slice(0, 15));
 
     }, [query, customers, deals, projects, tasks, invoices, products, suppliers, purchaseOrders, employees, bankAccounts, transactions, tickets, documents]);
 
     useEffect(() => {
+        const handleKeyDown = (event: KeyboardEvent) => {
+            if ((event.metaKey || event.ctrlKey) && event.key === 'k') {
+                event.preventDefault();
+                searchRef.current?.querySelector('input')?.focus();
+            }
+        };
+        
         const handleClickOutside = (event: MouseEvent) => {
             if (searchRef.current && !searchRef.current.contains(event.target as Node)) {
                 setIsFocused(false);
             }
         };
+
+        document.addEventListener('keydown', handleKeyDown);
         document.addEventListener('mousedown', handleClickOutside);
-        return () => document.removeEventListener('mousedown', handleClickOutside);
+        return () => {
+            document.removeEventListener('keydown', handleKeyDown);
+            document.removeEventListener('mousedown', handleClickOutside);
+        }
     }, []);
     
     const getResultText = (result: SearchResult) => {
@@ -89,22 +100,22 @@ const GlobalSearch: React.FC = () => {
             case 'Müşteriler': navigate(`/customers/${result.item.id}`); break;
             case 'Anlaşmalar': navigate(`/deals/${(result.item as Deal).id}`); break;
             case 'Projeler': navigate(`/projects/${(result.item as Project).id}`); break;
-            case 'Görevler': navigate('/tasks'); break;
+            case 'Görevler': navigate('/planner'); break;
             case 'Dokümanlar': navigate('/documents'); break;
-            case 'Faturalar': navigate('/invoices'); break;
-            case 'Ürünler': navigate('/inventory/products'); break;
-            case 'Tedarikçiler': navigate('/inventory/suppliers'); break;
-            case 'S.A. Siparişleri': navigate('/inventory/purchase-orders'); break;
+            case 'Faturalar': navigate('/invoicing/outgoing'); break;
+            case 'Ürünler': navigate(`/inventory/products/${(result.item as Product).id}`); break;
+            case 'Tedarikçiler': navigate(`/inventory/suppliers/${(result.item as Supplier).id}`); break;
+            case 'S.A. Siparişleri': navigate(`/inventory/purchase-orders/${(result.item as PurchaseOrder).id}/edit`); break;
             case 'Çalışanlar': navigate(`/hr/employees/${(result.item as Employee).id}`); break;
-            case 'Banka Hesapları': navigate('/accounting/bank-accounts'); break;
-            case 'İşlemler': navigate('/accounting/transactions'); break;
-            case 'Destek': navigate('/support/tickets'); break;
+            case 'Banka Hesapları': navigate('/finance/bank-accounts'); break;
+            case 'İşlemler': navigate('/finance/transactions'); break;
+            case 'Destek': navigate(`/support/tickets/${(result.item as SupportTicket).id}`); break;
         }
     }
 
     return (
         <div className="relative w-64" ref={searchRef}>
-            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
+            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-text-secondary">
                 {ICONS.search}
             </div>
             <input 
@@ -113,26 +124,29 @@ const GlobalSearch: React.FC = () => {
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
                 onFocus={() => setIsFocused(true)}
-                className="w-full pl-10 pr-4 py-2 border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-slate-700 dark:border-dark-border dark:text-white"
+                className="w-full pl-10 pr-12"
             />
+             <kbd className="absolute top-1/2 right-3 -translate-y-1/2 rounded bg-slate-200 dark:bg-slate-800 px-1.5 py-0.5 text-xs font-sans text-text-secondary pointer-events-none">
+                ⌘K
+            </kbd>
             {isFocused && query.length > 0 && (
-                <div className="absolute mt-2 w-full max-h-80 overflow-y-auto bg-card rounded-md shadow-lg z-20 border border-slate-200 dark:bg-dark-card dark:border-dark-border">
+                <div className="absolute mt-2 w-full max-h-80 overflow-y-auto bg-card rounded-lg shadow-lg z-20 border border-border">
                     {results.length > 0 ? (
                         <ul>
                            {results.map((result, index) => (
                                <li key={index}>
                                    <button 
                                       onClick={() => handleResultClick(result)}
-                                      className="w-full text-left px-4 py-2 hover:bg-slate-100 dark:hover:bg-slate-700 flex justify-between items-center"
+                                      className="w-full text-left px-4 py-2 hover:bg-slate-100 dark:hover:bg-slate-800 flex justify-between items-center"
                                     >
                                        <span className="truncate pr-2">{getResultText(result)}</span>
-                                       <span className="text-xs bg-slate-200 text-slate-600 dark:bg-slate-600 dark:text-slate-300 px-2 py-0.5 rounded-full shrink-0">{result.type}</span>
+                                       <span className="text-xs bg-slate-200 text-slate-600 dark:bg-slate-700 dark:text-slate-300 px-2 py-0.5 rounded-full shrink-0">{result.type}</span>
                                    </button>
                                </li>
                            ))}
                         </ul>
                     ) : (
-                        <div className="p-4 text-center text-text-secondary dark:text-dark-text-secondary">
+                        <div className="p-4 text-center text-text-secondary">
                             "{query}" için sonuç bulunamadı.
                         </div>
                     )}
@@ -142,4 +156,4 @@ const GlobalSearch: React.FC = () => {
     );
 };
 
-export default GlobalSearch
+export default GlobalSearch;

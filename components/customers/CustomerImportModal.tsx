@@ -18,6 +18,7 @@ const CustomerImportModal: React.FC<CustomerImportModalProps> = ({ isOpen, onClo
   const [data, setData] = useState<string[][]>([]);
   const [mapping, setMapping] = useState<Record<string, string>>({});
   const [step, setStep] = useState(1);
+  const [previewData, setPreviewData] = useState<MappedCustomer[]>([]);
   
   const customerFields: (keyof MappedCustomer)[] = ['name', 'company', 'email', 'phone', 'status', 'industry', 'tags', 'assignedToId', 'lastContact', 'leadSource'];
 
@@ -44,9 +45,9 @@ const CustomerImportModal: React.FC<CustomerImportModalProps> = ({ isOpen, onClo
     setMapping(prev => ({ ...prev, [header]: field }));
   };
   
-  const handleImport = () => {
-    const defaultAssigneeId = employees[0]?.id || 0;
-    const newCustomers: MappedCustomer[] = data.map(row => {
+  const mapDataToCustomers = (rows: string[][]): MappedCustomer[] => {
+      const defaultAssigneeId = employees[0]?.id || 0;
+      return rows.map(row => {
         const customer: Partial<MappedCustomer> = {};
         headers.forEach((header, index) => {
             const mappedField = mapping[header] as keyof MappedCustomer;
@@ -83,10 +84,19 @@ const CustomerImportModal: React.FC<CustomerImportModalProps> = ({ isOpen, onClo
         customer.billingAddress = customer.billingAddress || { country: 'Türkiye', city: '', district: '', streetAddress: '', postalCode: '', email: '', phone: '' };
         customer.shippingAddress = customer.shippingAddress || customer.billingAddress;
 
-
         return customer as MappedCustomer;
     });
-
+  }
+  
+  const generatePreview = () => {
+    const previewRows = data.slice(0, 5);
+    const previewCustomers = mapDataToCustomers(previewRows);
+    setPreviewData(previewCustomers);
+    setStep(3);
+  };
+  
+  const handleImport = () => {
+    const newCustomers = mapDataToCustomers(data);
     importCustomers(newCustomers);
     onClose();
     resetState();
@@ -98,6 +108,7 @@ const CustomerImportModal: React.FC<CustomerImportModalProps> = ({ isOpen, onClo
       setData([]);
       setMapping({});
       setStep(1);
+      setPreviewData([]);
   };
 
   return (
@@ -135,8 +146,36 @@ const CustomerImportModal: React.FC<CustomerImportModalProps> = ({ isOpen, onClo
             ))}
             </div>
             <div className="flex justify-end gap-2 pt-4">
-                <Button variant="secondary" onClick={resetState}>İptal</Button>
-                <Button onClick={handleImport}>İçeri Aktar</Button>
+                <Button variant="secondary" onClick={() => setStep(1)}>Geri</Button>
+                <Button onClick={generatePreview}>Önizle ve Devam Et</Button>
+            </div>
+        </div>
+      )}
+      {step === 3 && (
+         <div className="space-y-4">
+            <h3 className="font-semibold">Veri Önizleme</h3>
+            <p className="text-sm text-text-secondary dark:text-dark-text-secondary">İlk 5 satır aşağıda gösterilmektedir. Eşleştirmeler doğruysa içe aktarımı onaylayın.</p>
+            <div className="max-h-60 overflow-y-auto overflow-x-auto">
+                <table className="w-full text-left text-xs">
+                    <thead>
+                        <tr className="bg-slate-100 dark:bg-slate-800">
+                            {Object.values(mapping).filter(Boolean).map((field, i) => <th key={i} className="p-2 font-semibold">{field}</th>)}
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {previewData.map((customer, rowIndex) => (
+                             <tr key={rowIndex} className="border-b dark:border-dark-border">
+                                {Object.values(mapping).filter(Boolean).map((field, colIndex) => (
+                                    <td key={colIndex} className="p-2 truncate max-w-[150px]">{String((customer as any)[field] || '')}</td>
+                                ))}
+                            </tr>
+                        ))}
+                    </tbody>
+                </table>
+            </div>
+             <div className="flex justify-end gap-2 pt-4">
+                <Button variant="secondary" onClick={() => setStep(2)}>Geri</Button>
+                <Button onClick={handleImport}>İçeri Aktarımı Onayla</Button>
             </div>
         </div>
       )}

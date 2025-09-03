@@ -67,7 +67,6 @@ export const generateJournalEntryFromPrompt = async (
       },
     });
     
-    // FIX: Trim whitespace from the AI response before parsing JSON.
     const jsonString = response.text.trim();
     const generatedItems = JSON.parse(jsonString);
 
@@ -143,7 +142,6 @@ export const generatePuantajFromPrompt = async (prompt: string): Promise<Record<
             },
         });
         
-        // FIX: Trim whitespace from the AI response before parsing JSON.
         const jsonString = response.text.trim();
         return JSON.parse(jsonString);
 
@@ -185,7 +183,6 @@ export const generateSubtasksFromPrompt = async (taskTitle: string): Promise<str
             },
         });
 
-        // FIX: Trim whitespace from the AI response before parsing JSON.
         const jsonString = response.text.trim();
         const result = JSON.parse(jsonString);
         
@@ -248,7 +245,6 @@ export const generateCustomerSuggestions = async (customerContext: any): Promise
             },
         });
 
-        // FIX: Trim whitespace from the AI response before parsing JSON.
         const jsonString = response.text.trim();
         const result = JSON.parse(jsonString);
 
@@ -281,5 +277,34 @@ export const summarizeText = async (text: string): Promise<string> => {
     } catch (error) {
         console.error("Error summarizing text with AI:", error);
         throw new Error("Yapay zeka ile özetleme yapılırken bir hata oluştu.");
+    }
+};
+
+// FIX: Add missing generateSalesSummary function.
+export const generateSalesSummary = async (analyticsData: any): Promise<string> => {
+    if (!API_KEY) {
+        throw new Error("API Anahtarı ayarlanmadığı için yapay zeka özelliği kullanılamıyor.");
+    }
+    try {
+        const model = 'gemini-2.5-flash';
+        const systemInstruction = `You are an expert sales analyst. Your task is to analyze the provided sales data and generate a concise, insightful summary in Turkish. Highlight key metrics, potential strengths, and areas for improvement. Do not return JSON, just a plain text summary.`;
+
+        const prompt = `Please provide a summary for the following sales analytics data:
+        - Total Pipeline Value: ${analyticsData.totalPipelineValue}
+        - Weighted Pipeline Value (Forecast): ${analyticsData.weightedPipelineValue}
+        - Win Rate: ${analyticsData.winRate.toFixed(1)}%
+        - Average Sales Cycle: ${analyticsData.avgSalesCycle} days
+        `;
+        
+        const response: GenerateContentResponse = await ai.models.generateContent({
+            model,
+            contents: prompt,
+            config: { systemInstruction },
+        });
+
+        return response.text;
+    } catch (error) {
+        console.error("Error generating sales summary with AI:", error);
+        throw new Error("Yapay zeka ile satış özeti oluşturulurken bir hata oluştu.");
     }
 };

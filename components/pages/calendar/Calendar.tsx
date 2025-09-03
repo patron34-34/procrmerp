@@ -7,7 +7,7 @@ import WeekView from './WeekView';
 import AgendaView from './AgendaView';
 import CalendarUserFilter from '../../calendar/CalendarUserFilter';
 import Card from '../../ui/Card';
-import EventPopover from '../../calendar/EventPopover';
+import EventPopover from './EventPopover';
 // FIX: Import Button component to resolve 'Cannot find name' error.
 import Button from '../../ui/Button';
 

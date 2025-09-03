@@ -17,8 +17,11 @@ const DealWonModal: React.FC<DealWonModalProps> = ({ isOpen, onClose, deal }) =>
     const { addToast } = useNotification();
     const [winReason, setWinReason] = useState('');
     const [otherReason, setOtherReason] = useState('');
+    const [createProject, setCreateProject] = useState(true);
+    const [createTasks, setCreateTasks] = useState(false);
 
-    const handleAction = (action: 'just_close' | 'create_project' | 'create_tasks') => {
+
+    const handleConfirm = () => {
         const finalReason = winReason === 'Diğer' ? otherReason : winReason;
         if (!finalReason.trim()) {
             addToast('Lütfen bir kazanma nedeni belirtin.', 'warning');
@@ -28,18 +31,20 @@ const DealWonModal: React.FC<DealWonModalProps> = ({ isOpen, onClose, deal }) =>
         // First, update the deal status
         updateDealWinLossReason(deal.id, DealStage.Won, finalReason);
 
-        // ALWAYS attempt to create a sales order upon winning, but check for line items first.
+        // Always attempt to create a sales order upon winning, but check for line items first.
         if (deal.lineItems && deal.lineItems.length > 0) {
             convertDealToSalesOrder(deal);
-        } else {
-            addToast("Anlaşmada ürün bulunmadığı için satış siparişi oluşturulmadı.", "info");
+            addToast("Satış siparişi başarıyla oluşturuldu.", "success");
         }
 
-        // Then, perform the optional follow-up action
-        if (action === 'create_project') {
+        // Then, perform the optional follow-up actions
+        if (createProject) {
             createProjectFromDeal(deal);
-        } else if (action === 'create_tasks') {
+            addToast("İlgili proje oluşturuldu.", "info");
+        }
+        if (createTasks) {
             createTasksFromDeal(deal);
+             addToast("Başlangıç görevleri oluşturuldu.", "info");
         }
         
         onClose();
@@ -78,24 +83,27 @@ const DealWonModal: React.FC<DealWonModalProps> = ({ isOpen, onClose, deal }) =>
                 </div>
                 
                 <div className="border-t pt-4 space-y-2 dark:border-dark-border">
-                    <h4 className="font-semibold">Sonraki Adım Nedir?</h4>
-                    <p className="text-sm text-text-secondary dark:text-dark-text-secondary">
+                    <h4 className="font-semibold">Sonraki Adımlar</h4>
+                     <p className="text-sm text-text-secondary dark:text-dark-text-secondary">
                         Anlaşma kalemleri varsa satış siparişiniz otomatik olarak oluşturulacaktır. Dilerseniz ek olarak aşağıdaki adımları da başlatabilirsiniz.
                     </p>
-                    <div className="flex flex-col sm:flex-row gap-2 pt-2">
-                        <Button onClick={() => handleAction('create_project')} className="w-full justify-center">
-                            Proje Oluştur
-                        </Button>
-                        <Button onClick={() => handleAction('create_tasks')} className="w-full justify-center">
-                            Başlangıç Görevleri Oluştur
-                        </Button>
+                    <div className="space-y-2">
+                        <label className="flex items-center gap-2 p-2 rounded-md hover:bg-slate-50 dark:hover:bg-slate-800/50">
+                            <input type="checkbox" checked={createProject} onChange={e => setCreateProject(e.target.checked)} className="h-4 w-4 rounded text-primary-600 focus:ring-primary-500" />
+                            <span>Bu anlaşma için otomatik bir proje oluştur.</span>
+                        </label>
+                         <label className="flex items-center gap-2 p-2 rounded-md hover:bg-slate-50 dark:hover:bg-slate-800/50">
+                            <input type="checkbox" checked={createTasks} onChange={e => setCreateTasks(e.target.checked)} className="h-4 w-4 rounded text-primary-600 focus:ring-primary-500" />
+                            <span>Başlangıç görevleri oluştur (şablondan).</span>
+                        </label>
                     </div>
                 </div>
 
-                <div className="text-center pt-4">
-                     <button onClick={() => handleAction('just_close')} className="text-sm text-primary-600 hover:underline">
-                        Sadece Anlaşmayı Kapat (ve Sipariş Oluştur)
-                    </button>
+                <div className="flex justify-end pt-4 gap-2">
+                     <Button type="button" variant="secondary" onClick={onClose}>İptal</Button>
+                     <Button onClick={handleConfirm} disabled={!winReason.trim()}>
+                        Onayla & Sipariş Oluştur
+                    </Button>
                 </div>
             </div>
         </Modal>

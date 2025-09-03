@@ -5,6 +5,7 @@ import App from './App';
 import { AppProvider } from './context/AppContext';
 import { ThemeProvider } from './context/ThemeContext';
 import { NotificationProvider } from './context/NotificationContext';
+import DynamicStyles from './DynamicStyles';
 
 const rootElement = document.getElementById('root');
 if (!rootElement) {
@@ -18,6 +19,7 @@ root.render(
       <ThemeProvider>
         <NotificationProvider>
           <AppProvider>
+            <DynamicStyles />
             <App />
           </AppProvider>
         </NotificationProvider>

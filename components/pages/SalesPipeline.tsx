@@ -2,21 +2,22 @@ import React, { useState, useMemo } from 'react';
 import { useApp } from '../../context/AppContext';
 import { Deal, DealStage } from '../../types';
 import Button from '../ui/Button';
-import { ICONS } from '../../constants';
+import { ICONS, WIN_REASONS } from '../../constants';
 import SalesStats from '../sales/SalesStats';
 import SalesFilterBar from '../sales/SalesFilterBar';
 import DealFormModal from '../sales/DealFormModal';
 import ConfirmationModal from '../ui/ConfirmationModal';
 import SalesKanbanView from '../sales/SalesKanbanView';
 import SalesListView from '../sales/SalesListView';
-import SalesAnalyticsView from '../sales/SalesAnalyticsView';
 import WinLossReasonModal from '../sales/WinLossReasonModal';
-import DealWonModal from '../sales/DealWonModal';
+import Modal from '../ui/Modal';
+import { useNotification } from '../../context/NotificationContext';
 
 type ViewMode = 'kanban' | 'list' | 'analytics';
 
 const SalesPipeline: React.FC = () => {
-  const { deals, deleteDeal, hasPermission, updateDealStage, updateDealWinLossReason } = useApp();
+  const { deals, deleteDeal, hasPermission, updateDealStage, updateDealWinLossReason, createProjectFromDeal, createTasksFromDeal, convertDealToSalesOrder } = useApp();
+  const { addToast } = useNotification();
   const [isFormModalOpen, setIsFormModalOpen] = useState(false);
   const [editingDeal, setEditingDeal] = useState<Deal | null>(null);
   const [dealToDelete, setDealToDelete] = useState<Deal | null>(null);
@@ -25,7 +26,13 @@ const SalesPipeline: React.FC = () => {
   const [filters, setFilters] = useState({ assignedToId: 'all', closeDateStart: '', closeDateEnd: '' });
   
   const [winLossModalState, setWinLossModalState] = useState<{isOpen: boolean, deal: Deal | null, newStage: DealStage.Lost | null}>({isOpen: false, deal: null, newStage: null});
+  
+  // State for the inlined DealWonModal
   const [dealWonModalState, setDealWonModalState] = useState<{isOpen: boolean, deal: Deal | null}>({isOpen: false, deal: null});
+  const [winReason, setWinReason] = useState('');
+  const [otherReason, setOtherReason] = useState('');
+  const [createProject, setCreateProject] = useState(true);
+  const [createTasks, setCreateTasks] = useState(false);
 
   const canManageDeals = hasPermission('anlasma:yonet');
 
@@ -75,6 +82,10 @@ const SalesPipeline: React.FC = () => {
 
   const handleStageChangeRequest = (deal: Deal, newStage: DealStage) => {
     if (newStage === DealStage.Won) {
+        setWinReason('');
+        setOtherReason('');
+        setCreateProject(true);
+        setCreateTasks(false);
         setDealWonModalState({ isOpen: true, deal });
     } else if (newStage === DealStage.Lost) {
       setWinLossModalState({ isOpen: true, deal, newStage });
@@ -89,6 +100,36 @@ const SalesPipeline: React.FC = () => {
     }
     setWinLossModalState({ isOpen: false, deal: null, newStage: null });
   };
+  
+  const handleWinConfirm = () => {
+    const deal = dealWonModalState.deal;
+    if (!deal) return;
+
+    const finalReason = winReason === 'Diğer' ? otherReason : winReason;
+    if (!finalReason.trim()) {
+        addToast('Lütfen bir kazanma nedeni belirtin.', 'warning');
+        return;
+    }
+
+    updateDealWinLossReason(deal.id, DealStage.Won, finalReason);
+
+    if (deal.lineItems && deal.lineItems.length > 0) {
+        convertDealToSalesOrder(deal);
+        addToast("Satış siparişi başarıyla oluşturuldu.", "success");
+    }
+
+    if (createProject) {
+        createProjectFromDeal(deal);
+        addToast("İlgili proje oluşturuldu.", "info");
+    }
+    if (createTasks) {
+        createTasksFromDeal(deal);
+        addToast("Başlangıç görevleri oluşturuldu.", "info");
+    }
+    
+    setDealWonModalState({ isOpen: false, deal: null });
+  };
+
 
   return (
     <div className="space-y-6">
@@ -102,7 +143,6 @@ const SalesPipeline: React.FC = () => {
                 <div className="p-1 bg-slate-200 dark:bg-slate-700 rounded-md">
                     <button onClick={() => setViewMode('kanban')} className={`p-1 rounded ${viewMode === 'kanban' ? 'bg-white dark:bg-slate-500 shadow' : ''}`} title="Kanban Görünümü">{ICONS.kanban}</button>
                     <button onClick={() => setViewMode('list')} className={`p-1 rounded ${viewMode === 'list' ? 'bg-white dark:bg-slate-500 shadow' : ''}`} title="Liste Görünümü">{ICONS.list}</button>
-                    <button onClick={() => setViewMode('analytics')} className={`p-1 rounded ${viewMode === 'analytics' ? 'bg-white dark:bg-slate-500 shadow' : ''}`} title="Analiz Görünümü">{ICONS.analytics}</button>
                 </div>
                 {canManageDeals && (
                     <Button onClick={openModalForNew}>
@@ -115,7 +155,6 @@ const SalesPipeline: React.FC = () => {
         <div className="p-4">
           {viewMode === 'kanban' && <SalesKanbanView deals={filteredDeals} onEditDeal={openModalForEdit} onDeleteDeal={handleDeleteRequest} onStageChangeRequest={handleStageChangeRequest} canManage={canManageDeals} />}
           {viewMode === 'list' && <SalesListView deals={filteredDeals} onEdit={openModalForEdit} onDelete={handleDeleteRequest} onStageChangeRequest={handleStageChangeRequest} />}
-          {viewMode === 'analytics' && <SalesAnalyticsView deals={filteredDeals} />}
         </div>
       </div>
 
@@ -147,11 +186,62 @@ const SalesPipeline: React.FC = () => {
       )}
 
       {dealWonModalState.isOpen && dealWonModalState.deal && (
-        <DealWonModal
-          isOpen={dealWonModalState.isOpen}
-          onClose={() => setDealWonModalState({ isOpen: false, deal: null })}
-          deal={dealWonModalState.deal}
-        />
+         <Modal 
+            isOpen={dealWonModalState.isOpen} 
+            onClose={() => setDealWonModalState({isOpen: false, deal: null})} 
+            title={`🎉 Tebrikler! '${dealWonModalState.deal.title}' Kazanıldı!`}
+        >
+            <div className="space-y-6">
+                <div>
+                    <label className="block text-sm font-medium text-text-secondary dark:text-dark-text-secondary">Bu başarının arkasındaki ana neden neydi?</label>
+                    <div className="flex flex-wrap gap-2 mt-2">
+                        {WIN_REASONS.map(r => (
+                            <Button
+                                key={r}
+                                variant={winReason === r ? 'primary' : 'secondary'}
+                                onClick={() => setWinReason(r)}
+                            >
+                                {r}
+                            </Button>
+                        ))}
+                    </div>
+                    {winReason === 'Diğer' && (
+                        <input
+                            type="text"
+                            value={otherReason}
+                            onChange={(e) => setOtherReason(e.target.value)}
+                            className="mt-2 block w-full p-2 border rounded-md dark:bg-slate-700 dark:border-dark-border"
+                            placeholder="Diğer nedeni belirtin..."
+                            autoFocus
+                        />
+                    )}
+                </div>
+                
+                <div className="border-t pt-4 space-y-2 dark:border-dark-border">
+                    <h4 className="font-semibold">Sonraki Adımlar</h4>
+                     <p className="text-sm text-text-secondary dark:text-dark-text-secondary">
+                        Anlaşma kalemleri varsa satış siparişiniz otomatik olarak oluşturulacaktır. Dilerseniz ek olarak aşağıdaki adımları da başlatabilirsiniz.
+                    </p>
+                    <div className="space-y-2">
+                        <label className="flex items-center gap-2 p-2 rounded-md hover:bg-slate-50 dark:hover:bg-slate-800/50">
+                            <input type="checkbox" checked={createProject} onChange={e => setCreateProject(e.target.checked)} className="h-4 w-4 rounded text-primary-600 focus:ring-primary-500" />
+                            <span>Bu anlaşma için otomatik bir proje oluştur.</span>
+                        </label>
+                         <label className="flex items-center gap-2 p-2 rounded-md hover:bg-slate-50 dark:hover:bg-slate-800/50">
+                            <input type="checkbox" checked={createTasks} onChange={e => setCreateTasks(e.target.checked)} className="h-4 w-4 rounded text-primary-600 focus:ring-primary-500" />
+                            <span>Başlangıç görevleri oluştur (şablondan).</span>
+                        </label>
+                    </div>
+                </div>
+
+                <div className="flex justify-end pt-4 gap-2">
+                     <Button type="button" variant="secondary" onClick={() => setDealWonModalState({isOpen: false, deal: null})}>İptal</Button>
+                     <Button onClick={handleWinConfirm} disabled={!winReason.trim()}>
+                        Onayla & Sipariş Oluştur
+                    </Button>
+                </div>
+            </div>
+        </Modal>
       )}
     </div>
   );

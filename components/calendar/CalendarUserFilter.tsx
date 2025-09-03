@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
+// FIX: Correct import path for useApp
 import { useApp } from '../../context/AppContext';
 import { ICONS } from '../../constants';
 import { Employee } from '../../types';

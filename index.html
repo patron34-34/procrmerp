@@ -26,28 +26,42 @@
         animation: slideInRight 0.3s ease-out forwards;
       }
       :root {
-        --primary-color: #3b82f6; /* blue-500 */
-        --primary-color-rgb: 59, 130, 246;
-
+        --radius: 0.75rem; /* 12px */
+        
         /* Light Theme */
-        --background: #f8fafc;      /* slate-50 */
+        --background: #f4f4f5;      /* zinc-100 */
         --sidebar: #ffffff;          /* white */
         --card: #ffffff;             /* white */
-        --text-main: #1e293b;       /* slate-800 */
-        --text-secondary: #64748b;   /* slate-500 */
-        --border: #e2e8f0;           /* slate-200 */
-        --border-hover: #cbd5e1;     /* slate-300 */
+        --text-main: #18181b;       /* zinc-900 */
+        --text-secondary: #71717a;   /* zinc-500 */
+        --border: #e4e4e7;           /* zinc-200 */
+        --border-hover: #d4d4d8;     /* zinc-300 */
+        
+        /* These are now set by DynamicStyles.tsx */
+        /* --primary-color: #4f46e5;    */
+        /* --primary-color-rgb: 79, 70, 229; */
+        
+        --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+        --shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+        --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
       }
 
       .dark {
-         /* Dark Theme */
-        --background: #0f172a;    /* slate-900 */
-        --sidebar: #1e293b;       /* slate-800 */
-        --card: #1e293b;          /* slate-800 */
-        --text-main: #e2e8f0;      /* slate-200 */
-        --text-secondary: #94a3b8;  /* slate-400 */
-        --border: #334155;         /* slate-700 */
-        --border-hover: #475569;     /* slate-600 */
+        /* Dark Theme */
+        --background: #09090b;      /* zinc-950 */
+        --sidebar: #18181b;         /* zinc-900 */
+        --card: #18181b;            /* zinc-900 */
+        --text-main: #fafafa;        /* zinc-50 */
+        --text-secondary: #a1a1aa;    /* zinc-400 */
+        --border: #27272a;           /* zinc-800 */
+        --border-hover: #3f3f46;       /* zinc-700 */
+
+        /* --primary-color: #6366f1; */
+        /* --primary-color-rgb: 99, 102, 241; */
+
+        --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.1);
+        --shadow: 0 4px 6px -1px rgb(0 0 0 / 0.2), 0 2px 4px -2px rgb(0 0 0 / 0.2);
+        --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.2), 0 4px 6px -4px rgb(0 0 0 / 0.2);
       }
 
       html, body {
@@ -69,22 +83,23 @@
         color: var(--text-main);
         border: 1px solid var(--border);
         transition: border-color 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
-        border-radius: 0.5rem; /* rounded-lg */
+        border-radius: var(--radius);
         padding: 0.5rem 0.75rem;
         font-size: 0.875rem; /* text-sm */
+        width: 100%;
       }
       
       input:focus, select:focus, textarea:focus {
           outline: none;
-          border-color: var(--primary-color);
-          box-shadow: 0 0 0 3px rgba(var(--primary-color-rgb), 0.15);
+          border-color: var(--primary-color, #4f46e5);
+          box-shadow: 0 0 0 3px rgba(var(--primary-color-rgb, 79, 70, 229), 0.2);
       }
       input:disabled, select:disabled, textarea:disabled {
-        background-color: #f1f5f9;
+        background-color: #f3f4f6; /* gray-100 */
         cursor: not-allowed;
       }
       .dark input:disabled, .dark select:disabled, .dark textarea:disabled {
-        background-color: #2b3a51;
+        background-color: #374151; /* gray-700 */
       }
 
       /* Custom Scrollbar */
@@ -106,6 +121,9 @@
       }
 
       /* Organization Chart Styles */
+      .org-chart li::before, .org-chart li::after, .org-chart ul ul::before, .org-chart li:last-child::before, .org-chart li:first-child::after {
+          border-color: var(--border);
+      }
       .org-chart { display: inline-block; min-width: 100%; text-align: center; }
       .org-chart ul { padding-top: 20px; position: relative; display: flex; justify-content: center; }
       .org-chart li { list-style-type: none; position: relative; padding: 20px 5px 0 5px; flex-grow: 1; }
@@ -157,10 +175,19 @@
       .spinner {
         min-width: 24px;
         min-height: 24px;
-        border: 3px solid rgba(var(--primary-color-rgb), 0.3);
-        border-top-color: var(--primary-color);
+        border: 3px solid rgba(var(--primary-color-rgb, 79, 70, 229), 0.3);
+        border-top-color: var(--primary-color, #4f46e5);
         border-radius: 50%;
         animation: spinner .6s linear infinite;
+      }
+
+      /* Modal Animation */
+      @keyframes fadeIn {
+          from { opacity: 0; }
+          to { opacity: 1; }
+      }
+      .animate-fade-in {
+          animation: fadeIn 150ms ease-out;
       }
     </style>
     <script>
@@ -173,9 +200,13 @@
             },
             colors: {
               'primary': {
-                '50': '#eff6ff', '100': '#dbeafe', '200': '#bfdbfe', '300': '#93c5fd',
-                '400': '#60a5fa', '500': 'var(--primary-color)', '600': 'var(--primary-color)', '700': 'var(--primary-color)',
-                '800': 'var(--primary-color)', '900': 'var(--primary-color)', '950': 'var(--primary-color)',
+                '50': '#eef2ff', '100': '#e0e7ff', '200': '#c7d2fe', '300': '#a5b4fc', '400': '#818cf8', 
+                '500': 'var(--primary-color, #6366f1)', 
+                '600': 'var(--primary-color, #4f46e5)', 
+                '700': 'var(--primary-color, #4338ca)', 
+                '800': 'var(--primary-color, #3730a3)', 
+                '900': 'var(--primary-color, #312e81)', 
+                '950': 'var(--primary-color, #1e1b4b)'
               },
               background: 'var(--background)',
               sidebar: 'var(--sidebar)',
@@ -185,6 +216,16 @@
               border: 'var(--border)',
               'border-hover': 'var(--border-hover)',
             },
+            borderRadius: {
+              lg: 'calc(var(--radius) - 2px)',
+              xl: 'var(--radius)',
+              '2xl': 'calc(var(--radius) + 4px)',
+            },
+            boxShadow: {
+                sm: 'var(--shadow-sm)',
+                DEFAULT: 'var(--shadow)',
+                lg: 'var(--shadow-lg)',
+            }
           },
         },
       }

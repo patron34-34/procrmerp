@@ -247,7 +247,7 @@ const InvoiceForm: React.FC = () => {
                                         {isCustomerDropdownOpen && <ul className="absolute z-10 w-full bg-card dark:bg-dark-card border dark:border-dark-border rounded-md mt-1 max-h-48 overflow-y-auto">{filteredCustomers.map(c => <li key={c.id} onClick={() => handleCustomerSelect(c)} className="p-2 hover:bg-slate-100 dark:hover:bg-slate-700 cursor-pointer">{c.taxId} - {c.name}</li>)}</ul>}
                                     </div>
                                     <div className="grid grid-cols-2 gap-4">
-                                        <InputField label="VKN / TCKN" value={selectedCustomer?.taxId || ''} readOnly />
+                                       <InputField label="VKN / TCKN" value={selectedCustomer?.taxId || ''} readOnly />
                                         <InputField label="Adı" value={selectedCustomer?.name.split(' ')[0] || ''} readOnly />
                                         <InputField label="Soyadı" value={selectedCustomer?.name.split(' ').slice(1).join(' ') || ''} readOnly />
                                         <InputField label="Ticaret Sicil No" value="" readOnly />

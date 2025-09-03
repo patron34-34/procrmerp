@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useCallback } from 'react';
+import React, { useState, useMemo, useCallback, useEffect } from 'react';
 import { useApp } from '../../context/AppContext';
 import { Customer, SortConfig } from '../../types';
 import Card from '../ui/Card';
@@ -14,27 +14,71 @@ import ConfirmationModal from '../ui/ConfirmationModal';
 import CustomerFilterBar from '../customers/CustomerFilterBar';
 import CustomerMapView from '../customers/CustomerMapView';
 import { calculateHealthScore } from '../../utils/healthScoreCalculator';
+import { useSearchParams } from 'react-router-dom';
 
 
 type ViewMode = 'list' | 'kanban' | 'map';
 
 const Customers: React.FC = () => {
-    const { customers, employees, hasPermission, assignCustomersToEmployee, addTagsToCustomers, deleteMultipleCustomers, updateCustomerStatus, updateCustomer, loadSavedView, deals, invoices, tickets } = useApp();
+    // FIX: Get all context data from useApp
+    const { 
+        employees, 
+        hasPermission, 
+        systemLists, 
+        deals, 
+        invoices, 
+        tickets,
+        customers, 
+        assignCustomersToEmployee, 
+        addTagsToCustomers, 
+        deleteMultipleCustomers, 
+        updateCustomer,
+        updateCustomerStatus,
+        loadSavedView,
+        bulkUpdateCustomerStatus
+    } = useApp();
+
     const [viewMode, setViewMode] = useState<ViewMode>('list');
     const [selectedCustomerIds, setSelectedCustomerIds] = useState<number[]>([]);
     const [isFormModalOpen, setIsFormModalOpen] = useState(false);
     const [isImportModalOpen, setIsImportModalOpen] = useState(false);
     const [editingCustomer, setEditingCustomer] = useState<Customer | null>(null);
-
-    const [searchTerm, setSearchTerm] = useState('');
-    const [filters, setFilters] = useState({ status: 'all', industry: 'all', assignedToId: 'all', leadSource: 'all' });
-    const [sortConfig, setSortConfig] = useState<SortConfig>({ key: 'name', direction: 'ascending' });
     
+    const [searchParams, setSearchParams] = useSearchParams();
+
+    const [searchTerm, setSearchTerm] = useState(() => searchParams.get('q') || '');
+    const [filters, setFilters] = useState(() => ({
+        status: searchParams.get('status') || 'all',
+        industry: searchParams.get('industry') || 'all',
+        assignedToId: searchParams.get('assignedToId') || 'all',
+        leadSource: searchParams.get('leadSource') || 'all',
+    }));
+    const [sortConfig, setSortConfig] = useState<SortConfig>(() => {
+        const sortKey = searchParams.get('sortKey') as keyof (Customer & { assignedToName: string });
+        const sortDir = searchParams.get('sortDir') as 'ascending' | 'descending';
+        return sortKey && sortDir ? { key: sortKey, direction: sortDir } : { key: 'name', direction: 'ascending' };
+    });
+    
+    useEffect(() => {
+        const params = new URLSearchParams();
+        if (searchTerm) params.set('q', searchTerm);
+        Object.entries(filters).forEach(([key, value]) => {
+            if (value !== 'all') params.set(key, value);
+        });
+        if (sortConfig) {
+            params.set('sortKey', sortConfig.key as string);
+            params.set('sortDir', sortConfig.direction);
+        }
+        setSearchParams(params, { replace: true });
+    }, [searchTerm, filters, sortConfig, setSearchParams]);
+
     const [isAssignModalOpen, setIsAssignModalOpen] = useState(false);
     const [isTagModalOpen, setIsTagModalOpen] = useState(false);
     const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+    const [isStatusModalOpen, setIsStatusModalOpen] = useState(false);
     const [assigneeId, setAssigneeId] = useState<number>(employees[0]?.id || 0);
     const [tagsToAdd, setTagsToAdd] = useState<string[]>([]);
+    const [newStatusForBulkUpdate, setNewStatusForBulkUpdate] = useState<string>(systemLists.customerStatus[0]?.id || '');
     
     const canManageCustomers = hasPermission('musteri:yonet');
 
@@ -60,9 +104,15 @@ const Customers: React.FC = () => {
     };
     
     const handleTagConfirm = () => {
-        addTagsToCustomers(selectedCustomerIds, tagsToAdd);
+        addTagsToCustomers(selectedCustomerIds, tagsToAdd.filter(t => t));
         setIsTagModalOpen(false);
         setTagsToAdd([]);
+        setSelectedCustomerIds([]);
+    };
+    
+    const handleStatusChangeConfirm = () => {
+        bulkUpdateCustomerStatus(selectedCustomerIds, newStatusForBulkUpdate);
+        setIsStatusModalOpen(false);
         setSelectedCustomerIds([]);
     };
 
@@ -82,11 +132,10 @@ const Customers: React.FC = () => {
     
     const enrichedCustomers = useMemo(() => {
         return customers.map(customer => {
-            const assignee = employees.find(e => e.id === customer.assignedToId);
-            const healthScore = calculateHealthScore(customer, deals, invoices, tickets);
-            return { ...customer, assignedToName: assignee?.name || 'Atanmamış', healthScore };
+            const { score, breakdown } = calculateHealthScore(customer, deals, invoices, tickets);
+            return { ...customer, healthScore: score, healthScoreBreakdown: breakdown };
         });
-    }, [customers, employees, deals, invoices, tickets]);
+    }, [customers, deals, invoices, tickets]);
     
     const filteredAndSortedCustomers = useMemo(() => {
         let filtered = enrichedCustomers.filter(c => 
@@ -103,13 +152,21 @@ const Customers: React.FC = () => {
             const key = sortConfig.key;
             const valA = a[key as keyof typeof a];
             const valB = b[key as keyof typeof b];
-
-            if (valA === undefined || valA === null) return 1;
-            if (valB === undefined || valB === null) return -1;
+    
+            if (valA == null) return 1;
+            if (valB == null) return -1;
             
-            if (valA < valB) return sortConfig.direction === 'ascending' ? -1 : 1;
-            if (valA > valB) return sortConfig.direction === 'ascending' ? 1 : -1;
-            return 0;
+            let comparison = 0;
+            if (typeof valA === 'string' && typeof valB === 'string') {
+              comparison = valA.localeCompare(valB, 'tr', { sensitivity: 'base' });
+            } else if (typeof valA === 'number' && typeof valB === 'number') {
+              comparison = valA - valB;
+            } else {
+                if (valA < valB) comparison = -1;
+                if (valA > valB) comparison = 1;
+            }
+    
+            return sortConfig.direction === 'ascending' ? comparison : -comparison;
           });
         }
         return filtered;
@@ -123,6 +180,7 @@ const Customers: React.FC = () => {
                 <p className="font-semibold">{selectedCustomerIds.length} müşteri seçildi.</p>
                 <Button variant="secondary" onClick={() => setIsAssignModalOpen(true)}>Sorumlu Değiştir</Button>
                 <Button variant="secondary" onClick={() => setIsTagModalOpen(true)}>Etiket Ekle</Button>
+                <Button variant="secondary" onClick={() => setIsStatusModalOpen(true)}>Durum Değiştir</Button>
                 <Button variant="danger" onClick={() => setIsDeleteModalOpen(true)}>Sil</Button>
             </div>
         );
@@ -172,6 +230,8 @@ const Customers: React.FC = () => {
                             onEdit={handleOpenEditForm} 
                             onUpdate={updateCustomer}
                             onSelectionChange={setSelectedCustomerIds}
+                            sortConfig={sortConfig}
+                            onSort={setSortConfig}
                         />
                     )}
                     {viewMode === 'kanban' && (
@@ -222,6 +282,18 @@ const Customers: React.FC = () => {
                     <div className="flex justify-end gap-2">
                         <Button variant="secondary" onClick={() => setIsTagModalOpen(false)}>İptal</Button>
                         <Button onClick={handleTagConfirm}>Ekle</Button>
+                    </div>
+                </Modal>
+                <Modal isOpen={isStatusModalOpen} onClose={() => setIsStatusModalOpen(false)} title="Toplu Durum Değiştir">
+                    <div className="space-y-4">
+                        <p>{selectedCustomerIds.length} müşterinin durumunu değiştirin:</p>
+                        <select value={newStatusForBulkUpdate} onChange={e => setNewStatusForBulkUpdate(e.target.value)} className="w-full p-2 border rounded-md dark:bg-slate-700 dark:border-dark-border">
+                            {systemLists.customerStatus.map(s => <option key={s.id} value={s.id}>{s.label}</option>)}
+                        </select>
+                        <div className="flex justify-end gap-2">
+                            <Button variant="secondary" onClick={() => setIsStatusModalOpen(false)}>İptal</Button>
+                            <Button onClick={handleStatusChangeConfirm}>Değiştir</Button>
+                        </div>
                     </div>
                 </Modal>
                 <ConfirmationModal 

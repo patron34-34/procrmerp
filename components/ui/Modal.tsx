@@ -24,18 +24,18 @@ const Modal: React.FC<ModalProps> = ({ isOpen, onClose, title, children, size = 
 
   return (
     <div 
-      className="fixed inset-0 bg-black/70 z-50 flex justify-center items-start pt-12 backdrop-blur-sm"
+      className="fixed inset-0 bg-black/60 z-50 flex justify-center items-center p-4 backdrop-blur-sm animate-fade-in"
       onClick={onClose}
       aria-modal="true"
       role="dialog"
     >
       <div 
-        className={`bg-card rounded-xl shadow-2xl w-full m-4 dark:bg-dark-card border border-border dark:border-dark-border ${sizeClasses[size]}`}
+        className={`bg-card rounded-2xl shadow-lg w-full m-4 border border-border ${sizeClasses[size]}`}
         onClick={e => e.stopPropagation()}
       >
-        <div className="flex justify-between items-center px-6 py-4 border-b border-border dark:border-dark-border">
-          <h2 className="text-xl font-bold text-text-main dark:text-dark-text-main">{title}</h2>
-          <button onClick={onClose} className="text-text-secondary hover:text-text-main dark:text-dark-text-secondary dark:hover:text-dark-text-main" aria-label="Kapat">
+        <div className="flex justify-between items-center px-6 py-4 border-b border-border">
+          <h2 className="text-xl font-bold text-text-main">{title}</h2>
+          <button onClick={onClose} className="text-text-secondary hover:text-text-main" aria-label="Kapat">
             {ICONS.close}
           </button>
         </div>

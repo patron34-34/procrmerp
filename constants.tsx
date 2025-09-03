@@ -16,19 +16,23 @@ import {
     SalesOrder, SalesOrderStatus, Shipment, ShipmentStatus, WidgetConfig, 
     StockItem, StockItemStatus, SalesOrderItem, PickList, PickListItem, InvoiceLineItem, ShipmentItem, 
     PayrollRun, Payslip, TaskTemplate, ScheduledTask, Attachment, Address,
+// FIX: Fix typo in type import.
     ReportCardInfo, Cinsiyet, CalismaStatusu, SigortaKolu, MedeniDurum, EgitimSeviyesi,
     ProductType, EInvoiceType, Unit, SupplierContact, BillOfMaterials, WorkOrder, WorkOrderStatus,
     InvoiceType, EInvoiceScenario, EInvoiceProfile, CountersSettings, JobOpeningStatus, AssignedDepartment,
     Expense, ExpenseStatus, Asset, AssetStatus,
     TransactionType, TransactionCategory, DocumentType, CommunicationLogType, SalesActivityType,
-    HrParameters
+    HrParameters,
+    Quotation,
+    Lead,
+    CommissionRecord
 } from './types';
 
 export const Logo: React.FC<{ className?: string }> = ({ className }) => (
     <svg className={className} viewBox="0 0 208 50" fill="none" xmlns="http://www.w3.org/2000/svg">
         <defs>
             <linearGradient id="logoGradient" x1="0" y1="0" x2="1" y2="1">
-                <stop stopColor="#1e40af" /> 
+                <stop stopColor="var(--primary-color, #4f46e5)" /> 
                 <stop offset="1" stopColor="#14b8a6" />
             </linearGradient>
         </defs>
@@ -141,6 +145,7 @@ export const ICONS = {
     fileXml: <svg className={smallIconBaseClass} xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M14.25 9.75L16.5 12l-2.25 2.25m-4.5 0L7.5 12l2.25-2.25M6 20.25h12A2.25 2.25 0 0020.25 18V5.75A2.25 2.25 0 0018 3.5H6A2.25 2.25 0 003.75 5.75v12.25A2.25 2.25 0 006 20.25z" /></svg>,
     filter: <svg className={smallIconBaseClass} xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M12 3c2.755 0 5.455.232 8.083.678.533.09.917.556.917 1.096v1.044a2.25 2.25 0 01-.659 1.591l-5.432 5.432a2.25 2.25 0 00-.659 1.591v2.927a2.25 2.25 0 01-1.244 2.013L9.75 21v-6.572a2.25 2.25 0 00-.659-1.591L3.659 7.409A2.25 2.25 0 013 5.818V4.774c0-.54.384-1.006.917-1.096A48.32 48.32 0 0112 3z" /></svg>,
     view: <svg className={smallIconBaseClass} xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M2.036 12.322a1.012 1.012 0 010-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178z" /><path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /></svg>,
+    commission: <svg className={smallIconBaseClass} xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M2.25 18.75a60.07 60.07 0 0115.797 2.101c.727.198 1.453-.342 1.453-1.096V18.75M3.75 4.5v.75A.75.75 0 013 6h-.75m0 0v-.375c0-.621.504-1.125 1.125-1.125H20.25M2.25 6v9m18-10.5v.75c0 .414.336.75.75.75h.75m-1.5-1.5h.375c.621 0 1.125.504 1.125 1.125v1.5c0 .621-.504 1.125-1.125 1.125h-.375m1.5-3.75h-1.5m-16.5 18.75v-16.5c0-.621.504-1.125 1.125-1.125h16.5c.621 0 1.125.504 1.125 1.125v16.5" /></svg>,
 };
 
 export const MOCK_CUSTOMERS: Customer[] = [
@@ -222,6 +227,8 @@ export const MOCK_INVOICES: Invoice[] = [
     }
 ];
 
+export const MOCK_QUOTATIONS: Quotation[] = [];
+
 export const MOCK_BILLS: Bill[] = [
     { id: 1, supplierId: 1, supplierName: "Sunucu Hizmetleri A.Ş.", billNumber: "SH-2024-556", issueDate: "2024-05-01", dueDate: "2024-05-20", totalAmount: 1200, status: BillStatus.Paid },
     { id: 2, supplierId: 2, supplierName: "Ofis Malzemeleri Ltd.", billNumber: "OM-890", issueDate: "2024-05-15", dueDate: "2024-06-15", totalAmount: 450, status: BillStatus.Payable }
@@ -229,78 +236,207 @@ export const MOCK_BILLS: Bill[] = [
 
 export const MOCK_PRODUCTS: Product[] = [
     { id: 1, name: "CRM Lisans Yıllık", sku: "CRM-YILLIK-01", price: 10000, category: "Yazılım", productType: ProductType.Hizmet, eInvoiceType: EInvoiceType.Hizmet, unit: Unit.Adet, lowStockThreshold: 0, trackBy: 'none', financials: { purchasePrice: 0, purchaseCurrency: 'TRY', salePrice: 10000, saleCurrency: 'TRY', vatRate: 20 } },
-    { id: 2, name: "Web Tasarım Hizmeti", sku: "WEB-HIZMET-01", price: 8000, category: "Hizmet", productType: ProductType.Hizmet, eInvoiceType: EInvoiceType.Hizmet, unit: Unit.Adet, lowStockThreshold: 0, trackBy: 'none', financials: { purchasePrice: 0, purchaseCurrency: 'TRY', salePrice: 8000, saleCurrency: 'TRY', vatRate: 20 } }
+    { id: 2, name: "Web Tasarım Hizmeti", sku: "WEB-HIZMET-01", price: 8000, category: "Hizmet", productType: ProductType.Hizmet, eInvoiceType: EInvoiceType.Hizmet, unit: Unit.Saat, lowStockThreshold: 0, trackBy: 'none', financials: { purchasePrice: 0, purchaseCurrency: 'TRY', salePrice: 8000, saleCurrency: 'TRY', vatRate: 20 } },
+];
+
+// START: ADDED MISSING MOCK DATA AND CONSTANTS
+
+export const MOCK_COMMUNICATION_LOGS: CommunicationLog[] = [
+    { id: 1, customerId: 1, type: CommunicationLogType.Call, content: "Proje başlangıç toplantısı yapıldı. Tüm gereksinimler anlaşıldı.", timestamp: "2024-05-10T14:00:00Z", userId: 1, userName: "Ali Veli" },
+    { id: 2, customerId: 2, type: CommunicationLogType.Email, content: "Depo otomasyonu teklifi gönderildi. Geri dönüş bekleniyor.", timestamp: "2024-05-10T11:00:00Z", userId: 2, userName: "Ayşe Kaya" }
+];
+
+export const MOCK_SAVED_VIEWS: SavedView[] = [
+    { id: 1, name: "VIP Müşterilerim", filters: { status: "aktif", industry: "Teknoloji", assignedToId: "1", leadSource: "all" }, sortConfig: { key: 'name', direction: 'ascending' } }
 ];
 
 export const MOCK_SUPPLIERS: Supplier[] = [
     {
-        id: 1, name: "Sunucu Hizmetleri A.Ş.", email: "destek@sunucuhizmetleri.com", phone: "0850 123 4567", avatar: "https://i.pravatar.cc/150?u=s1", tags: ["altyapı", "kritik"],
-        accountType: 'Tüzel Kişi', accountCode: 'S001', taxId: '1112223334', taxOffice: 'Büyük Mükellefler',
-        address: { country: 'Türkiye', city: 'İstanbul', district: 'Kağıthane', streetAddress: 'Cendere Cd.', postalCode: '34418', email: '', phone: '' },
-        iban: 'TR110006200000000006298765', openingBalance: 0, currency: 'TRY', openingDate: '2023-02-01'
+        id: 1, name: "Sunucu Hizmetleri A.Ş.", email: "destek@sunucu.com", phone: "0850 123 4567", avatar: "https://i.pravatar.cc/150?u=s1", tags: ["hosting", "altyapı"],
+        accountType: 'Tüzel Kişi', accountCode: 'S001', taxId: '1112223333', taxOffice: 'Beşiktaş',
+        address: { country: 'Türkiye', city: 'İstanbul', district: 'Beşiktaş', streetAddress: 'Barbaros Blv.', postalCode: '34353', email: 'destek@sunucu.com', phone: '0850 123 4567' },
+        iban: 'TR100006200000000006298765', openingBalance: -1200, currency: 'TRY', openingDate: '2023-02-01'
     },
     {
-        id: 2, name: "Ofis Malzemeleri Ltd.", email: "siparis@ofismalzemeleri.com", phone: "0212 555 8899", avatar: "https://i.pravatar.cc/150?u=s2", tags: ["sarf"],
-        accountType: 'Tüzel Kişi', accountCode: 'S002', taxId: '4445556667', taxOffice: 'İkitelli',
-        address: { country: 'Türkiye', city: 'İstanbul', district: 'Başakşehir', streetAddress: 'Sanayi Blv.', postalCode: '34490', email: '', phone: '' },
-        iban: 'TR220001000000000012341234', openingBalance: 0, currency: 'TRY', openingDate: '2023-03-10'
+        id: 2, name: "Ofis Malzemeleri Ltd.", email: "siparis@ofis.com", phone: "0212 987 6543", avatar: "https://i.pravatar.cc/150?u=s2", tags: ["kırtasiye"],
+        accountType: 'Tüzel Kişi', accountCode: 'S002', taxId: '4445556666', taxOffice: 'Eminönü',
+        address: { country: 'Türkiye', city: 'İstanbul', district: 'Fatih', streetAddress: 'Sirkeci Cd.', postalCode: '34112', email: 'siparis@ofis.com', phone: '0212 987 6543' },
+        iban: 'TR200001000000000012398765', openingBalance: 0, currency: 'TRY', openingDate: '2023-05-15'
     }
 ];
 
-export const MOCK_PURCHASE_ORDERS: PurchaseOrder[] = [];
+export const MOCK_PURCHASE_ORDERS: PurchaseOrder[] = [
+    { id: 1, poNumber: "PO-2024-001", supplierId: 2, supplierName: "Ofis Malzemeleri Ltd.", orderDate: "2024-05-02", expectedDate: "2024-05-09", targetWarehouseId: 1, status: PurchaseOrderStatus.Received, items: [], totalAmount: 450, billId: 2 },
+];
 
 export const MOCK_EMPLOYEES: Employee[] = [
-    { id: 1, employeeId: "EMP001", name: "Ali Veli", department: "Satış", position: "Satış Müdürü", email: "ali.veli@profusion.com", phone: "0532 111 2233", hireDate: "2022-01-15", salary: 25000, avatar: "https://i.pravatar.cc/150?u=emp1", role: "satis" },
-    { id: 2, employeeId: "EMP002", name: "Ayşe Kaya", department: "Yönetim", position: "Genel Müdür", email: "ayse.kaya@profusion.com", phone: "0533 222 3344", hireDate: "2020-03-10", salary: 40000, avatar: "https://i.pravatar.cc/150?u=emp2", role: "admin" },
-    { id: 3, employeeId: "EMP003", name: "Mehmet Demir", department: "Teknik", position: "Proje Yöneticisi", email: "mehmet.demir@profusion.com", phone: "0542 333 4455", hireDate: "2021-06-01", salary: 30000, avatar: "https://i.pravatar.cc/150?u=emp3", role: "satis" },
-    { id: 4, employeeId: "EMP004", name: "Zeynep Çelik", department: "İK", position: "İK Uzmanı", email: "zeynep.celik@profusion.com", phone: "0535 444 5566", hireDate: "2023-02-20", salary: 22000, avatar: "https://i.pravatar.cc/150?u=emp4", role: "ik", managerId: 2 },
-    { id: 5, employeeId: "EMP005", name: "Mustafa Arslan", department: "Satış", position: "Satış Temsilcisi", email: "mustafa.arslan@profusion.com", phone: "0536 555 6677", hireDate: "2023-08-01", salary: 20000, avatar: "https://i.pravatar.cc/150?u=emp5", role: "calisan", managerId: 2 },
+    { id: 1, employeeId: "EMP001", name: "Ali Veli", department: "Satış", position: "Satış Yöneticisi", email: "ali.veli@profusion.com", phone: "0532 111 2233", hireDate: "2022-01-15", salary: 25000, avatar: "https://i.pravatar.cc/150?u=e1", role: "yonetici", managerId: 2 },
+    { id: 2, employeeId: "EMP002", name: "Ayşe Kaya", department: "Yönetim", position: "Genel Müdür", email: "ayse.kaya@profusion.com", phone: "0532 222 3344", hireDate: "2020-03-01", salary: 40000, avatar: "https://i.pravatar.cc/150?u=e2", role: "admin" },
+    { id: 3, employeeId: "EMP003", name: "Mehmet Yılmaz", department: "Teknik", position: "Proje Yöneticisi", email: "mehmet.yilmaz@profusion.com", phone: "0532 333 4455", hireDate: "2021-06-20", salary: 30000, avatar: "https://i.pravatar.cc/150?u=e3", role: "yonetici", managerId: 2 },
+    { id: 4, employeeId: "EMP004", name: "Zeynep Çelik", department: "Teknik", position: "Yazılım Geliştirici", email: "zeynep.celik@profusion.com", phone: "0532 444 5566", hireDate: "2023-08-10", salary: 22000, avatar: "https://i.pravatar.cc/150?u=e4", role: "calisan", managerId: 3 }
 ];
 
 export const MOCK_LEAVE_REQUESTS: LeaveRequest[] = [
-    { id: 1, employeeId: 4, employeeName: 'Zeynep Çelik', leaveType: LeaveType.Annual, startDate: '2024-06-10', endDate: '2024-06-14', reason: 'Yıllık tatil', status: LeaveStatus.Approved },
-    { id: 2, employeeId: 5, employeeName: 'Mustafa Arslan', leaveType: LeaveType.Annual, startDate: '2024-08-10', endDate: '2024-08-12', reason: 'Aile ziyareti', status: LeaveStatus.Pending },
+    { id: 1, employeeId: 1, employeeName: "Ali Veli", leaveType: LeaveType.Annual, startDate: "2024-07-20", endDate: "2024-07-27", reason: "Yaz tatili", status: LeaveStatus.Approved },
+    { id: 2, employeeId: 4, employeeName: "Zeynep Çelik", leaveType: LeaveType.Sick, startDate: "2024-05-14", endDate: "2024-05-15", reason: "Grip", status: LeaveStatus.Approved },
+    { id: 3, employeeId: 1, employeeName: "Ali Veli", leaveType: LeaveType.Unpaid, startDate: "2024-08-01", endDate: "2024-08-02", reason: "Kişisel", status: LeaveStatus.Pending }
 ];
 
-export const MOCK_BANK_ACCOUNTS: BankAccount[] = [];
-export const MOCK_TRANSACTIONS: Transaction[] = [];
-export const MOCK_TICKETS: SupportTicket[] = [];
-export const MOCK_DOCUMENTS: Document[] = [];
-export const MOCK_COMMENTS: Comment[] = [];
-export const MOCK_COMMUNICATION_LOGS: CommunicationLog[] = [];
-export const MOCK_SAVED_VIEWS: SavedView[] = [];
-export const MOCK_CUSTOM_FIELD_DEFINITIONS: CustomFieldDefinition[] = [];
-export const MOCK_SALES_ACTIVITIES: SalesActivity[] = [];
 export const MOCK_PERFORMANCE_REVIEWS: PerformanceReview[] = [];
 export const MOCK_JOB_OPENINGS: JobOpening[] = [];
 export const MOCK_CANDIDATES: Candidate[] = [];
 export const MOCK_ONBOARDING_TEMPLATES: OnboardingTemplate[] = [];
 export const MOCK_ONBOARDING_WORKFLOWS: OnboardingWorkflow[] = [];
-export const MOCK_COMPANY_INFO: CompanyInfo = { name: "ProFusion Inc.", address: "Teknopark, İstanbul, Türkiye", phone: "0212 555 0000", email: "info@profusion.com", website: "https://profusion.com" };
+export const MOCK_PAYROLL_RUNS: PayrollRun[] = [];
+export const MOCK_PAYSLIPS: Payslip[] = [];
+
+export const MOCK_BANK_ACCOUNTS: BankAccount[] = [
+    { id: 1, accountName: "Ana Vadesiz Hesap", bankName: "Garanti BBVA", accountNumber: "TR...1234", balance: 150250.75 },
+    { id: 2, accountName: "Dolar Hesabı", bankName: "Akbank", accountNumber: "TR...5678", balance: 25400.50 }
+];
+
+export const MOCK_TRANSACTIONS: Transaction[] = [
+    { id: 1, date: "2024-05-15", description: "Tekno A.Ş. Fatura Ödemesi", amount: 12000, type: TransactionType.Income, category: TransactionCategory.Sales, accountId: 1 },
+    { id: 2, date: "2024-05-14", description: "Ofis Kira Ödemesi", amount: 5000, type: TransactionType.Expense, category: TransactionCategory.Rent, accountId: 1 },
+    { id: 3, date: "2024-05-13", description: "Sunucu Hizmetleri A.Ş. Fatura", amount: 1200, type: TransactionType.Expense, category: TransactionCategory.Utilities, accountId: 1 }
+];
+
+export const MOCK_TICKETS: SupportTicket[] = [
+    { id: 1, ticketNumber: "TKT-2024-001", subject: "Raporlarda yavaşlık", description: "Satış raporları çok yavaş yükleniyor.", customerId: 1, customerName: "Tekno A.Ş.", assignedToId: 3, assignedToName: "Mehmet Yılmaz", status: TicketStatus.Open, priority: TicketPriority.High, createdDate: "2024-05-14", attachments: [] }
+];
+
+export const MOCK_DOCUMENTS: Document[] = [];
+export const MOCK_COMMENTS: Comment[] = [];
+export const MOCK_SALES_ACTIVITIES: SalesActivity[] = [];
+export const MOCK_CUSTOM_FIELD_DEFINITIONS: CustomFieldDefinition[] = [];
+
+export const INITIAL_DASHBOARD_LAYOUT: DashboardWidget[] = [
+  { id: '1', widgetId: 'stat-total-revenue', w: 1, h: 1 },
+  { id: '2', widgetId: 'stat-unpaid-invoices', w: 1, h: 1 },
+  { id: '3', widgetId: 'stat-active-customers', w: 1, h: 1 },
+  { id: '4', widgetId: 'stat-open-tickets', w: 1, h: 1 },
+  { id: '5', widgetId: 'chart-financial-summary', w: 4, h: 2 },
+  { id: '6', widgetId: 'list-my-tasks', w: 2, h: 2 },
+];
+
+export const MOCK_COMPANY_INFO: CompanyInfo = { name: "ProFusion ERP", address: "Teknoloji Vadisi, No:1, İstanbul", phone: "0212 555 0000", email: "info@profusion.com", website: "https://profusion.com" };
 export const MOCK_BRANDING_SETTINGS: BrandingSettings = { logoUrl: "", primaryColor: "#3b82f6" };
 export const MOCK_SECURITY_SETTINGS: SecuritySettings = { passwordMinLength: 8, passwordRequireUppercase: true, passwordRequireNumber: true, sessionTimeout: 30 };
-export const MOCK_ACCOUNTS: Account[] = [
-    { id: 1, accountNumber: "100", name: "Kasa", type: AccountType.Asset, balance: 15000 },
-    { id: 2, accountNumber: "102", name: "Bankalar", type: AccountType.Asset, balance: 120000 },
-    { id: 3, accountNumber: "120", name: "Alıcılar", type: AccountType.Asset, balance: 45000 },
-    { id: 4, accountNumber: "320", name: "Satıcılar", type: AccountType.Liability, balance: 22000 },
-    { id: 5, accountNumber: "500", name: "Sermaye", type: AccountType.Equity, balance: 100000 },
-    { id: 6, accountNumber: "600", name: "Yurtiçi Satışlar", type: AccountType.Revenue, balance: 250000 },
-    { id: 7, accountNumber: "770", name: "Genel Yönetim Giderleri", type: AccountType.Expense, balance: 20000 },
-    { id: 8, accountNumber: "770.01", name: "Maaş Giderleri", type: AccountType.Expense, balance: 60000, parentId: 7 },
-    { id: 9, accountNumber: "360", name: "Ödenecek Vergi ve Fonlar", type: AccountType.Liability, balance: 0 },
-    { id: 10, accountNumber: "361", name: "Ödenecek Sosyal Güvenlik Kesintileri", type: AccountType.Liability, balance: 0 },
+
+export const INITIAL_ROLES: Role[] = [
+    { id: "admin", name: "Admin", isSystemRole: true },
+    { id: "yonetici", name: "Yönetici", isSystemRole: true },
+    { id: "calisan", name: "Çalışan", isSystemRole: true },
+    { id: "satis", name: "Satış Temsilcisi", isSystemRole: false },
+    { id: "muhasebe", name: "Muhasebe Uzmanı", isSystemRole: false }
 ];
-export const MOCK_JOURNAL_ENTRIES: JournalEntry[] = [];
-export const MOCK_RECURRING_JOURNAL_ENTRIES: RecurringJournalEntry[] = [];
-export const MOCK_BUDGETS: Budget[] = [];
-export const MOCK_COST_CENTERS: CostCenter[] = [];
-export const MOCK_TAX_RATES: TaxRate[] = [];
-export const MOCK_PRICE_LISTS: PriceList[] = [];
+
+// FIX: Move PERMISSION_DESCRIPTIONS before its usage.
+export const PERMISSION_DESCRIPTIONS: { [key in Permission]: { id: Permission, description: string } } = {
+    'dashboard:goruntule': { id: 'dashboard:goruntule', description: 'Kontrol panelini görüntüleyebilir.' },
+    'dashboard:duzenle': { id: 'dashboard:duzenle', description: 'Kontrol panelindeki bileşenleri düzenleyebilir.' },
+    'musteri:goruntule': { id: 'musteri:goruntule', description: 'Müşteri kayıtlarını görüntüleyebilir.' },
+    'musteri:yonet': { id: 'musteri:yonet', description: 'Müşteri oluşturabilir, düzenleyebilir ve silebilir.' },
+    'anlasma:goruntule': { id: 'anlasma:goruntule', description: 'Satış anlaşmalarını görüntüleyebilir.' },
+    'anlasma:yonet': { id: 'anlasma:yonet', description: 'Satış anlaşması oluşturabilir, düzenleyebilir ve silebilir.' },
+    'proje:goruntule': { id: 'proje:goruntule', description: 'Projeleri görüntüleyebilir.' },
+    'proje:yonet': { id: 'proje:yonet', description: 'Proje oluşturabilir, düzenleyebilir ve silebilir.' },
+    'gorev:goruntule': { id: 'gorev:goruntule', description: 'Görevleri görüntüleyebilir.' },
+    'gorev:yonet': { id: 'gorev:yonet', description: 'Görev oluşturabilir, düzenleyebilir ve silebilir.' },
+    'fatura:goruntule': { id: 'fatura:goruntule', description: 'Faturaları görüntüleyebilir.' },
+    'fatura:yonet': { id: 'fatura:yonet', description: 'Fatura oluşturabilir, düzenleyebilir ve silebilir.' },
+    'takvim:goruntule': { id: 'takvim:goruntule', description: 'Takvimi görüntüleyebilir.' },
+    'rapor:goruntule': { id: 'rapor:goruntule', description: 'Tüm raporları görüntüleyebilir.' },
+    'envanter:goruntule': { id: 'envanter:goruntule', description: 'Envanter ve ürünleri görüntüleyebilir.' },
+    'envanter:yonet': { id: 'envanter:yonet', description: 'Ürün, tedarikçi, satın alma siparişi yönetebilir.' },
+    'depo:yonet': { id: 'depo:yonet', description: 'Depoları yönetebilir.' },
+    'stok-hareketi:goruntule': { id: 'stok-hareketi:goruntule', description: 'Stok hareketlerini görüntüleyebilir.' },
+    'stok-sayimi:yap': { id: 'stok-sayimi:yap', description: 'Stok sayımı ve düzeltmesi yapabilir.' },
+    'satis-siparis:goruntule': { id: 'satis-siparis:goruntule', description: 'Satış siparişlerini görüntüleyebilir.' },
+    'satis-siparis:yonet': { id: 'satis-siparis:yonet', description: 'Satış siparişi oluşturabilir, düzenleyebilir ve silebilir.' },
+    'sevkiyat:goruntule': { id: 'sevkiyat:goruntule', description: 'Sevkiyatları görüntüleyebilir.' },
+    'sevkiyat:yonet': { id: 'sevkiyat:yonet', description: 'Sevkiyat oluşturabilir, düzenleyebilir ve silebilir.' },
+    'toplama-listesi:goruntule': { id: 'toplama-listesi:goruntule', description: 'Toplama listelerini görüntüleyebilir.' },
+    'toplama-listesi:yonet': { id: 'toplama-listesi:yonet', description: 'Toplama listesi oluşturabilir, düzenleyebilir ve silebilir.' },
+    'ik:goruntule': { id: 'ik:goruntule', description: 'İK modülünü ve çalışan bilgilerini (maaş hariç) görüntüleyebilir.' },
+    'ik:maas-goruntule': { id: 'ik:maas-goruntule', description: 'Çalışan maaş bilgilerini görüntüleyebilir.' },
+    'ik:izin-yonet': { id: 'ik:izin-yonet', description: 'İzin taleplerini yönetebilir.' },
+    'ik:performans-yonet': { id: 'ik:performans-yonet', description: 'Performans değerlendirmelerini yönetebilir.' },
+    'ik:ise-alim-goruntule': { id: 'ik:ise-alim-goruntule', description: 'İşe alım modülünü görüntüleyebilir.' },
+    'ik:ise-alim-yonet': { id: 'ik:ise-alim-yonet', description: 'Açık pozisyon ve adayları yönetebilir.' },
+    'ik:oryantasyon-goruntule': { id: 'ik:oryantasyon-goruntule', description: 'Oryantasyon modülünü görüntüleyebilir.' },
+    'ik:oryantasyon-yonet': { id: 'ik:oryantasyon-yonet', description: 'Oryantasyon şablon ve iş akışlarını yönetebilir.' },
+    'ik:bordro-yonet': { id: 'ik:bordro-yonet', description: 'Bordro süreçlerini yönetebilir.' },
+    'ik:rapor-goruntule': { id: 'ik:rapor-goruntule', description: 'İK raporlarını görüntüleyebilir.' },
+    'ik:masraf-yonet': { id: 'ik:masraf-yonet', description: 'Masraf taleplerini yönetebilir.' },
+    'ik:varlik-yonet': { id: 'ik:varlik-yonet', description: 'Şirket varlıklarını (zimmet) yönetebilir.' },
+    'finans:goruntule': { id: 'finans:goruntule', description: 'Finans modülünü görüntüleyebilir.' },
+    'finans:yonet': { id: 'finans:yonet', description: 'Banka hesaplarını ve işlemleri yönetebilir.' },
+    'destek:goruntule': { id: 'destek:goruntule', description: 'Destek taleplerini görüntüleyebilir.' },
+    'destek:yonet': { id: 'destek:yonet', description: 'Destek taleplerini yönetebilir.' },
+    'aktivite:goruntule': { id: 'aktivite:goruntule', description: 'Sistem aktivite kayıtlarını görüntüleyebilir.' },
+    // FIX: Add missing permission description.
+    'dokuman:goruntule': { id: 'dokuman:goruntule', description: 'Dokümanları görüntüleyebilir.' },
+    'dokuman:yonet': { id: 'dokuman:yonet', description: 'Doküman oluşturabilir, düzenleyebilir ve silebilir.' },
+    'yorum:yonet': { id: 'yorum:yonet', description: 'Kayıtlara yorum ekleyebilir, düzenleyebilir ve silebilir.' },
+    'kullanici:yonet': { id: 'kullanici:yonet', description: 'Kullanıcıları ve rollerini yönetebilir.' },
+    'ayarlar:goruntule': { id: 'ayarlar:goruntule', description: 'Ayarlar sayfasını görüntüleyebilir.' },
+    'ayarlar:genel-yonet': { id: 'ayarlar:genel-yonet', description: 'Genel şirket ayarlarını yönetebilir.' },
+    'ayarlar:roller-yonet': { id: 'ayarlar:roller-yonet', description: 'Rolleri ve izinleri yönetebilir.' },
+    'ayarlar:guvenlik-yonet': { id: 'ayarlar:guvenlik-yonet', description: 'Güvenlik ayarlarını yönetebilir.' },
+    'ayarlar:muhasebe-yonet': { id: 'ayarlar:muhasebe-yonet', description: 'Muhasebe ayarlarını yönetebilir.' },
+    'ayarlar:maliyet-merkezi-yonet': { id: 'ayarlar:maliyet-merkezi-yonet', description: 'Maliyet merkezlerini yönetebilir.' },
+    'ayarlar:vergi-yonet': { id: 'ayarlar:vergi-yonet', description: 'Vergi oranlarını yönetebilir.' },
+    'ayarlar:ik-bordro-yonet': { id: 'ayarlar:ik-bordro-yonet', description: 'İK ve Bordro ayarlarını yönetebilir.' },
+    'muhasebe:goruntule': { id: 'muhasebe:goruntule', description: 'Muhasebe modülünü (hesap planı vb.) görüntüleyebilir.' },
+    'muhasebe:yonet': { id: 'muhasebe:yonet', description: 'Yevmiye fişi vb. muhasebe kayıtlarını yönetebilir.' },
+    'muhasebe:mutabakat-yap': { id: 'muhasebe:mutabakat-yap', description: 'Banka mutabakatı yapabilir.' },
+    'muhasebe:defteri-kebir-goruntule': { id: 'muhasebe:defteri-kebir-goruntule', description: 'Defter-i Kebir (muavin) raporunu görüntüleyebilir.' },
+    'muhasebe:bilanco-goruntule': { id: 'muhasebe:bilanco-goruntule', description: 'Bilanço raporunu görüntüleyebilir.' },
+    'muhasebe:gelir-tablosu-goruntule': { id: 'muhasebe:gelir-tablosu-goruntule', description: 'Gelir Tablosu raporunu görüntüleyebilir.' },
+    'muhasebe:nakit-akis-goruntule': { id: 'muhasebe:nakit-akis-goruntule', description: 'Nakit Akış Tablosu raporunu görüntüleyebilir.' },
+    'muhasebe:alacak-yaslandirma-goruntule': { id: 'muhasebe:alacak-yaslandirma-goruntule', description: 'Alacak Yaşlandırma raporunu görüntüleyebilir.' },
+    'muhasebe:kar-zarar-goruntule': { id: 'muhasebe:kar-zarar-goruntule', description: 'Kar/Zarar raporunu görüntüleyebilir.' },
+    'muhasebe:tekrarlanan-yonet': { id: 'muhasebe:tekrarlanan-yonet', description: 'Tekrarlanan yevmiye fişlerini yönetebilir.' },
+    'muhasebe:butce-yonet': { id: 'muhasebe:butce-yonet', description: 'Bütçeleri yönetebilir.' },
+    'otomasyon:goruntule': { id: 'otomasyon:goruntule', description: 'Otomasyonları görüntüleyebilir.' },
+    'otomasyon:yonet': { id: 'otomasyon:yonet', description: 'Otomasyon oluşturabilir, düzenleyebilir ve silebilir.' },
+};
+
+export const INITIAL_ROLES_PERMISSIONS: Record<string, Permission[]> = {
+    admin: Object.values(PERMISSION_DESCRIPTIONS).map(p => p.id as Permission), // All permissions
+    yonetici: ['dashboard:goruntule', 'musteri:goruntule', 'musteri:yonet', 'anlasma:goruntule', 'anlasma:yonet', 'proje:goruntule', 'gorev:goruntule', 'gorev:yonet', 'rapor:goruntule', 'ik:goruntule'],
+    calisan: ['dashboard:goruntule', 'musteri:goruntule', 'proje:goruntule', 'gorev:goruntule', 'takvim:goruntule'],
+    satis: ['dashboard:goruntule', 'musteri:goruntule', 'musteri:yonet', 'anlasma:goruntule', 'anlasma:yonet', 'fatura:goruntule', 'takvim:goruntule'],
+    muhasebe: ['dashboard:goruntule', 'fatura:goruntule', 'fatura:yonet', 'finans:goruntule', 'finans:yonet', 'muhasebe:goruntule', 'muhasebe:yonet', 'muhasebe:mutabakat-yap']
+};
+
+export const MOCK_TAX_RATES: TaxRate[] = [{ id: 1, name: "KDV %20", rate: 0.20 }, { id: 2, name: "KDV %10", rate: 0.10 }, { id: 3, name: "KDV %1", rate: 0.01 }];
+
+export const INITIAL_SYSTEM_LISTS: SystemLists = {
+    customerStatus: [
+        { id: 'aktif', label: 'Aktif', color: '#22c55e' },
+        { id: 'potensiyel', label: 'Potensiyel', color: '#3b82f6' },
+        { id: 'kaybedilmiş', label: 'Kaybedilmiş', color: '#64748b' }
+    ],
+    dealStage: [], taskStatus: [], taskPriority: [],
+    leadSource: [
+        { id: 'Website', label: 'Website' },
+        { id: 'Referans', label: 'Referans' },
+        { id: 'Fuar', label: 'Fuar' },
+        { id: 'Soğuk Arama', label: 'Soğuk Arama' }
+    ],
+};
+
+export const INITIAL_EMAIL_TEMPLATES: EmailTemplate[] = [];
+export const MOCK_PRICE_LISTS: PriceList[] = [{ id: 1, name: "Genel Fiyat Listesi", currency: 'TRY', isDefault: true }];
 export const MOCK_PRICE_LIST_ITEMS: PriceListItem[] = [];
 export const MOCK_AUTOMATIONS: Automation[] = [];
 export const MOCK_AUTOMATION_LOGS: AutomationLog[] = [];
-export const MOCK_WAREHOUSES: Warehouse[] = [];
+export const MOCK_TASK_TEMPLATES: TaskTemplate[] = [];
+export const MOCK_SCHEDULED_TASKS: ScheduledTask[] = [];
+export const MOCK_COUNTERS_SETTINGS: CountersSettings = { prefix: 'FAT-', nextNumber: 3, padding: 6 };
+export const MOCK_WAREHOUSES: Warehouse[] = [{ id: 1, name: 'Ana Depo', location: 'Merkez', isDefault: true }];
 export const MOCK_STOCK_MOVEMENTS: StockMovement[] = [];
 export const MOCK_INVENTORY_TRANSFERS: InventoryTransfer[] = [];
 export const MOCK_INVENTORY_ADJUSTMENTS: InventoryAdjustment[] = [];
@@ -308,249 +444,47 @@ export const MOCK_SALES_ORDERS: SalesOrder[] = [];
 export const MOCK_SHIPMENTS: Shipment[] = [];
 export const MOCK_STOCK_ITEMS: StockItem[] = [];
 export const MOCK_PICK_LISTS: PickList[] = [];
-export const MOCK_PAYROLL_RUNS: PayrollRun[] = [];
-export const MOCK_PAYSLIPS: Payslip[] = [];
-export const MOCK_TASK_TEMPLATES: TaskTemplate[] = [];
-export const MOCK_SCHEDULED_TASKS: ScheduledTask[] = [];
 export const MOCK_BOMS: BillOfMaterials[] = [];
 export const MOCK_WORK_ORDERS: WorkOrder[] = [];
-export const MOCK_EXPENSES: Expense[] = [
-    {
-        id: 1,
-        employeeId: 5,
-        employeeName: 'Mustafa Arslan',
-        submissionDate: '2024-07-28',
-        description: 'Ankara müşteri ziyareti taksi ücreti',
-        category: 'Seyahat',
-        amount: 150,
-        status: ExpenseStatus.Pending,
-        attachments: [],
-    },
-];
-export const MOCK_ASSETS: Asset[] = [
-     { id: 1, name: 'Dell XPS 15', category: 'Laptop', serialNumber: 'SN12345DELL', purchaseDate: '2023-01-10', assignedToId: 5, assignmentDate: '2023-08-01', status: AssetStatus.InUse },
-];
-export const MOCK_COUNTERS_SETTINGS: CountersSettings = { prefix: 'FAT-', nextNumber: 3, padding: 5 };
-export const INITIAL_ROLES: Role[] = [
-  { id: "admin", name: "Yönetici", isSystemRole: true },
-  { id: "satis", name: "Satış", isSystemRole: true },
-  { id: "ik", name: "İK", isSystemRole: true },
-  { id: "muhasebe", name: "Muhasebe", isSystemRole: false },
-  { id: "calisan", name: "Çalışan", isSystemRole: false },
-];
-export const INITIAL_ROLES_PERMISSIONS: Record<string, Permission[]> = {
-    "admin": [
-        "dashboard:goruntule", "dashboard:duzenle",
-        "musteri:goruntule", "musteri:yonet",
-        "anlasma:goruntule", "anlasma:yonet",
-        "proje:goruntule", "proje:yonet",
-        "gorev:goruntule", "gorev:yonet",
-        "fatura:goruntule", "fatura:yonet",
-        "takvim:goruntule", "rapor:goruntule",
-        "envanter:goruntule", "envanter:yonet",
-        "depo:yonet", "stok-hareketi:goruntule", "stok-sayimi:yap",
-        "satis-siparis:goruntule", "satis-siparis:yonet",
-        "sevkiyat:goruntule", "sevkiyat:yonet",
-        "toplama-listesi:goruntule", "toplama-listesi:yonet",
-        "ik:goruntule", "ik:maas-goruntule", "ik:izin-yonet", "ik:performans-yonet", "ik:ise-alim-goruntule", "ik:ise-alim-yonet", "ik:oryantasyon-goruntule", "ik:oryantasyon-yonet", "ik:bordro-yonet", "ik:rapor-goruntule", "ik:masraf-yonet", "ik:varlik-yonet",
-        "finans:goruntule", "finans:yonet",
-        "destek:goruntule", "destek:yonet",
-        "aktivite:goruntule", "dokuman:goruntule", "dokuman:yonet", "yorum:yonet",
-        "kullanici:yonet", "ayarlar:goruntule", "ayarlar:genel-yonet", "ayarlar:roller-yonet", "ayarlar:guvenlik-yonet", "ayarlar:muhasebe-yonet", "ayarlar:maliyet-merkezi-yonet", "ayarlar:vergi-yonet", "ayarlar:ik-bordro-yonet",
-        "muhasebe:goruntule", "muhasebe:yonet", "muhasebe:mutabakat-yap", "muhasebe:defteri-kebir-goruntule", "muhasebe:bilanco-goruntule", "muhasebe:gelir-tablosu-goruntule", "muhasebe:nakit-akis-goruntule", "muhasebe:alacak-yaslandirma-goruntule", "muhasebe:kar-zarar-goruntule", "muhasebe:tekrarlanan-yonet", "muhasebe:butce-yonet",
-        "otomasyon:goruntule", "otomasyon:yonet"
-    ],
-    "satis": [
-        "dashboard:goruntule", "musteri:goruntule", "musteri:yonet", "anlasma:goruntule", "anlasma:yonet",
-        "proje:goruntule", "gorev:goruntule", "gorev:yonet", "fatura:goruntule", "takvim:goruntule",
-        "rapor:goruntule", "dokuman:goruntule", "yorum:yonet"
-    ],
-    "ik": [
-        "dashboard:goruntule", "takvim:goruntule",
-        "ik:goruntule", "ik:maas-goruntule", "ik:izin-yonet", "ik:performans-yonet", "ik:ise-alim-goruntule", "ik:ise-alim-yonet", "ik:oryantasyon-goruntule", "ik:oryantasyon-yonet", "ik:bordro-yonet", "ik:rapor-goruntule", "ik:masraf-yonet", "ik:varlik-yonet",
-        "dokuman:goruntule"
-    ],
-    "muhasebe": [
-        "dashboard:goruntule", "fatura:goruntule", "fatura:yonet", "rapor:goruntule",
-        "finans:goruntule", "finans:yonet",
-        "muhasebe:goruntule", "muhasebe:yonet", "muhasebe:mutabakat-yap", "muhasebe:defteri-kebir-goruntule", "muhasebe:bilanco-goruntule", "muhasebe:gelir-tablosu-goruntule", "muhasebe:nakit-akis-goruntule", "muhasebe:alacak-yaslandirma-goruntule", "muhasebe:kar-zarar-goruntule", "muhasebe:tekrarlanan-yonet", "muhasebe:butce-yonet"
-    ],
-    "calisan": [] // Portal user, no standard permissions
-};
+export const MOCK_ACCOUNTS: Account[] = [];
+export const MOCK_JOURNAL_ENTRIES: JournalEntry[] = [];
+export const MOCK_RECURRING_JOURNAL_ENTRIES: RecurringJournalEntry[] = [];
+export const MOCK_BUDGETS: Budget[] = [];
+export const MOCK_COST_CENTERS: CostCenter[] = [];
+export const MOCK_EXPENSES: Expense[] = [];
+export const MOCK_ASSETS: Asset[] = [];
+export const DEFAULT_TURKISH_PAYROLL_PARAMS_2025: HrParameters = { MINIMUM_WAGE_GROSS: 25000, SGK_CEILING: 187500, EMPLOYEE_SGK_RATE: 0.14, EMPLOYEE_UNEMPLOYMENT_RATE: 0.01, EMPLOYER_SGK_RATE: 0.205, EMPLOYER_UNEMPLOYMENT_RATE: 0.02, EMPLOYER_SGK_INCENTIVE_RATE: 0.05, STAMP_DUTY_RATE: 0.00759, INCOME_TAX_EXEMPTION_BASE: 25000, INCOME_TAX_BRACKETS: [{ limit: 110000, rate: 0.15 }, { limit: 230000, rate: 0.20 }, { limit: 870000, rate: 0.27 }, { limit: 3000000, rate: 0.35 }, { limit: Infinity, rate: 0.40 }], SEVERANCE_CEILING: 35058.58 };
+export const MOCK_SALES_RETURNS: any[] = [];
+export const MOCK_LEADS: Lead[] = [];
+export const MOCK_COMMISSION_RECORDS: CommissionRecord[] = [];
 
-// FIX: Add missing exports
 export const AVAILABLE_WIDGETS: WidgetConfig[] = [
     { id: 'stat-total-revenue', name: 'Toplam Gelir', type: 'StatCard', defaultW: 1, defaultH: 1 },
     { id: 'stat-unpaid-invoices', name: 'Ödenmemiş Faturalar', type: 'StatCard', defaultW: 1, defaultH: 1 },
     { id: 'stat-active-customers', name: 'Aktif Müşteriler', type: 'StatCard', defaultW: 1, defaultH: 1 },
     { id: 'stat-open-tickets', name: 'Açık Destek Talepleri', type: 'StatCard', defaultW: 1, defaultH: 1 },
-    { id: 'stat-total-cash', name: 'Toplam Nakit', type: 'StatCard', defaultW: 1, defaultH: 1 },
-    { id: 'stat-net-cash-flow', name: 'Net Nakit Akışı (30g)', type: 'StatCard', defaultW: 1, defaultH: 1 },
-    { id: 'chart-financial-summary', name: 'Finansal Özet', type: 'Chart', defaultW: 3, defaultH: 2 },
-    { id: 'chart-invoice-status', name: 'Fatura Durumları', type: 'Chart', defaultW: 3, defaultH: 2 },
+    { id: 'chart-financial-summary', name: 'Finansal Özet', type: 'Chart', defaultW: 4, defaultH: 2 },
     { id: 'list-my-tasks', name: 'Görevlerim', type: 'List', defaultW: 2, defaultH: 2 },
-    { id: 'list-today-view', name: 'Bugün', type: 'List', defaultW: 2, defaultH: 2 },
     { id: 'list-recent-activities', name: 'Son Aktiviteler', type: 'List', defaultW: 2, defaultH: 2 },
+    { id: 'chart-invoice-status', name: 'Fatura Durum Dağılımı', type: 'Chart', defaultW: 2, defaultH: 2 },
 ];
-export const INITIAL_DASHBOARD_LAYOUT: DashboardWidget[] = [
-    { id: 'w1', widgetId: 'stat-total-revenue', w: 1, h: 1, x:0, y:0 },
-    { id: 'w2', widgetId: 'stat-unpaid-invoices', w: 1, h: 1, x:1, y:0 },
-    { id: 'w3', widgetId: 'stat-active-customers', w: 1, h: 1, x:2, y:0 },
-    { id: 'w4', widgetId: 'stat-open-tickets', w: 1, h: 1, x:3, y:0 },
-    { id: 'w5', widgetId: 'chart-financial-summary', w: 4, h: 2, x:0, y:1 },
-    { id: 'w6', widgetId: 'list-my-tasks', w: 2, h: 2, x:4, y:1 },
-    { id: 'w7', widgetId: 'list-recent-activities', w: 2, h: 2, x:4, y:3 },
-];
-
-export const INITIAL_SYSTEM_LISTS: SystemLists = {
-    customerStatus: [
-        { id: 'potensiyel', label: 'Potansiyel', color: '#3b82f6' },
-        { id: 'aktif', label: 'Aktif', color: '#22c55e' },
-        { id: 'kaybedilmiş', label: 'Kaybedilmiş', color: '#64748b' }
-    ],
-    dealStage: [], // these come from DealStage enum
-    taskStatus: [], // from TaskStatus enum
-    taskPriority: [], // from TaskPriority enum
-    leadSource: [
-        { id: 'Website', label: 'Website' },
-        { id: 'Referans', label: 'Referans' },
-        { id: 'Fuar', label: 'Fuar' },
-        { id: 'Soğuk Arama', label: 'Soğuk Arama' }
-    ]
-};
-
-export const INITIAL_EMAIL_TEMPLATES: EmailTemplate[] = [
-    { id: 'invoice', name: 'Fatura Gönderimi', subject: 'Yeni Faturanız: {{invoiceNumber}}', body: 'Merhaba {{customerName}},\n\n... faturanız ektedir.', variables: ['invoiceNumber', 'customerName'] },
-    { id: 'newUser', name: 'Yeni Kullanıcı Karşılama', subject: 'ProFusion\'a Hoş Geldiniz!', body: 'Merhaba {{userName}},\n\n...', variables: ['userName'] },
-    { id: 'taskAssigned', name: 'Görev Ataması', subject: 'Yeni Görev: {{taskTitle}}', body: 'Merhaba,\n\nSize yeni bir görev atandı: {{taskTitle}}', variables: ['taskTitle'] }
-];
-
-export const DEFAULT_TURKISH_PAYROLL_PARAMS_2025: HrParameters = {
-    MINIMUM_WAGE_GROSS: 25000.80,
-    SGK_CEILING: 187506.00,
-    EMPLOYEE_SGK_RATE: 0.14,
-    EMPLOYEE_UNEMPLOYMENT_RATE: 0.01,
-    EMPLOYER_SGK_RATE: 0.205,
-    EMPLOYER_UNEMPLOYMENT_RATE: 0.02,
-    EMPLOYER_SGK_INCENTIVE_RATE: 0.05,
-    STAMP_DUTY_RATE: 0.00759,
-    INCOME_TAX_EXEMPTION_BASE: 25000.80,
-    INCOME_TAX_BRACKETS: [
-        { limit: 110000, rate: 0.15 },
-        { limit: 230000, rate: 0.20 },
-        { limit: 870000, rate: 0.27 },
-        { limit: 3000000, rate: 0.35 },
-        { limit: Infinity, rate: 0.40 }
-    ],
-    SEVERANCE_CEILING: 35058.58
-};
-
-export const MOCK_SALES_RETURNS: any[] = [];
-
+export const SGK_TERMINATION_CODES: any[] = [];
+export const SGK_PROFESSION_CODES_SAMPLE: any[] = [];
 export const CINSIYET_OPTIONS: Cinsiyet[] = ['Erkek', 'Kadın'];
 export const CALISMA_STATUSU_OPTIONS: CalismaStatusu[] = ['Tam Zamanlı', 'Yarı Zamanlı', 'Geçici', 'Stajyer'];
 export const SIGORTA_KOLU_OPTIONS: SigortaKolu[] = ['4A', '4B', '4C'];
 export const MEDENI_DURUM_OPTIONS: MedeniDurum[] = ['Bekar', 'Evli'];
 export const EGITIM_SEVIYELERI: EgitimSeviyesi[] = ['İlköğretim', 'Lise', 'Ön Lisans', 'Lisans', 'Yüksek Lisans', 'Doktora'];
-export const SGK_TERMINATION_CODES = [ { code: '03', description: 'İstifa' }, { code: '04', description: 'İşverenin haklı nedenle feshi' } ];
-export const SGK_PROFESSION_CODES_SAMPLE = [ { code: '2512.04', description: 'Yazılım Geliştiricisi' }, { code: '2421.01', description: 'Yönetim Danışmanı' } ];
-export const SGK_INCENTIVE_CODES = [{ code: '5510', description: '5 Puanlık İndirim' }];
-export const SGK_MISSING_DAY_REASONS = [{ code: '01', description: 'İstirahat' }];
-
-export const REPORT_CARDS: ReportCardInfo[] = [
-    { title: 'Satış Performansı', description: 'Anlaşma değerleri, kazanma oranları ve satış hunisi analizi.', link: '/reports/sales', icon: ICONS.sales },
-    { title: 'Fatura Durum Raporu', description: 'Ödenmiş, ödenmemiş ve gecikmiş faturaların takibi.', link: '/reports/invoices', icon: ICONS.invoices },
-    { title: 'Gider Analizi', description: 'Giderlerin kategori bazında dağılımını inceleyin.', link: '/reports/expenses', icon: ICONS.expenses },
-];
-
-export const HR_REPORT_CARDS: ReportCardInfo[] = [
-    { title: 'Personel Devir Oranı (Turnover)', description: 'Belirli bir dönemdeki personel giriş-çıkışlarını analiz edin.', link: '/hr/reports/turnover', icon: ICONS.hr },
-];
-
+export const SGK_INCENTIVE_CODES: any[] = [];
+export const REPORT_CARDS: ReportCardInfo[] = [];
+export const HR_REPORT_CARDS: ReportCardInfo[] = [];
 export const PROJECT_HOURLY_RATE = 75;
-
-export const DEAL_STAGE_PROBABILITIES: { [key in DealStage]: number } = {
-    [DealStage.Lead]: 0.1,
-    [DealStage.Contacted]: 0.3,
-    [DealStage.Proposal]: 0.6,
-    [DealStage.Won]: 1,
-    [DealStage.Lost]: 0,
-};
-
-export const WIN_REASONS = ['Fiyat', 'Ürün Kalitesi', 'Hizmet', 'Referans', 'Diğer'];
-export const LOSS_REASONS = ['Fiyat', 'Rakip Ürün', 'İhtiyaç Yok', 'Zamanlama', 'Diğer'];
-
-export const PERMISSION_DESCRIPTIONS: { [key in Permission]: string } = {
-    'dashboard:goruntule': 'Kontrol panelini görüntüleme izni.',
-    'dashboard:duzenle': 'Kontrol panelini düzenleme izni.',
-    'musteri:goruntule': 'Müşterileri görüntüleme izni.',
-    'musteri:yonet': 'Müşteri ekleme, düzenleme, silme izni.',
-    'anlasma:goruntule': 'Anlaşmaları görüntüleme izni.',
-    'anlasma:yonet': 'Anlaşma ekleme, düzenleme, silme izni.',
-    'proje:goruntule': 'Projeleri görüntüleme izni.',
-    'proje:yonet': 'Proje ekleme, düzenleme, silme izni.',
-    'gorev:goruntule': 'Görevleri görüntüleme izni.',
-    'gorev:yonet': 'Görev ekleme, düzenleme, silme izni.',
-    'fatura:goruntule': 'Faturaları görüntüleme izni.',
-    'fatura:yonet': 'Fatura ekleme, düzenleme, silme izni.',
-    'takvim:goruntule': 'Takvimi görüntüleme izni.',
-    'rapor:goruntule': 'Raporları görüntüleme izni.',
-    'envanter:goruntule': 'Envanteri görüntüleme izni.',
-    'envanter:yonet': 'Envanter yönetimi (ürün ekleme, silme vb).',
-    'depo:yonet': 'Depo yönetimi.',
-    'stok-hareketi:goruntule': 'Stok hareketlerini görüntüleme.',
-    'stok-sayimi:yap': 'Stok sayımı yapma izni.',
-    'satis-siparis:goruntule': 'Satış siparişlerini görüntüleme.',
-    'satis-siparis:yonet': 'Satış siparişlerini yönetme.',
-    'sevkiyat:goruntule': 'Sevkiyatları görüntüleme.',
-    'sevkiyat:yonet': 'Sevkiyatları yönetme.',
-    'toplama-listesi:goruntule': 'Toplama listelerini görüntüleme.',
-    'toplama-listesi:yonet': 'Toplama listelerini yönetme.',
-    'ik:goruntule': 'İK modülünü görüntüleme.',
-    'ik:maas-goruntule': 'Maaş bilgilerini görüntüleme.',
-    'ik:izin-yonet': 'İzin taleplerini yönetme.',
-    'ik:performans-yonet': 'Performans değerlendirmelerini yönetme.',
-    'ik:ise-alim-goruntule': 'İşe alım modülünü görüntüleme.',
-    'ik:ise-alim-yonet': 'İşe alım modülünü yönetme.',
-    'ik:oryantasyon-goruntule': 'Oryantasyon modülünü görüntüleme.',
-    'ik:oryantasyon-yonet': 'Oryantasyon modülünü yönetme.',
-    'ik:bordro-yonet': 'Bordro yönetimi.',
-    'ik:rapor-goruntule': 'İK raporlarını görüntüleme.',
-    'ik:masraf-yonet': 'Masraf taleplerini yönetme.',
-    'ik:varlik-yonet': 'Varlıkları (zimmet) yönetme.',
-    'finans:goruntule': 'Finans modülünü görüntüleme.',
-    'finans:yonet': 'Finansal işlemleri yönetme.',
-    'destek:goruntule': 'Destek taleplerini görüntüleme.',
-    'destek:yonet': 'Destek taleplerini yönetme.',
-    'aktivite:goruntule': 'Aktivite kayıtlarını görüntüleme.',
-    'dokuman:goruntule': 'Dokümanları görüntüleme.',
-    'dokuman:yonet': 'Dokümanları yönetme.',
-    'yorum:yonet': 'Yorum ekleme, düzenleme, silme.',
-    'kullanici:yonet': 'Kullanıcıları yönetme.',
-    'ayarlar:goruntule': 'Ayarları görüntüleme.',
-    'ayarlar:genel-yonet': 'Genel ayarları yönetme.',
-    'ayarlar:roller-yonet': 'Rolleri ve izinleri yönetme.',
-    'ayarlar:guvenlik-yonet': 'Güvenlik ayarlarını yönetme.',
-    'ayarlar:muhasebe-yonet': 'Muhasebe ayarlarını yönetme.',
-    'ayarlar:maliyet-merkezi-yonet': 'Maliyet merkezlerini yönetme.',
-    'ayarlar:vergi-yonet': 'Vergi ayarlarını yönetme.',
-    'ayarlar:ik-bordro-yonet': 'İK ve bordro ayarlarını yönetme.',
-    'muhasebe:goruntule': 'Muhasebe modülünü görüntüleme.',
-    'muhasebe:yonet': 'Muhasebe kayıtlarını yönetme.',
-    'muhasebe:mutabakat-yap': 'Banka mutabakatı yapma.',
-    'muhasebe:defteri-kebir-goruntule': 'Defter-i kebir görüntüleme.',
-    'muhasebe:bilanco-goruntule': 'Bilanço görüntüleme.',
-    'muhasebe:gelir-tablosu-goruntule': 'Gelir tablosu görüntüleme.',
-    'muhasebe:nakit-akis-goruntule': 'Nakit akış tablosu görüntüleme.',
-    'muhasebe:alacak-yaslandirma-goruntule': 'Alacak yaşlandırma raporu görüntüleme.',
-    'muhasebe:kar-zarar-goruntule': 'Kar/zarar raporu görüntüleme.',
-    'muhasebe:tekrarlanan-yonet': 'Tekrarlanan yevmiye kayıtlarını yönetme.',
-    'muhasebe:butce-yonet': 'Bütçe yönetimi.',
-    'otomasyon:goruntule': 'Otomasyonları görüntüleme.',
-    'otomasyon:yonet': 'Otomasyonları yönetme.'
-};
-
+export const DEAL_STAGE_PROBABILITIES: { [key in DealStage]: number } = { [DealStage.Lead]: 0.1, [DealStage.Contacted]: 0.3, [DealStage.Proposal]: 0.6, [DealStage.Won]: 1, [DealStage.Lost]: 0 };
+export const WIN_REASONS = ['Fiyat', 'Ürün Kalitesi', 'Hizmet', 'İlişki', 'Diğer'];
+export const LOSS_REASONS = ['Fiyat', 'Rakip Ürün', 'Zamanlama', 'Bütçe Yok', 'Diğer'];
+export const SGK_MISSING_DAY_REASONS: any[] = [];
+export const TEVKIFAT_KODLARI: any[] = [];
+export const KDV_MUAFİYET_KODLARI: any[] = [];
 export const INVOICE_TYPE_OPTIONS: InvoiceType[] = ['Satış', 'İade', 'Tevkifat', 'İstisna', 'Özel Matrah'];
-export const PAYMENT_METHODS = ['Nakit', 'Banka Havalesi', 'Kredi Kartı'];
-export const KDV_MUAFİYET_KODLARI = [{ code: '301', description: 'Mal İhracatı' }];
-export const TEVKIFAT_KODLARI = [{ code: '601', description: 'Yapım İşleri (2/10)', rate: 0.2 }];
+export const PAYMENT_METHODS: string[] = ['Nakit', 'Banka Transferi', 'Kredi Kartı'];
+// END: ADDED MISSING MOCK DATA AND CONSTANTS

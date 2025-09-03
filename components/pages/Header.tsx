@@ -190,18 +190,4 @@ const Header: React.FC = () => {
                                    <img src={user.avatar} alt={user.name} className="h-8 w-8 rounded-full" />
                                    <div>
                                      <p className="font-medium text-text-main">{user.name}</p>
-                                     <p className="text-xs">{user.role}</p>
-                                   </div>
-                                </button>
-                            </li>
-                        ))}
-                    </ul>
-                </div>
-            )}
-        </div>
-      </div>
-    </header>
-  );
-};
-
-export default Header;
+                               

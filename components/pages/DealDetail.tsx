@@ -1,8 +1,8 @@
-import React, { useState } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import React, { useState, useMemo } from 'react';
+import { useParams, Link, useNavigate } from 'react-router-dom';
 import { useApp } from '../../context/AppContext';
 import Card from '../ui/Card';
-import { DealStage, SalesActivityType } from '../../types';
+import { DealStage, SalesActivityType, QuotationStatus } from '../../types';
 import ActivityTimeline from '../sales/ActivityTimeline';
 import LogActivityModal from '../sales/LogActivityModal';
 import Button from '../ui/Button';
@@ -11,7 +11,8 @@ import CommentsThread from '../collaboration/CommentsThread';
 
 const DealDetail: React.FC = () => {
     const { id } = useParams<{ id: string }>();
-    const { deals, customers, hasPermission } = useApp();
+    const navigate = useNavigate();
+    const { deals, customers, hasPermission, quotations } = useApp();
     const dealId = parseInt(id || '', 10);
     const deal = deals.find(d => d.id === dealId);
     const customer = customers.find(c => c.id === deal?.customerId);
@@ -21,6 +22,8 @@ const DealDetail: React.FC = () => {
 
     const canManageDeals = hasPermission('anlasma:yonet');
 
+    const relatedQuotations = useMemo(() => quotations.filter(q => q.dealId === dealId), [quotations, dealId]);
+
     if (!deal) {
         return <Card title="Hata"><p>Anlaşma bulunamadı. Lütfen <Link to="/sales">Satış Hattı'na</Link> geri dönün.</p></Card>;
     }
@@ -28,6 +31,10 @@ const DealDetail: React.FC = () => {
     const handleOpenLogActivityModal = (type: SalesActivityType) => {
         setActivityType(type);
         setIsLogActivityModalOpen(true);
+    };
+
+    const handleCreateQuotation = () => {
+        navigate('/sales/quotations/new', { state: { dealId: deal.id } });
     };
 
     const getStageBadge = (stage: DealStage) => {
@@ -40,6 +47,18 @@ const DealDetail: React.FC = () => {
         };
         return <span className={`px-2 py-1 text-xs font-medium rounded-full ${styles[stage]}`}>{stage}</span>;
     };
+    
+    const getQuotationStatusBadge = (status: QuotationStatus) => {
+        const styles: { [key in QuotationStatus]: string } = {
+            [QuotationStatus.Draft]: 'bg-slate-100 text-slate-800',
+            [QuotationStatus.Sent]: 'bg-blue-100 text-blue-800',
+            [QuotationStatus.Accepted]: 'bg-green-100 text-green-800',
+            [QuotationStatus.Rejected]: 'bg-red-100 text-red-800',
+            [QuotationStatus.Expired]: 'bg-gray-100 text-gray-800',
+        };
+        return <span className={`px-2 py-1 text-xs font-medium rounded-full ${styles[status]}`}>{status}</span>;
+    };
+
 
     return (
         <>
@@ -85,6 +104,26 @@ const DealDetail: React.FC = () => {
                         </Card>
                     </div>
                      <div className="lg:col-span-1 space-y-6">
+                         <Card title="Teklifler" action={canManageDeals && <Button size="sm" onClick={handleCreateQuotation}>Teklif Oluştur</Button>}>
+                             <div className="space-y-2">
+                                 {relatedQuotations.length > 0 ? (
+                                    relatedQuotations.map(q => (
+                                        <div key={q.id} className="p-2 border rounded-md dark:border-dark-border flex justify-between items-center">
+                                            <div>
+                                                <Link to={`/sales/quotations/edit/${q.id}`} className="font-semibold text-primary-600 hover:underline">{q.quotationNumber}</Link>
+                                                <p className="text-xs text-text-secondary">{q.issueDate}</p>
+                                            </div>
+                                            <div className="text-right">
+                                                <p className="font-mono text-sm">${q.grandTotal.toLocaleString()}</p>
+                                                {getQuotationStatusBadge(q.status)}
+                                            </div>
+                                        </div>
+                                    ))
+                                 ) : (
+                                    <p className="text-sm text-center text-text-secondary py-4">Bu anlaşma için henüz teklif oluşturulmadı.</p>
+                                 )}
+                             </div>
+                         </Card>
                          <Card title="Ürünler ve Hizmetler">
                             {deal.lineItems.length > 0 ? (
                                 <div className="overflow-x-auto max-h-96">

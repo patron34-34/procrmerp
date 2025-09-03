@@ -1,16 +1,14 @@
-import React, { useState, useMemo } from 'react';
+import React, { useMemo } from 'react';
 import { useApp } from '../../../context/AppContext';
 import { SalesReturn, SalesReturnStatus } from '../../../types';
 import Card from '../../ui/Card';
 import Button from '../../ui/Button';
 import { ICONS } from '../../../constants';
 import EmptyState from '../../ui/EmptyState';
-import { Link, useNavigate } from 'react-router-dom';
-import ConfirmationModal from '../../ui/ConfirmationModal';
+import { Link } from 'react-router-dom';
 
 const SalesReturns: React.FC = () => {
     const { salesReturns, hasPermission } = useApp();
-    const navigate = useNavigate();
     const canManage = hasPermission('fatura:yonet');
 
     const stats = useMemo(() => {
@@ -21,9 +19,9 @@ const SalesReturns: React.FC = () => {
 
     const getStatusBadge = (status: SalesReturnStatus) => {
         const styles: { [key in SalesReturnStatus]: string } = {
-            [SalesReturnStatus.Draft]: 'bg-yellow-100 text-yellow-800',
-            [SalesReturnStatus.Approved]: 'bg-blue-100 text-blue-800',
-            [SalesReturnStatus.Processed]: 'bg-green-100 text-green-800',
+            [SalesReturnStatus.Draft]: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200',
+            [SalesReturnStatus.Approved]: 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200',
+            [SalesReturnStatus.Processed]: 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200',
         };
         return <span className={`px-2 py-1 text-xs font-medium rounded-full ${styles[status]}`}>{status}</span>;
     };
@@ -45,7 +43,7 @@ const SalesReturns: React.FC = () => {
                 action={canManage && (
                     <Link to="/invoicing/returns/new">
                         <Button>
-                            <span className="flex items-center gap-2">{ICONS.add} Yeni İade Faturası</span>
+                            <span className="flex items-center gap-2">{ICONS.add} Yeni İade</span>
                         </Button>
                     </Link>
                 )}

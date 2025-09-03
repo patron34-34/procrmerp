@@ -146,43 +146,31 @@ const TerminationCalculator: React.FC = () => {
                                     <ResultRow label="Net İhbar Tazminatı" value={result.noticePayNet} isBold />
                                 </div>
                                 <div>
-                                    <h4 className="font-bold mb-2">Yıllık İzin Ücreti</h4>
-                                    <ResultRow label="Hak Edilen / Kullanılan" value={`${result.annualLeaveDaysEntitled} / ${result.annualLeaveDaysUsed} gün`} />
-                                    <ResultRow label="Kalan İzin Günü" value={`${result.annualLeaveDaysUnused} gün`} />
-                                    <ResultRow label="Brüt İzin Ücreti" value={result.annualLeavePayGross} />
-                                    <ResultRow label="Net İzin Ücreti" value={result.annualLeavePayNet} isBold />
+                                    <h4 className="font-bold mb-2">Yıllık İzin Ücreti ({result.annualLeaveDaysUnused} Gün)</h4>
+                                    <ResultRow label="Brüt Yıllık İzin Ücreti" value={result.annualLeavePayGross} />
+                                    <ResultRow label="Net Yıllık İzin Ücreti" value={result.annualLeavePayNet} isBold />
                                 </div>
-                                 <div>
-                                    <h4 className="font-bold mb-2">Ek Ödemeler</h4>
-                                    <ResultRow label="Brüt Bonus/Prim" value={result.bonusGross} />
-                                    <ResultRow label="Net Bonus/Prim" value={result.bonusNet} isBold />
+                                <div>
+                                    <h4 className="font-bold mb-2">Prim / Bonus</h4>
+                                    <ResultRow label="Brüt Prim / Bonus" value={result.bonusGross} />
+                                    <ResultRow label="Net Prim / Bonus" value={result.bonusNet} isBold />
                                 </div>
                             </div>
                             
-                            <div className="pt-4 border-t dark:border-dark-border">
-                                <h4 className="font-bold mb-2">Genel Toplam</h4>
-                                <ResultRow label="Toplam Vergiye Tabi Tutar" value={result.totalTaxableGross} />
+                            <div className="p-4 bg-slate-100 dark:bg-slate-800 rounded-lg space-y-2">
+                                <ResultRow label="Toplam Brüt Vergiye Tabi Tutar" value={result.totalTaxableGross} />
                                 <ResultRow label="Toplam Gelir Vergisi" value={-result.totalIncomeTax} />
                                 <ResultRow label="Toplam Damga Vergisi" value={-result.totalStampDuty} />
-                                <ResultRow label="Çalışana Ödenecek Toplam Net Tutar" value={result.totalNetPayment} isBold className="text-xl text-green-600" />
+                                <ResultRow label="TOPLAM NET ÖDEME" value={result.totalNetPayment} isBold className="!text-xl !text-green-600" />
                             </div>
-                             <div className="pt-4 border-t dark:border-dark-border text-center">
-                                <Button onClick={() => setIsDocModalOpen(true)}>Belgeleri Oluştur</Button>
+                            <div className="flex justify-end gap-2">
+                                <Button variant="secondary" onClick={() => {setDocumentToPrint('ibraname')}}>İbraname Oluştur</Button>
                             </div>
                         </div>
                     </Card>
                 )}
             </div>
         </div>
-        <Modal isOpen={isDocModalOpen} onClose={() => setIsDocModalOpen(false)} title="Belge Oluştur">
-            <div className="text-center">
-                <p className="mb-4">Hangi belgeyi oluşturmak istersiniz?</p>
-                <div className="flex justify-center gap-4">
-                    <Button onClick={() => { setIsDocModalOpen(false); setDocumentToPrint('ibraname'); }}>İbraname Yazdır</Button>
-                    <Button variant="secondary" onClick={() => alert('Fesih Bildirimi henüz hazır değil.')}>Fesih Bildirimi Yazdır</Button>
-                </div>
-            </div>
-        </Modal>
         </>
     );
 };

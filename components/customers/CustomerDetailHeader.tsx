@@ -12,24 +12,30 @@ import TicketFormModal from '../support/TicketFormModal';
 import SalesOrderFormModal from '../inventory/SalesOrderFormModal';
 
 interface CustomerDetailHeaderProps {
-    customer: Customer & { healthScore: number };
+    customer: Customer & { healthScore?: number };
     onAddNewTask: () => void;
+    onAddNewDeal: () => void;
+    onAddNewProject: () => void;
+    onAddNewInvoice: () => void;
+    onAddNewTicket: () => void;
+    onAddNewSalesOrder: () => void;
 }
 
-const CustomerDetailHeader: React.FC<CustomerDetailHeaderProps> = ({ customer, onAddNewTask }) => {
+const CustomerDetailHeader: React.FC<CustomerDetailHeaderProps> = ({ 
+    customer, 
+    onAddNewTask,
+    onAddNewDeal,
+    onAddNewProject,
+    onAddNewInvoice,
+    onAddNewTicket,
+    onAddNewSalesOrder
+ }) => {
     const { hasPermission, systemLists } = useApp();
     const [isFormModalOpen, setIsFormModalOpen] = useState(false);
-    const [isDealFormOpen, setIsDealFormOpen] = useState(false);
-    const [isProjectFormOpen, setIsProjectFormOpen] = useState(false);
-    const [isInvoiceFormOpen, setIsInvoiceFormOpen] = useState(false);
-    const [isTicketFormOpen, setIsTicketFormOpen] = useState(false);
-    const [isSalesOrderFormOpen, setIsSalesOrderFormOpen] = useState(false);
-
+    
     const canManageCustomers = hasPermission('musteri:yonet');
     const statusInfo = systemLists.customerStatus.find(s => s.id === customer.status);
-    const prefilledData = { customerId: customer.id };
-
-
+    
     return (
         <>
             <div className="flex flex-col md:flex-row justify-between items-start gap-4">
@@ -64,11 +70,11 @@ const CustomerDetailHeader: React.FC<CustomerDetailHeaderProps> = ({ customer, o
                             menuPosition="right-0"
                         >
                             <DropdownItem onClick={onAddNewTask}><span className="w-5">{ICONS.tasks}</span> Görev</DropdownItem>
-                            <DropdownItem onClick={() => setIsDealFormOpen(true)}><span className="w-5">{ICONS.sales}</span> Anlaşma</DropdownItem>
-                            <DropdownItem onClick={() => setIsSalesOrderFormOpen(true)}><span className="w-5">{ICONS.salesOrder}</span> Satış Siparişi</DropdownItem>
-                            <DropdownItem onClick={() => setIsProjectFormOpen(true)}><span className="w-5">{ICONS.projects}</span> Proje</DropdownItem>
-                            <DropdownItem onClick={() => setIsInvoiceFormOpen(true)}><span className="w-5">{ICONS.invoices}</span> Fatura</DropdownItem>
-                            <DropdownItem onClick={() => setIsTicketFormOpen(true)}><span className="w-5">{ICONS.support}</span> Destek Talebi</DropdownItem>
+                            <DropdownItem onClick={onAddNewDeal}><span className="w-5">{ICONS.sales}</span> Anlaşma</DropdownItem>
+                            <DropdownItem onClick={onAddNewSalesOrder}><span className="w-5">{ICONS.salesOrder}</span> Satış Siparişi</DropdownItem>
+                            <DropdownItem onClick={onAddNewProject}><span className="w-5">{ICONS.projects}</span> Proje</DropdownItem>
+                            <DropdownItem onClick={onAddNewInvoice}><span className="w-5">{ICONS.invoices}</span> Fatura</DropdownItem>
+                            <DropdownItem onClick={onAddNewTicket}><span className="w-5">{ICONS.support}</span> Destek Talebi</DropdownItem>
                         </Dropdown>
                          <Dropdown
                             trigger={
@@ -86,11 +92,6 @@ const CustomerDetailHeader: React.FC<CustomerDetailHeaderProps> = ({ customer, o
             </div>
             
             {isFormModalOpen && canManageCustomers && <CustomerForm isOpen={isFormModalOpen} onClose={() => setIsFormModalOpen(false)} customer={customer} />}
-            {isDealFormOpen && <DealFormModal isOpen={isDealFormOpen} onClose={() => setIsDealFormOpen(false)} deal={null} prefilledData={prefilledData} />}
-            {isProjectFormOpen && <ProjectFormModal isOpen={isProjectFormOpen} onClose={() => setIsProjectFormOpen(false)} project={null} prefilledData={prefilledData} />}
-            {isInvoiceFormOpen && <InvoiceFormModal isOpen={isInvoiceFormOpen} onClose={() => setIsInvoiceFormOpen(false)} invoice={null} prefilledData={prefilledData} />}
-            {isTicketFormOpen && <TicketFormModal isOpen={isTicketFormOpen} onClose={() => setIsTicketFormOpen(false)} ticket={null} prefilledData={prefilledData} />}
-            {isSalesOrderFormOpen && <SalesOrderFormModal isOpen={isSalesOrderFormOpen} onClose={() => setIsSalesOrderFormOpen(false)} order={null} prefilledData={prefilledData} />}
         </>
     );
 };

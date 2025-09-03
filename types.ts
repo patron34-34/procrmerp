@@ -218,6 +218,7 @@ export interface Customer {
   customFields?: { [key: string]: string | number | boolean };
   priceListId?: number;
   healthScore?: number;
+  healthScoreBreakdown?: string[];
 
   // New detailed fields
   accountType: 'Gerçek Kişi' | 'Tüzel Kişi';
@@ -448,7 +449,6 @@ export interface Invoice {
     originalInvoiceId?: number;
 }
 
-// FIX: Add SalesReturn and SalesReturnStatus types
 export enum SalesReturnStatus {
     Draft = 'Taslak',
     Approved = 'Onaylandı',
@@ -469,6 +469,48 @@ export interface SalesReturn {
     subTotal: number;
     totalTax: number;
     grandTotal: number;
+}
+
+export enum QuotationStatus {
+    Draft = 'Taslak',
+    Sent = 'Gönderildi',
+    Accepted = 'Kabul Edildi',
+    Rejected = 'Reddedildi',
+    Expired = 'Süresi Doldu',
+}
+
+export interface QuotationLineItem {
+    id: number;
+    productId: number;
+    productName: string;
+    quantity: number;
+    unit: string;
+    unitPrice: number;
+    discountRate: number;
+    taxRate: number;
+    description?: string;
+    totalPrice: number; // calculated
+}
+
+export interface Quotation {
+    id: number;
+    quotationNumber: string;
+    customerId: number;
+    customerName: string;
+    dealId?: number;
+    issueDate: string;
+    expiryDate: string;
+    status: QuotationStatus;
+    items: QuotationLineItem[];
+    notes?: string;
+    terms?: string;
+    // totals
+    subTotal: number;
+    totalDiscount: number;
+    totalTax: number;
+    grandTotal: number;
+    // related docs
+    salesOrderId?: number;
 }
 
 export enum ProductType {
@@ -747,8 +789,7 @@ export type Permission =
     | 'otomasyon:goruntule' | 'otomasyon:yonet'
     ;
 
-// FIX: Add 'sales_return' to EntityType
-export type EntityType = 'customer' | 'deal' | 'project' | 'task' | 'invoice' | 'product' | 'supplier' | 'purchase_order' | 'employee' | 'ticket' | 'document' | 'user' | 'role' | 'automation' | 'journal_entry' | 'payroll_run' | 'task_template' | 'scheduled_task' | 'sales_order' | 'shipment' | 'work_order' | 'bom' | 'bill' | 'warehouse' | 'inventory_transfer' | 'inventory_adjustment' | 'expense' | 'asset' | 'sales_return';
+export type EntityType = 'customer' | 'deal' | 'project' | 'task' | 'invoice' | 'product' | 'supplier' | 'purchase_order' | 'employee' | 'ticket' | 'document' | 'user' | 'role' | 'automation' | 'journal_entry' | 'payroll_run' | 'task_template' | 'scheduled_task' | 'sales_order' | 'shipment' | 'work_order' | 'bom' | 'bill' | 'warehouse' | 'inventory_transfer' | 'inventory_adjustment' | 'expense' | 'asset' | 'sales_return' | 'quotation' | 'lead' | 'commission';
 
 export enum ActionType {
     CREATED = 'Oluşturuldu',
@@ -779,6 +820,7 @@ export enum ActionType {
     SCHEDULED_TASK_CREATED = 'Planlanmış Görev Oluşturuldu',
     SCHEDULED_TASK_UPDATED = 'Planlanmış Görev Güncellendi',
     SCHEDULED_TASK_DELETED = 'Planlanmış Görev Silindi',
+    LEAD_CONVERTED = 'Potansiyel Müşteri Dönüştürüldü',
 }
 
 export interface ActivityLog {
@@ -1497,17 +1539,66 @@ export interface HrParameters {
     SEVERANCE_CEILING: number;
 }
 
+export enum LeadStatus {
+    New = 'Yeni',
+    Contacted = 'İletişim Kuruldu',
+    Qualified = 'Nitelikli',
+    Unqualified = 'Niteliksiz',
+}
+
+export interface Lead {
+    id: number;
+    name: string;
+    company: string;
+    email: string;
+    phone: string;
+    status: LeadStatus;
+    source: string;
+    assignedToId: number;
+}
+
+export interface CommissionRecord {
+    id: number;
+    employeeId: number;
+    dealId: number;
+    dealValue: number;
+    commissionAmount: number;
+    earnedDate: string;
+}
+
+export interface SalesAnalyticsData {
+    weightedPipelineValue: number;
+    totalPipelineValue: number;
+    winRate: number;
+    avgSalesCycle: number; // in days
+    topPerformers: { name: string; value: number }[];
+}
+
+
 export interface AppContextType {
-    customers: Customer[];
+    customers: (Customer & { assignedToName: string })[];
     addCustomer: (customerData: Omit<Customer, 'id' | 'avatar'>) => Customer;
     updateCustomer: (customer: Customer) => Customer;
     updateCustomerStatus: (customerId: number, newStatus: string) => Customer | undefined;
+    bulkUpdateCustomerStatus: (customerIds: number[], newStatus: string) => void;
     assignCustomersToEmployee: (customerIds: number[], employeeId: number) => void;
     addTagsToCustomers: (customerIds: number[], tags: string[]) => void;
     deleteCustomer: (id: number) => void;
     deleteMultipleCustomers: (ids: number[]) => void;
     importCustomers: (customersData: Omit<Customer, 'id' | 'avatar'>[]) => Customer[];
     contacts: Contact[];
+    addContact: (contactData: Omit<Contact, 'id'>) => void;
+    updateContact: (contact: Contact) => void;
+    deleteContact: (contactId: number) => void;
+    communicationLogs: CommunicationLog[];
+    addCommunicationLog: (customerId: number, type: CommunicationLogType, content: string) => void;
+    updateCommunicationLog: (log: CommunicationLog) => void;
+    deleteCommunicationLog: (logId: number) => void;
+    savedViews: SavedView[];
+    addSavedView: (name: string, filters: SavedView['filters'], sortConfig: SortConfig) => void;
+    deleteSavedView: (id: number) => void;
+    loadSavedView: (id: number) => SavedView | undefined;
+    
     deals: Deal[];
     projects: Project[];
     tasks: Task[];
@@ -1532,9 +1623,7 @@ export interface AppContextType {
     documents: Document[];
     comments: Comment[];
     salesActivities: SalesActivity[];
-    communicationLogs: CommunicationLog[];
     activityLogs: ActivityLog[];
-    savedViews: SavedView[];
     customFieldDefinitions: CustomFieldDefinition[];
     dashboardLayout: DashboardWidget[];
     companyInfo: CompanyInfo;
@@ -1573,11 +1662,20 @@ export interface AppContextType {
     expenses: Expense[];
     assets: Asset[];
     hrParameters: HrParameters;
-    // FIX: Add sales return properties to context type
     salesReturns: SalesReturn[];
     addSalesReturn: (returnData: Omit<SalesReturn, 'id' | 'returnNumber' | 'customerName'>) => SalesReturn | undefined;
     updateSalesReturn: (salesReturn: SalesReturn) => void;
     deleteSalesReturn: (id: number) => void;
+    quotations: Quotation[];
+    addQuotation: (quotationData: Omit<Quotation, 'id' | 'quotationNumber' | 'customerName'>) => Quotation;
+    updateQuotation: (quotation: Quotation) => void;
+    deleteQuotation: (id: number) => void;
+    convertQuotationToSalesOrder: (quotationId: number) => SalesOrder | undefined;
+    leads: Lead[];
+    addLead: (leadData: Omit<Lead, 'id'>) => Lead;
+    convertLead: (leadId: number) => { customer: Customer; contact: Contact; deal: Deal } | undefined;
+    commissionRecords: CommissionRecord[];
+    createCommissionRecord: (deal: Deal) => CommissionRecord;
     setCurrentUser: (user: Employee) => void;
     isManager: (employeeId: number) => boolean;
     itemCount: number;
@@ -1654,13 +1752,7 @@ export interface AppContextType {
     addWidgetToDashboard: (widgetId: string) => void;
     removeWidgetFromDashboard: (id: string) => void;
     hasPermission: (permission: Permission) => boolean;
-    addSavedView: (name: string, filters: SavedView['filters'], sortConfig: SortConfig) => void;
-    deleteSavedView: (id: number) => void;
-    loadSavedView: (id: number) => SavedView | undefined;
-    addContact: (contactData: Omit<Contact, 'id'>) => void;
-    updateContact: (contact: Contact) => void;
-    deleteContact: (contactId: number) => void;
-    addDeal: (dealData: Omit<Deal, 'id' | 'customerName' | 'assignedToName' | 'value' | 'lastActivityDate'>) => void;
+    addDeal: (dealData: Omit<Deal, 'id' | 'customerName' | 'assignedToName' | 'value' | 'lastActivityDate'>) => Deal;
     updateDeal: (deal: Deal) => void;
     updateDealStage: (dealId: number, newStage: DealStage) => void;
     updateDealWinLossReason: (dealId: number, stage: DealStage.Won | DealStage.Lost, reason: string) => void;
@@ -1718,9 +1810,6 @@ export interface AppContextType {
     addComment: (text: string, entityType: 'customer' | 'project' | 'deal' | 'task' | 'ticket' | 'sales_order', entityId: number) => void;
     updateComment: (comment: Comment) => void;
     deleteComment: (commentId: number) => void;
-    addCommunicationLog: (customerId: number, type: CommunicationLogType, content: string) => void;
-    updateCommunicationLog: (log: CommunicationLog) => void;
-    deleteCommunicationLog: (logId: number) => void;
     addSalesActivity: (activityData: Omit<SalesActivity, "id" | "userName" | "userAvatar" | "timestamp">) => void;
     addPerformanceReview: (reviewData: Omit<PerformanceReview, "id" | "employeeName" | "reviewerName">) => void;
     updatePerformanceReview: (review: PerformanceReview) => void;

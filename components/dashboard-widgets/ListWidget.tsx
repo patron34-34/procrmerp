@@ -1,4 +1,5 @@
 
+
 import React from 'react';
 import { useApp } from '../../context/AppContext';
 import { TaskStatus, TaskPriority, Deal, Invoice, Project, Task } from '../../types';
@@ -42,7 +43,7 @@ const ListWidget: React.FC<ListWidgetProps> = ({ widgetId }) => {
         
         const todayInvoices: TodayItem[] = invoices
             .filter(i => i.dueDate === todayStr)
-            .map(i => ({ id: `invoice-${i.id}`, type: 'Fatura', title: `${i.invoiceNumber} - ${i.customerName}`, date: i.dueDate, link: `/invoices`, icon: ICONS.invoices }));
+            .map(i => ({ id: `invoice-${i.id}`, type: 'Fatura', title: `${i.invoiceNumber} - ${i.customerName}`, date: i.dueDate, link: `/invoicing/outgoing`, icon: ICONS.invoices }));
         
         const allTodayItems = [...todayTasks, ...todayProjects, ...todayDeals, ...todayInvoices];
 
