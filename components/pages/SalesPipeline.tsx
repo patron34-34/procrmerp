@@ -16,14 +16,14 @@ import { useNotification } from '../../context/NotificationContext';
 type ViewMode = 'kanban' | 'list' | 'analytics';
 
 const SalesPipeline: React.FC = () => {
-  const { deals, deleteDeal, hasPermission, updateDealStage, updateDealWinLossReason, createProjectFromDeal, createTasksFromDeal, convertDealToSalesOrder } = useApp();
+  const { deals, hasPermission, api, updateDealWinLossReason, taskTemplates } = useApp();
   const { addToast } = useNotification();
   const [isFormModalOpen, setIsFormModalOpen] = useState(false);
   const [editingDeal, setEditingDeal] = useState<Deal | null>(null);
   const [dealToDelete, setDealToDelete] = useState<Deal | null>(null);
   const [viewMode, setViewMode] = useState<ViewMode>('kanban');
   
-  const [filters, setFilters] = useState({ assignedToId: 'all', closeDateStart: '', closeDateEnd: '' });
+  const [filters, setFilters] = useState({ assignedToId: 'all', closeDateStart: '', closeDateEnd: '', showStale: false });
   
   const [winLossModalState, setWinLossModalState] = useState<{isOpen: boolean, deal: Deal | null, newStage: DealStage.Lost | null}>({isOpen: false, deal: null, newStage: null});
   
@@ -32,7 +32,9 @@ const SalesPipeline: React.FC = () => {
   const [winReason, setWinReason] = useState('');
   const [otherReason, setOtherReason] = useState('');
   const [createProject, setCreateProject] = useState(true);
-  const [createTasks, setCreateTasks] = useState(false);
+  const [useTaskTemplate, setUseTaskTemplate] = useState(false);
+  const [selectedTaskTemplateId, setSelectedTaskTemplateId] = useState<number | undefined>(taskTemplates[0]?.id);
+  const [isLoading, setIsLoading] = useState(false);
 
   const canManageDeals = hasPermission('anlasma:yonet');
 
@@ -51,6 +53,10 @@ const SalesPipeline: React.FC = () => {
              endDate.setHours(23, 59, 59, 999);
              if(dealDate > endDate) return false;
           }
+      }
+      if (filters.showStale) {
+        const daysSinceLastActivity = (new Date().getTime() - new Date(deal.lastActivityDate).getTime()) / (1000 * 3600 * 24);
+        if (daysSinceLastActivity <= 14) return false;
       }
       return true;
     });
@@ -73,9 +79,10 @@ const SalesPipeline: React.FC = () => {
     setDealToDelete(deal);
   };
 
-  const handleDeleteConfirm = () => {
+  const handleDeleteConfirm = async () => {
     if (dealToDelete) {
-      deleteDeal(dealToDelete.id);
+      await api.deleteDeal(dealToDelete.id);
+      addToast('Anlaşma başarıyla silindi.', 'success');
       setDealToDelete(null);
     }
   };
@@ -85,12 +92,13 @@ const SalesPipeline: React.FC = () => {
         setWinReason('');
         setOtherReason('');
         setCreateProject(true);
-        setCreateTasks(false);
+        setUseTaskTemplate(false);
+        setSelectedTaskTemplateId(taskTemplates[0]?.id);
         setDealWonModalState({ isOpen: true, deal });
     } else if (newStage === DealStage.Lost) {
       setWinLossModalState({ isOpen: true, deal, newStage });
     } else {
-      updateDealStage(deal.id, newStage);
+      api.updateDealStage(deal.id, newStage);
     }
   };
   
@@ -101,7 +109,7 @@ const SalesPipeline: React.FC = () => {
     setWinLossModalState({ isOpen: false, deal: null, newStage: null });
   };
   
-  const handleWinConfirm = () => {
+  const handleWinConfirm = async () => {
     const deal = dealWonModalState.deal;
     if (!deal) return;
 
@@ -110,24 +118,13 @@ const SalesPipeline: React.FC = () => {
         addToast('Lütfen bir kazanma nedeni belirtin.', 'warning');
         return;
     }
-
-    updateDealWinLossReason(deal.id, DealStage.Won, finalReason);
-
-    if (deal.lineItems && deal.lineItems.length > 0) {
-        convertDealToSalesOrder(deal);
-        addToast("Satış siparişi başarıyla oluşturuldu.", "success");
-    }
-
-    if (createProject) {
-        createProjectFromDeal(deal);
-        addToast("İlgili proje oluşturuldu.", "info");
-    }
-    if (createTasks) {
-        createTasksFromDeal(deal);
-        addToast("Başlangıç görevleri oluşturuldu.", "info");
-    }
+    
+    setIsLoading(true);
+    await api.winDeal(deal, finalReason, createProject, useTaskTemplate, selectedTaskTemplateId);
+    setIsLoading(false);
     
     setDealWonModalState({ isOpen: false, deal: null });
+    addToast(`'${deal.title}' anlaşması başarıyla kazanıldı!`, 'success');
   };
 
 
@@ -228,16 +225,28 @@ const SalesPipeline: React.FC = () => {
                             <span>Bu anlaşma için otomatik bir proje oluştur.</span>
                         </label>
                          <label className="flex items-center gap-2 p-2 rounded-md hover:bg-slate-50 dark:hover:bg-slate-800/50">
-                            <input type="checkbox" checked={createTasks} onChange={e => setCreateTasks(e.target.checked)} className="h-4 w-4 rounded text-primary-600 focus:ring-primary-500" />
+                            <input type="checkbox" checked={useTaskTemplate} onChange={e => setUseTaskTemplate(e.target.checked)} className="h-4 w-4 rounded text-primary-600 focus:ring-primary-500" disabled={!createProject} />
                             <span>Başlangıç görevleri oluştur (şablondan).</span>
                         </label>
+                        {createProject && useTaskTemplate && (
+                            <div className="pl-8">
+                                <label className="block text-sm font-medium text-text-secondary">Kullanılacak Görev Şablonu</label>
+                                <select 
+                                    value={selectedTaskTemplateId} 
+                                    onChange={(e) => setSelectedTaskTemplateId(Number(e.target.value))}
+                                    className="w-full p-2 border rounded-md dark:bg-slate-700 dark:border-dark-border"
+                                >
+                                    {taskTemplates.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
+                                </select>
+                            </div>
+                        )}
                     </div>
                 </div>
 
                 <div className="flex justify-end pt-4 gap-2">
-                     <Button type="button" variant="secondary" onClick={() => setDealWonModalState({isOpen: false, deal: null})}>İptal</Button>
-                     <Button onClick={handleWinConfirm} disabled={!winReason.trim()}>
-                        Onayla & Sipariş Oluştur
+                     <Button type="button" variant="secondary" onClick={() => setDealWonModalState({isOpen: false, deal: null})} disabled={isLoading}>İptal</Button>
+                     <Button onClick={handleWinConfirm} disabled={!winReason.trim() || isLoading}>
+                        {isLoading ? <div className="spinner !w-4 !h-4"></div> : 'Onayla'}
                     </Button>
                 </div>
             </div>

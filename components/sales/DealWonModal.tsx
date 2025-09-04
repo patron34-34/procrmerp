@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useApp } from '../../context/AppContext';
-import { Deal, DealStage } from '../../types';
+import { Deal } from '../../types';
 import Modal from '../ui/Modal';
 import Button from '../ui/Button';
 import { WIN_REASONS } from '../../constants';
@@ -13,40 +13,27 @@ interface DealWonModalProps {
 }
 
 const DealWonModal: React.FC<DealWonModalProps> = ({ isOpen, onClose, deal }) => {
-    const { updateDealWinLossReason, createProjectFromDeal, createTasksFromDeal, convertDealToSalesOrder } = useApp();
+    const { api } = useApp();
     const { addToast } = useNotification();
     const [winReason, setWinReason] = useState('');
     const [otherReason, setOtherReason] = useState('');
     const [createProject, setCreateProject] = useState(true);
     const [createTasks, setCreateTasks] = useState(false);
+    const [isLoading, setIsLoading] = useState(false);
 
 
-    const handleConfirm = () => {
+    const handleConfirm = async () => {
         const finalReason = winReason === 'Diğer' ? otherReason : winReason;
         if (!finalReason.trim()) {
             addToast('Lütfen bir kazanma nedeni belirtin.', 'warning');
             return;
         }
 
-        // First, update the deal status
-        updateDealWinLossReason(deal.id, DealStage.Won, finalReason);
+        setIsLoading(true);
+        await api.winDeal(deal, finalReason, createProject, createTasks);
+        setIsLoading(false);
 
-        // Always attempt to create a sales order upon winning, but check for line items first.
-        if (deal.lineItems && deal.lineItems.length > 0) {
-            convertDealToSalesOrder(deal);
-            addToast("Satış siparişi başarıyla oluşturuldu.", "success");
-        }
-
-        // Then, perform the optional follow-up actions
-        if (createProject) {
-            createProjectFromDeal(deal);
-            addToast("İlgili proje oluşturuldu.", "info");
-        }
-        if (createTasks) {
-            createTasksFromDeal(deal);
-             addToast("Başlangıç görevleri oluşturuldu.", "info");
-        }
-        
+        addToast(`'${deal.title}' anlaşması başarıyla kazanıldı!`, 'success');
         onClose();
     };
 
@@ -100,9 +87,9 @@ const DealWonModal: React.FC<DealWonModalProps> = ({ isOpen, onClose, deal }) =>
                 </div>
 
                 <div className="flex justify-end pt-4 gap-2">
-                     <Button type="button" variant="secondary" onClick={onClose}>İptal</Button>
-                     <Button onClick={handleConfirm} disabled={!winReason.trim()}>
-                        Onayla & Sipariş Oluştur
+                     <Button type="button" variant="secondary" onClick={onClose} disabled={isLoading}>İptal</Button>
+                     <Button onClick={handleConfirm} disabled={!winReason.trim() || isLoading}>
+                        {isLoading ? <div className="spinner !w-4 !h-4"></div> : 'Onayla'}
                     </Button>
                 </div>
             </div>

@@ -32,7 +32,8 @@ const AccordionSection: React.FC<{ title: string, children: ReactNode }> = ({ ti
 );
 
 const CustomerForm: React.FC<CustomerFormProps> = ({ isOpen, onClose, customer }) => {
-    const { employees, addCustomer, updateCustomer, systemLists, priceLists } = useApp();
+    const { employees, api, systemLists, priceLists } = useApp();
+    const [isLoading, setIsLoading] = useState(false);
     
     const initialFormData: Omit<Customer, 'id' | 'avatar' | 'healthScore' | 'customFields'> = {
         name: '', email: '', company: '', phone: '',
@@ -102,21 +103,23 @@ const CustomerForm: React.FC<CustomerFormProps> = ({ isOpen, onClose, customer }
         return Object.keys(newErrors).length === 0;
     };
 
-    const handleSubmit = (e: React.FormEvent, saveAndNew = false) => {
+    const handleSubmit = async (e: React.FormEvent, saveAndNew = false) => {
         e.preventDefault();
         if (validate()) {
+            setIsLoading(true);
             const customerData = { ...formData, company: formData.company || formData.name };
             if (customer) {
-                updateCustomer({ ...customer, ...customerData });
+                await api.updateCustomer({ ...customer, ...customerData });
                 onClose();
             } else {
-                addCustomer(customerData);
+                await api.addCustomer(customerData);
                 if (saveAndNew) {
                     setFormData(initialFormData);
                 } else {
                     onClose();
                 }
             }
+            setIsLoading(false);
         }
     };
 
@@ -169,14 +172,14 @@ const CustomerForm: React.FC<CustomerFormProps> = ({ isOpen, onClose, customer }
                     </AccordionSection>
                 </div>
                 <div className="flex justify-end pt-4 gap-2 border-t dark:border-dark-border">
-                    <Button type="button" variant="secondary" onClick={onClose}>İptal</Button>
+                    <Button type="button" variant="secondary" onClick={onClose} disabled={isLoading}>İptal</Button>
                     {!customer && (
-                        <Button type="button" variant="secondary" onClick={(e) => handleSubmit(e, true)}>
-                            <span className="flex items-center gap-2">{ICONS.saveAndNew} Kaydet ve Yeni</span>
+                        <Button type="button" variant="secondary" onClick={(e) => handleSubmit(e, true)} disabled={isLoading}>
+                             <span className="flex items-center gap-2">{isLoading ? <div className="spinner !w-4 !h-4"></div> : ICONS.saveAndNew} Kaydet ve Yeni</span>
                         </Button>
                     )}
-                    <Button type="submit">
-                        <span className="flex items-center gap-2">{ICONS.save} Kaydet</span>
+                    <Button type="submit" disabled={isLoading}>
+                        <span className="flex items-center gap-2">{isLoading ? <div className="spinner !w-4 !h-4"></div> : ICONS.save} Kaydet</span>
                     </Button>
                 </div>
             </form>

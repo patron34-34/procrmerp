@@ -287,6 +287,7 @@ export interface Deal {
   winReason?: string;
   lossReason?: string;
   lastActivityDate: string;
+  createdDate: string;
 }
 
 export interface Project {
@@ -511,6 +512,7 @@ export interface Quotation {
     grandTotal: number;
     // related docs
     salesOrderId?: number;
+    publicLink?: string;
 }
 
 export enum ProductType {
@@ -715,7 +717,7 @@ export interface CalendarEvent {
     ownerId: number;
 }
 
-export type EventType = 'project' | 'deal' | 'invoice' | 'task';
+export type EventType = 'project' | 'deal' | 'invoice' | 'task' | 'appointment';
 export interface ReportCardInfo {
     title: string;
     description: string;
@@ -1574,8 +1576,11 @@ export interface SalesAnalyticsData {
     topPerformers: { name: string; value: number }[];
 }
 
+// Add ApiService to AppContextType
+import { ApiService } from '../services/api';
 
 export interface AppContextType {
+    api: ApiService;
     customers: (Customer & { assignedToName: string })[];
     addCustomer: (customerData: Omit<Customer, 'id' | 'avatar'>) => Customer;
     updateCustomer: (customer: Customer) => Customer;
@@ -1587,7 +1592,7 @@ export interface AppContextType {
     deleteMultipleCustomers: (ids: number[]) => void;
     importCustomers: (customersData: Omit<Customer, 'id' | 'avatar'>[]) => Customer[];
     contacts: Contact[];
-    addContact: (contactData: Omit<Contact, 'id'>) => void;
+    addContact: (contactData: Omit<Contact, 'id'>) => Contact;
     updateContact: (contact: Contact) => void;
     deleteContact: (contactId: number) => void;
     communicationLogs: CommunicationLog[];
@@ -1675,7 +1680,6 @@ export interface AppContextType {
     addLead: (leadData: Omit<Lead, 'id'>) => Lead;
     convertLead: (leadId: number) => { customer: Customer; contact: Contact; deal: Deal } | undefined;
     commissionRecords: CommissionRecord[];
-    createCommissionRecord: (deal: Deal) => CommissionRecord;
     setCurrentUser: (user: Employee) => void;
     isManager: (employeeId: number) => boolean;
     itemCount: number;
@@ -1716,7 +1720,6 @@ export interface AppContextType {
     updatePurchaseOrder: (po: PurchaseOrder) => void;
     updatePurchaseOrderStatus: (poId: number, status: PurchaseOrderStatus) => void;
     createBillFromPO: (poId: number) => void;
-    convertDealToSalesOrder: (deal: Deal) => void;
     allocateStockToSalesOrder: (soId: number, allocations: { [productId: string]: number[] }) => void;
     createShipmentFromSalesOrder: (soId: number, itemsToShip: ShipmentItem[]) => void;
     createPickList: (shipmentIds: number[]) => void;
@@ -1752,12 +1755,12 @@ export interface AppContextType {
     addWidgetToDashboard: (widgetId: string) => void;
     removeWidgetFromDashboard: (id: string) => void;
     hasPermission: (permission: Permission) => boolean;
-    addDeal: (dealData: Omit<Deal, 'id' | 'customerName' | 'assignedToName' | 'value' | 'lastActivityDate'>) => Deal;
+    addDeal: (dealData: Omit<Deal, 'id' | 'customerName' | 'assignedToName' | 'value' | 'lastActivityDate' | 'createdDate'>) => Deal;
     updateDeal: (deal: Deal) => void;
     updateDealStage: (dealId: number, newStage: DealStage) => void;
     updateDealWinLossReason: (dealId: number, stage: DealStage.Won | DealStage.Lost, reason: string) => void;
     deleteDeal: (id: number) => void;
-    addProject: (projectData: Omit<Project, 'id' | 'client'>) => void;
+    addProject: (projectData: Omit<Project, 'id' | 'client'>, taskTemplateId?: number) => void;
     updateProject: (project: Project) => void;
     deleteProject: (id: number) => void;
     addTask: (taskData: Omit<Task, 'id' | 'assignedToName' | 'relatedEntityName'>, subtaskTitles?: string[]) => Task | undefined;
@@ -1834,22 +1837,22 @@ export interface AppContextType {
     updateBrandingSettings: (settings: BrandingSettings) => void;
     updateSecuritySettings: (settings: SecuritySettings) => void;
     updateCounters: (settings: CountersSettings) => void;
-    addRole: (roleData: Omit<Role, "id" | "isSystemRole">, cloneFromRoleId?: string) => void;
+    addRole: (roleData: Omit<Role, 'id' | 'isSystemRole'>, cloneFromRoleId?: string) => void;
     updateRolePermissions: (roleId: string, permissions: Permission[]) => void;
     deleteRole: (roleId: string) => void;
-    addCustomField: (fieldData: Omit<CustomFieldDefinition, "id">) => void;
+    addCustomField: (fieldData: Omit<CustomFieldDefinition, 'id'>) => void;
     updateCustomField: (field: CustomFieldDefinition) => void;
     deleteCustomField: (id: number) => void;
     markNotificationAsRead: (id: number) => void;
     clearAllNotifications: () => void;
-    createProjectFromDeal: (deal: Deal) => void;
-    createTasksFromDeal: (deal: Deal) => void;
     logActivity: (actionType: ActionType, details: string, entityType?: EntityType, entityId?: number) => void;
     updateAccountingLockDate: (date: string | null) => void;
     addStockMovement: (productId: number, warehouseId: number, type: StockMovementType, quantityChange: number, notes?: string, relatedDocumentId?: number) => void;
-    addExpense: (expenseData: Omit<Expense, 'id' | 'employeeName' | 'status'>) => void;
+    addExpense: (expenseData: Omit<Expense, 'id' | 'employeeName' | 'status' | 'employeeId'>) => void;
     updateExpenseStatus: (expenseId: number, status: ExpenseStatus) => void;
     addAsset: (assetData: Omit<Asset, 'id'>) => void;
     updateAsset: (asset: Asset) => void;
     updateHrParameters: (params: HrParameters) => void;
+    isCommandPaletteOpen: boolean;
+    setIsCommandPaletteOpen: (value: boolean | ((prevState: boolean) => boolean)) => void;
 }

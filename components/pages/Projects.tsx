@@ -11,7 +11,7 @@ import { Link } from 'react-router-dom';
 import Modal from '../ui/Modal';
 
 const Projects: React.FC = () => {
-  const { projects, employees, deleteProject, hasPermission, addProject, updateProject, customers } = useApp();
+  const { projects, employees, deleteProject, hasPermission, addProject, updateProject, customers, taskTemplates } = useApp();
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingProject, setEditingProject] = useState<Project | null>(null);
   const [projectToDelete, setProjectToDelete] = useState<Project | null>(null);
@@ -19,36 +19,37 @@ const Projects: React.FC = () => {
   const canManageProjects = hasPermission('proje:yonet');
   
   // Form state moved from missing ProjectFormModal
-  const initialFormState: Omit<Project, 'id' | 'client'> = {
+  const initialFormState: Omit<Project, 'id' | 'client' | 'progress' | 'spent'> = {
     name: '',
     customerId: customers[0]?.id || 0,
     deadline: new Date().toISOString().split('T')[0],
     status: 'beklemede',
-    progress: 0,
     description: '',
     startDate: new Date().toISOString().split('T')[0],
     teamMemberIds: [],
     budget: 0,
-    spent: 0,
     tags: [],
   };
   const [formData, setFormData] = useState(initialFormState);
   const [tagsInput, setTagsInput] = useState(''); // For comma-separated tags
+  const [selectedTaskTemplateId, setSelectedTaskTemplateId] = useState<number | undefined>();
+
 
   useEffect(() => {
     if (editingProject) {
-        const { client, ...projectData } = editingProject;
+        const { client, progress, spent, ...projectData } = editingProject;
         setFormData({ ...initialFormState, ...projectData });
         setTagsInput(editingProject.tags.join(', '));
     } else {
         setFormData(initialFormState);
         setTagsInput('');
+        setSelectedTaskTemplateId(taskTemplates[0]?.id);
     }
-  }, [editingProject, isFormOpen]);
+  }, [editingProject, isFormOpen, customers, taskTemplates]);
 
   const handleFormInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
-    const isNumber = ['progress', 'customerId', 'budget', 'spent'].includes(name);
+    const isNumber = ['customerId', 'budget'].includes(name);
     setFormData(prev => ({ ...prev, [name]: isNumber ? parseInt(value) : value }));
   };
 
@@ -58,13 +59,13 @@ const Projects: React.FC = () => {
     
     const customer = customers.find(c => c.id === formData.customerId);
     const finalTags = tagsInput.split(',').map(tag => tag.trim()).filter(Boolean);
-    const projectData = { ...formData, tags: finalTags };
+    const projectData = { ...formData, tags: finalTags, progress: 0, spent: 0 };
 
     if (customer) {
         if (editingProject) {
             updateProject({ ...editingProject, ...projectData, client: customer.company });
         } else {
-            addProject(projectData);
+            addProject(projectData, selectedTaskTemplateId);
         }
         setIsFormOpen(false);
     }
@@ -97,7 +98,6 @@ const Projects: React.FC = () => {
   return (
     <>
     <Card 
-        title="Tüm Projeler"
         action={
             <div className="flex items-center gap-2">
                 <Button onClick={handleExport} variant="secondary">
@@ -112,8 +112,8 @@ const Projects: React.FC = () => {
       <div className="overflow-x-auto">
       {projects.length > 0 ? (
         <table className="w-full text-left">
-          <thead className="border-b border-slate-200 dark:border-dark-border">
-            <tr className="bg-slate-50 dark:bg-slate-900/50">
+          <thead className="border-b border-border">
+            <tr className="bg-slate-50 dark:bg-sidebar">
               <th className="p-4 font-semibold">Proje Adı</th>
               <th className="p-4 font-semibold">Müşteri</th>
               <th className="p-4 font-semibold">Bitiş Tarihi</th>
@@ -125,9 +125,9 @@ const Projects: React.FC = () => {
           </thead>
           <tbody>
             {projects.map((project) => (
-              <tr key={project.id} className="border-b border-slate-200 hover:bg-slate-50 dark:border-dark-border dark:hover:bg-slate-800/50">
+              <tr key={project.id} className="border-b border-border hover:bg-slate-50 dark:hover:bg-slate-800/50">
                 <td className="p-4 font-medium">
-                  <Link to={`/projects/${project.id}`} className="hover:text-primary-600 dark:hover:text-primary-400">
+                  <Link to={`/projects/${project.id}`} className="hover:text-primary-600">
                     {project.name}
                   </Link>
                    <div className="mt-1 flex flex-wrap gap-1">
@@ -136,19 +136,19 @@ const Projects: React.FC = () => {
                     ))}
                   </div>
                 </td>
-                <td className="p-4 text-text-secondary dark:text-dark-text-secondary">{project.client}</td>
-                <td className="p-4 text-text-secondary dark:text-dark-text-secondary">{project.deadline}</td>
+                <td className="p-4 text-text-secondary">{project.client}</td>
+                <td className="p-4 text-text-secondary">{project.deadline}</td>
                 <td className="p-4">
                   <div className="flex -space-x-2">
                     {project.teamMemberIds.map(id => {
                       const member = employees.find(e => e.id === id);
-                      return member ? <img key={id} src={member.avatar} alt={member.name} title={member.name} className="w-8 h-8 rounded-full border-2 border-white dark:border-dark-card"/> : null;
+                      return member ? <img key={id} src={member.avatar} alt={member.name} title={member.name} className="w-8 h-8 rounded-full border-2 border-white dark:border-card"/> : null;
                     })}
                   </div>
                 </td>
                 <td className="p-4">
                   <div className="w-32">
-                      <div className="flex justify-between text-xs text-text-secondary dark:text-dark-text-secondary">
+                      <div className="flex justify-between text-xs text-text-secondary">
                           <span>${project.spent.toLocaleString()}</span>
                           <span>${project.budget.toLocaleString()}</span>
                       </div>
@@ -167,8 +167,8 @@ const Projects: React.FC = () => {
                 </td>
                 {canManageProjects && <td className="p-4">
                     <div className="flex items-center gap-3">
-                        <button onClick={() => openModalForEdit(project)} className="text-slate-500 hover:text-primary-600 dark:hover:text-primary-400">{ICONS.edit}</button>
-                        <button onClick={() => setProjectToDelete(project)} className="text-slate-500 hover:text-red-600 dark:hover:text-red-500">{ICONS.trash}</button>
+                        <button onClick={() => openModalForEdit(project)} className="text-slate-500 hover:text-primary-600">{ICONS.edit}</button>
+                        <button onClick={() => setProjectToDelete(project)} className="text-slate-500 hover:text-red-600">{ICONS.trash}</button>
                     </div>
                 </td>}
               </tr>
@@ -218,11 +218,16 @@ const Projects: React.FC = () => {
                       <label htmlFor="budget" className="block text-sm font-medium">Bütçe ($)</label>
                       <input type="number" name="budget" id="budget" value={formData.budget} onChange={handleFormInputChange} className="mt-1 w-full" />
                   </div>
-                  <div>
-                      <label htmlFor="spent" className="block text-sm font-medium">Harcanan ($)</label>
-                      <input type="number" name="spent" id="spent" value={formData.spent} onChange={handleFormInputChange} className="mt-1 w-full" />
-                  </div>
               </div>
+               {!editingProject && taskTemplates.length > 0 && (
+                 <div>
+                    <label htmlFor="taskTemplateId" className="block text-sm font-medium">Görev Şablonu (Opsiyonel)</label>
+                     <select name="taskTemplateId" id="taskTemplateId" value={selectedTaskTemplateId} onChange={(e) => setSelectedTaskTemplateId(Number(e.target.value))} className="mt-1 w-full">
+                         <option value="">Şablonsuz oluştur</option>
+                         {taskTemplates.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
+                     </select>
+                </div>
+               )}
                <div>
                   <label htmlFor="tags" className="block text-sm font-medium">Etiketler (virgülle ayırın)</label>
                   <input type="text" name="tags" id="tags" value={tagsInput} onChange={(e) => setTagsInput(e.target.value)} className="mt-1 w-full" />

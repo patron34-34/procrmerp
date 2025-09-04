@@ -21,9 +21,11 @@ import RecurringTaskUpdateModal from '../tasks/RecurringTaskUpdateModal';
 import { expandRecurringEvents } from '../../utils/recurringEvents';
 import { exportToCSV } from '../../utils/csvExporter';
 import PrintableTaskList from '../tasks/PrintableTaskList';
+import TaskWorkloadView from '../tasks/TaskWorkloadView';
+import TaskAnalyticsView from '../tasks/TaskAnalyticsView';
+import Dropdown, { DropdownItem } from '../ui/Dropdown';
 
-
-type ViewMode = 'list' | 'kanban' | 'calendar' | 'gantt';
+type ViewMode = 'list' | 'kanban' | 'calendar' | 'gantt' | 'workload' | 'analytics';
 
 interface FocusSuggestion {
     taskId: number;
@@ -362,6 +364,16 @@ const Tasks: React.FC = () => {
     const isAllTasksActive = filters.assignedToId === 'all';
     const isMyTasksActive = filters.assignedToId === currentUser.id.toString();
 
+    const ViewButton: React.FC<{ mode: ViewMode, title: string, icon: JSX.Element }> = ({ mode, title, icon }) => (
+        <button
+            onClick={() => setViewMode(mode)}
+            className={`p-1 rounded ${viewMode === mode ? 'bg-white dark:bg-slate-500 shadow' : ''}`}
+            title={title}
+        >
+            {icon}
+        </button>
+    );
+
     return (
         <>
             <div className="space-y-6">
@@ -388,23 +400,22 @@ const Tasks: React.FC = () => {
                         </div>
                         <div className="flex items-center gap-2">
                             <div className="p-1 bg-slate-200 dark:bg-slate-700 rounded-md">
-                                <button onClick={() => setViewMode('list')} className={`p-1 rounded ${viewMode === 'list' ? 'bg-white dark:bg-slate-500 shadow' : ''}`} title="Liste">{ICONS.list}</button>
-                                <button onClick={() => setViewMode('kanban')} className={`p-1 rounded ${viewMode === 'kanban' ? 'bg-white dark:bg-slate-500 shadow' : ''}`} title="Kanban">{ICONS.kanban}</button>
-                                <button onClick={() => setViewMode('calendar')} className={`p-1 rounded ${viewMode === 'calendar' ? 'bg-white dark:bg-slate-500 shadow' : ''}`} title="Takvim">{ICONS.calendar}</button>
-                                <button onClick={() => setViewMode('gantt')} className={`p-1 rounded ${viewMode === 'gantt' ? 'bg-white dark:bg-slate-500 shadow' : ''}`} title="Gantt">{ICONS.gantt}</button>
+                                <ViewButton mode="list" title="Liste" icon={ICONS.list} />
+                                <ViewButton mode="kanban" title="Kanban" icon={ICONS.kanban} />
+                                <ViewButton mode="calendar" title="Takvim" icon={ICONS.calendar} />
+                                <ViewButton mode="gantt" title="Gantt" icon={ICONS.gantt} />
+                                <ViewButton mode="workload" title="İş Yükü" icon={ICONS.employees} />
+                                <ViewButton mode="analytics" title="Analiz" icon={ICONS.analytics} />
                             </div>
                             {canManageTasks && (
-                                <>
-                                     <Button variant="secondary" onClick={handleGenerateFocus} title="AI ile Güne Odaklan">
-                                        <span className="flex items-center gap-2">{ICONS.magic} Günün Odağını Belirle</span>
-                                    </Button>
-                                     <Button variant="secondary" onClick={() => setIsTemplateModalOpen(true)}>
-                                        <span className="flex items-center gap-2">{ICONS.add} Şablondan Oluştur</span>
-                                    </Button>
-                                    <Button onClick={handleOpenNewForm}>
-                                        <span className="flex items-center gap-2">{ICONS.add} Yeni Görev</span>
-                                    </Button>
-                                </>
+                                <Dropdown
+                                    trigger={<Button>Yeni...</Button>}
+                                    menuPosition="right-0"
+                                >
+                                    <DropdownItem onClick={handleOpenNewForm}>{ICONS.add} Yeni Görev</DropdownItem>
+                                    <DropdownItem onClick={() => setIsTemplateModalOpen(true)}>{ICONS.add} Şablondan Oluştur</DropdownItem>
+                                    <DropdownItem onClick={handleGenerateFocus}>{ICONS.magic} Günün Odağını Belirle</DropdownItem>
+                                </Dropdown>
                             )}
                         </div>
                     </div>
@@ -445,6 +456,8 @@ const Tasks: React.FC = () => {
                                 onRemoveTaskDependency={removeTaskDependency}
                             />
                         )}
+                        {viewMode === 'workload' && <TaskWorkloadView />}
+                        {viewMode === 'analytics' && <TaskAnalyticsView />}
                     </div>
                 </Card>
 

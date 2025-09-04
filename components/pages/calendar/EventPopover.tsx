@@ -38,7 +38,9 @@ const EventPopover: React.FC<EventPopoverProps> = ({ event, target, onClose }) =
             case 'project': return `/projects/${event.data.id}`;
             case 'deal': return `/deals/${event.data.id}`;
             case 'invoice': return `/invoicing/outgoing`;
-            case 'task': return `/planner`;
+            case 'task': 
+            case 'appointment':
+                return `/planner`;
             default: return '/';
         }
     };
@@ -52,6 +54,8 @@ const EventPopover: React.FC<EventPopoverProps> = ({ event, target, onClose }) =
 
     const customerLink = getRelatedCustomerLink();
     const customerName = event.data.customerName || (event.type === 'project' && event.data.client);
+    const eventDate = new Date(event.date);
+    const eventEndDate = event.endDate ? new Date(event.endDate) : null;
 
     return (
         <div ref={popoverRef} style={popoverStyle} className="z-50 bg-card dark:bg-dark-card rounded-lg shadow-xl border dark:border-dark-border">
@@ -76,11 +80,14 @@ const EventPopover: React.FC<EventPopoverProps> = ({ event, target, onClose }) =
                 <div className="mt-3 text-sm text-text-secondary dark:text-dark-text-secondary">
                     <p className="flex items-center gap-2">
                         <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
-                        {event.date.toLocaleDateString('tr-TR', { weekday: 'long', day: 'numeric', month: 'long' })}
+                        {eventDate.toLocaleDateString('tr-TR', { weekday: 'long', day: 'numeric', month: 'long' })}
                     </p>
                     <p className="flex items-center gap-2 mt-1">
                         <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
-                        {event.isAllDay ? 'Tüm gün' : event.date.toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' })}
+                        {event.isAllDay 
+                            ? 'Tüm gün' 
+                            : `${eventDate.toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' })} ${eventEndDate ? ` - ${eventEndDate.toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' })}` : ''}`
+                        }
                     </p>
                 </div>
 

@@ -9,7 +9,6 @@ import CartPopover from '../cart/CartPopover';
 const Header: React.FC = () => {
   const location = useLocation();
   const params = useParams<{ id?: string, accountId?: string }>();
-  // FIX: Get customers from useApp now
   const { customers, projects, deals, currentUser, employees, setCurrentUser, accounts, journalEntries, budgets, purchaseOrders, pickLists, salesOrders, itemCount } = useApp();
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
   const userMenuRef = useRef<HTMLDivElement>(null);
@@ -129,7 +128,6 @@ const Header: React.FC = () => {
         '/access-denied': 'Erişim Engellendi'
     };
     
-    // Find a matching key for settings pages
     if (path.startsWith('/admin/settings')) return 'Ayarlar';
 
 

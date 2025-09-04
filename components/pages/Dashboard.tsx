@@ -111,7 +111,7 @@ const Dashboard: React.FC = () => {
                       addWidgetToDashboard(widget.id);
                       setIsAddWidgetModalOpen(false);
                     }}
-                    className="w-full text-left p-3 bg-slate-100 dark:bg-dark-sidebar hover:bg-slate-200 dark:hover:bg-dark-border rounded-lg"
+                    className="w-full text-left p-3 bg-slate-100 dark:bg-card hover:bg-slate-200 dark:hover:bg-border rounded-lg"
                   >
                     {widget.name}
                   </button>
@@ -119,7 +119,7 @@ const Dashboard: React.FC = () => {
               ))}
             </ul>
           ) : (
-            <p className="text-center text-text-secondary dark:text-dark-text-secondary">Eklenecek başka bileşen yok.</p>
+            <p className="text-center text-text-secondary">Eklenecek başka bileşen yok.</p>
           )}
         </div>
       </Modal>

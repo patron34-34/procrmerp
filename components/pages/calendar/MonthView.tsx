@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { CalendarEvent } from '../../../types';
 import { getCalendarGrid, isSameDay } from '../../../utils/dateUtils';
 
@@ -6,16 +6,40 @@ interface MonthViewProps {
     date: Date;
     events: CalendarEvent[];
     onEventClick: (event: CalendarEvent, target: HTMLDivElement) => void;
+    onEventDrop: (event: CalendarEvent, newDate: Date) => void;
+    onNewTask: (date: Date) => void;
 }
 
-const MonthView: React.FC<MonthViewProps> = ({ date, events, onEventClick }) => {
+const MonthView: React.FC<MonthViewProps> = ({ date, events, onEventClick, onEventDrop, onNewTask }) => {
     const calendarGrid = getCalendarGrid(date.getFullYear(), date.getMonth());
     const weekdayHeaders = ['Pzt', 'Sal', 'Çar', 'Per', 'Cum', 'Cmt', 'Paz'];
+    const [dragOverDate, setDragOverDate] = useState<Date | null>(null);
 
     const getEventsForDay = (day: Date): CalendarEvent[] => {
-        return events.filter(event => isSameDay(event.date, day));
+        return events.filter(event => isSameDay(new Date(event.date), day));
     };
 
+    const handleDragStart = (e: React.DragEvent, event: CalendarEvent) => {
+        e.dataTransfer.setData("calendarEvent", JSON.stringify(event));
+    };
+
+    const handleDragOver = (e: React.DragEvent, day: Date | null) => {
+        e.preventDefault();
+        if (day) setDragOverDate(day);
+    };
+
+    const handleDrop = (e: React.DragEvent, day: Date | null) => {
+        e.preventDefault();
+        setDragOverDate(null);
+        if (day) {
+            const eventJson = e.dataTransfer.getData("calendarEvent");
+            if (eventJson) {
+                const event = JSON.parse(eventJson);
+                onEventDrop(event, day);
+            }
+        }
+    };
+    
     return (
         <div className="grid grid-cols-7 border-l dark:border-dark-border">
              <div className="grid grid-cols-7 col-span-7 border-t dark:border-dark-border">
@@ -29,11 +53,16 @@ const MonthView: React.FC<MonthViewProps> = ({ date, events, onEventClick }) => 
                 const dayEvents = getEventsForDay(day);
                 const isToday = isSameDay(day, new Date());
                 const isCurrentMonth = day.getMonth() === date.getMonth();
+                const isDragOver = dragOverDate && isSameDay(day, dragOverDate);
 
                 return (
                     <div
                         key={index}
-                        className={`border-r border-b dark:border-dark-border min-h-[120px] p-2 flex flex-col ${isCurrentMonth ? '' : 'bg-slate-50 dark:bg-slate-800/20'}`}
+                        onDragOver={(e) => handleDragOver(e, day)}
+                        onDragLeave={() => setDragOverDate(null)}
+                        onDrop={(e) => handleDrop(e, day)}
+                        onDoubleClick={() => onNewTask(day)}
+                        className={`border-r border-b dark:border-dark-border min-h-[120px] p-2 flex flex-col transition-colors duration-200 ${isCurrentMonth ? '' : 'bg-slate-50 dark:bg-slate-800/20'} ${isDragOver ? 'bg-primary-100 dark:bg-primary-900/50' : ''}`}
                     >
                         <span className={`font-semibold self-start mb-1 ${isToday ? 'bg-primary-500 text-white rounded-full w-7 h-7 flex items-center justify-center' : ''} ${!isCurrentMonth ? 'text-slate-400' : ''}`}>
                             {day.getDate()}
@@ -42,12 +71,14 @@ const MonthView: React.FC<MonthViewProps> = ({ date, events, onEventClick }) => 
                             {dayEvents.slice(0, 3).map(event => (
                                 <div
                                     key={event.id}
+                                    draggable
+                                    onDragStart={(e) => handleDragStart(e, event)}
                                     ref={React.createRef<HTMLDivElement>()}
-                                    onClick={(e) => onEventClick(event, e.currentTarget)}
+                                    onClick={(e) => { e.stopPropagation(); onEventClick(event, e.currentTarget); }}
                                     className="p-1 rounded-md text-white text-xs truncate cursor-pointer"
                                     style={{ backgroundColor: event.color }}
                                 >
-                                    {event.isAllDay ? '' : event.date.toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' }) + ' '}
+                                    {event.isAllDay ? '' : new Date(event.date).toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' }) + ' '}
                                     {event.title}
                                 </div>
                             ))}

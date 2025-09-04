@@ -34,7 +34,7 @@ const MyExpenses: React.FC = () => {
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
         if (formData.description && formData.amount > 0) {
-            addExpense({ ...formData, employeeId: currentUser.id });
+            addExpense(formData);
             setIsModalOpen(false);
             setFormData(initialFormState);
         }

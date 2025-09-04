@@ -1,5 +1,3 @@
-
-
 import { useCallback } from 'react';
 import { Customer } from '../types';
 import { useLocalStorageState } from './useLocalStorageState';
@@ -68,7 +66,6 @@ export const useCustomers = (initialCustomers: Customer[]) => {
 
     return {
         customers,
-        // FIX: Export setCustomers to be used by the context provider wrapper.
         setCustomers,
         addCustomer,
         updateCustomer,

@@ -17,8 +17,8 @@ const InfoRow: React.FC<{ label: string; value?: React.ReactNode }> = ({ label, 
     if (value === undefined || value === null || value === '' || (typeof value === 'number' && isNaN(value))) return null;
     return (
         <div className="grid grid-cols-3 gap-4 text-sm py-2 border-b border-slate-100 dark:border-slate-700/50 last:border-0">
-            <dt className="text-text-secondary dark:text-dark-text-secondary">{label}</dt>
-            <dd className="col-span-2 text-text-main dark:text-dark-text-main font-medium">{value}</dd>
+            <dt className="text-text-secondary">{label}</dt>
+            <dd className="col-span-2 text-text-main font-medium">{value}</dd>
         </div>
     );
 };
@@ -122,7 +122,7 @@ const EmployeeDetail: React.FC<EmployeeDetailProps> = ({ employeeId: propEmploye
                  return (
                     <Card title="İzin Geçmişi">
                         <table className="w-full text-left">
-                            <thead><tr className="bg-slate-50 dark:bg-slate-900/50"><th className="p-2">Tür</th><th className="p-2">Başlangıç</th><th className="p-2">Bitiş</th><th className="p-2">Durum</th></tr></thead>
+                            <thead><tr className="bg-slate-50 dark:bg-sidebar"><th className="p-2">Tür</th><th className="p-2">Başlangıç</th><th className="p-2">Bitiş</th><th className="p-2">Durum</th></tr></thead>
                             <tbody>{employeeLeaves.map(lr => (<tr key={lr.id} className="border-b dark:border-dark-border"><td className="p-2">{lr.leaveType}</td><td className="p-2">{lr.startDate}</td><td className="p-2">{lr.endDate}</td><td className="p-2">{getLeaveStatusBadge(lr.status)}</td></tr>))}</tbody>
                         </table>
                     </Card>
@@ -137,7 +137,7 @@ const EmployeeDetail: React.FC<EmployeeDetailProps> = ({ employeeId: propEmploye
                  return (
                     <Card title="Maaş Pusulaları">
                         <table className="w-full text-left">
-                            <thead><tr className="bg-slate-50 dark:bg-slate-900/50"><th className="p-2">Dönem</th><th className="p-2 text-right">Brüt Maaş</th><th className="p-2 text-right">Net Maaş</th><th className="p-2 text-center">Eylemler</th></tr></thead>
+                            <thead><tr className="bg-slate-50 dark:bg-sidebar"><th className="p-2">Dönem</th><th className="p-2 text-right">Brüt Maaş</th><th className="p-2 text-right">Net Maaş</th><th className="p-2 text-center">Eylemler</th></tr></thead>
                             <tbody>{employeePayslips.map(p => (<tr key={p.id} className="border-b dark:border-dark-border"><td className="p-2 font-medium">{p.payPeriod}</td><td className="p-2 text-right font-mono">${p.grossPay.toLocaleString()}</td><td className="p-2 text-right font-mono text-green-600 font-semibold">${p.netPay.toLocaleString()}</td><td className="p-2 text-center"><button onClick={() => setViewingPayslip(p)} className="text-primary-600 hover:underline text-sm">Görüntüle</button></td></tr>))}</tbody>
                         </table>
                     </Card>
@@ -146,7 +146,7 @@ const EmployeeDetail: React.FC<EmployeeDetailProps> = ({ employeeId: propEmploye
                 return (
                     <Card title="Zimmetli Varlıklar">
                         <table className="w-full text-left">
-                            <thead><tr className="bg-slate-50 dark:bg-slate-900/50"><th className="p-2">Varlık Adı</th><th className="p-2">Kategori</th><th className="p-2">Seri Numarası</th><th className="p-2">Atanma Tarihi</th></tr></thead>
+                            <thead><tr className="bg-slate-50 dark:bg-sidebar"><th className="p-2">Varlık Adı</th><th className="p-2">Kategori</th><th className="p-2">Seri Numarası</th><th className="p-2">Atanma Tarihi</th></tr></thead>
                             <tbody>{employeeAssets.map(asset => (<tr key={asset.id} className="border-b dark:border-dark-border"><td className="p-2">{asset.name}</td><td className="p-2">{asset.category}</td><td className="p-2">{asset.serialNumber}</td><td className="p-2">{asset.assignmentDate}</td></tr>))}</tbody>
                         </table>
                     </Card>
@@ -169,18 +169,18 @@ const EmployeeDetail: React.FC<EmployeeDetailProps> = ({ employeeId: propEmploye
                         <img src={employee.avatar} alt={employee.name} className="h-24 w-24 rounded-full"/>
                         <div>
                             <h2 className="text-3xl font-bold">{employee.name}</h2>
-                            <p className="text-lg text-text-secondary dark:text-dark-text-secondary">{employee.position} - {employee.department}</p>
+                            <p className="text-lg text-text-secondary">{employee.position} - {employee.department}</p>
                         </div>
                     </div>
                 </Card>
                 
-                <div className="border-b border-slate-200 dark:border-dark-border">
+                <div className="border-b border-border">
                     <nav className="-mb-px flex space-x-8" aria-label="Tabs">
-                        <button onClick={() => setActiveTab('ozluk')} className={`${activeTab === 'ozluk' ? 'border-primary-500 text-primary-600' : 'border-transparent text-text-secondary hover:border-slate-300'} whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm`}>Özlük Bilgileri</button>
-                        <button onClick={() => setActiveTab('assets')} className={`${activeTab === 'assets' ? 'border-primary-500 text-primary-600' : 'border-transparent text-text-secondary hover:border-slate-300'} whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm`}>Varlıklar ({employeeAssets.length})</button>
-                        <button onClick={() => setActiveTab('leaves')} className={`${activeTab === 'leaves' ? 'border-primary-500 text-primary-600' : 'border-transparent text-text-secondary hover:border-slate-300'} whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm`}>İzin Geçmişi</button>
-                        <button onClick={() => setActiveTab('payroll')} className={`${activeTab === 'payroll' ? 'border-primary-500 text-primary-600' : 'border-transparent text-text-secondary hover:border-slate-300'} whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm`}>Bordro</button>
-                        <button onClick={() => setActiveTab('performance')} className={`${activeTab === 'performance' ? 'border-primary-500 text-primary-600' : 'border-transparent text-text-secondary hover:border-slate-300'} whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm`}>Performans</button>
+                        <button onClick={() => setActiveTab('ozluk')} className={`${activeTab === 'ozluk' ? 'border-primary-500 text-primary-600' : 'border-transparent text-text-secondary hover:border-border'} whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm`}>Özlük Bilgileri</button>
+                        <button onClick={() => setActiveTab('assets')} className={`${activeTab === 'assets' ? 'border-primary-500 text-primary-600' : 'border-transparent text-text-secondary hover:border-border'} whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm`}>Varlıklar ({employeeAssets.length})</button>
+                        <button onClick={() => setActiveTab('leaves')} className={`${activeTab === 'leaves' ? 'border-primary-500 text-primary-600' : 'border-transparent text-text-secondary hover:border-border'} whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm`}>İzin Geçmişi</button>
+                        <button onClick={() => setActiveTab('payroll')} className={`${activeTab === 'payroll' ? 'border-primary-500 text-primary-600' : 'border-transparent text-text-secondary hover:border-border'} whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm`}>Bordro</button>
+                        <button onClick={() => setActiveTab('performance')} className={`${activeTab === 'performance' ? 'border-primary-500 text-primary-600' : 'border-transparent text-text-secondary hover:border-border'} whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm`}>Performans</button>
                     </nav>
                 </div>
                 <div>{renderTabContent()}</div>

@@ -1,5 +1,4 @@
 import React, { useState, useRef, useEffect } from 'react';
-// FIX: Correct import path for useApp
 import { useApp } from '../../context/AppContext';
 import { ICONS } from '../../constants';
 import { Employee } from '../../types';
@@ -83,5 +82,4 @@ const CalendarUserFilter: React.FC<CalendarUserFilterProps> = ({ selectedUsers, 
     );
 };
 
-// FIX: Add default export to make the component a module.
 export default CalendarUserFilter;

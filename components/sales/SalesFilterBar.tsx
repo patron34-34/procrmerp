@@ -1,22 +1,25 @@
-
 import React from 'react';
 import { useApp } from '../../context/AppContext';
 import Button from '../ui/Button';
 
 interface SalesFilterBarProps {
-  filters: { assignedToId: string; closeDateStart: string; closeDateEnd: string; };
-  setFilters: (filters: { assignedToId: string; closeDateStart: string; closeDateEnd: string; }) => void;
+  filters: { assignedToId: string; closeDateStart: string; closeDateEnd: string; showStale: boolean; };
+  setFilters: (filters: { assignedToId: string; closeDateStart: string; closeDateEnd: string; showStale: boolean; }) => void;
 }
 
 const SalesFilterBar: React.FC<SalesFilterBarProps> = ({ filters, setFilters }) => {
   const { employees } = useApp();
 
   const handleFilterChange = (e: React.ChangeEvent<HTMLSelectElement | HTMLInputElement>) => {
-    setFilters({ ...filters, [e.target.name]: e.target.value });
+    const { name, value, type } = e.target;
+    const isCheckbox = type === 'checkbox';
+    const checked = (e.target as HTMLInputElement).checked;
+
+    setFilters({ ...filters, [name]: isCheckbox ? checked : value });
   };
   
   const handleClearFilters = () => {
-    setFilters({ assignedToId: 'all', closeDateStart: '', closeDateEnd: '' });
+    setFilters({ assignedToId: 'all', closeDateStart: '', closeDateEnd: '', showStale: false });
   };
 
   return (
@@ -53,6 +56,17 @@ const SalesFilterBar: React.FC<SalesFilterBarProps> = ({ filters, setFilters }) 
           onChange={handleFilterChange}
           className="p-2 border rounded-md dark:bg-slate-700 dark:border-dark-border"
         />
+      </div>
+      <div className="flex items-center">
+        <input 
+            type="checkbox"
+            id="showStale"
+            name="showStale"
+            checked={filters.showStale}
+            onChange={handleFilterChange}
+            className="h-4 w-4 rounded border-gray-300 text-primary-600 focus:ring-primary-500"
+        />
+        <label htmlFor="showStale" className="ml-2 block text-sm">İşlem Görmeyenleri Göster</label>
       </div>
       <Button onClick={handleClearFilters} variant="secondary">Filtreleri Temizle</Button>
     </div>

@@ -1,5 +1,3 @@
-
-
 import React, { useState, KeyboardEvent } from 'react';
 import { ICONS } from '../../constants';
 

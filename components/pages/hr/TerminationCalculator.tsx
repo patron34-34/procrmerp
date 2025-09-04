@@ -53,10 +53,21 @@ const TerminationCalculator: React.FC = () => {
     
     useEffect(() => {
         if (documentToPrint) {
-            setTimeout(() => {
-                window.print();
+            const handleAfterPrint = () => {
                 setDocumentToPrint(null);
-            }, 100);
+                window.removeEventListener('afterprint', handleAfterPrint);
+            };
+
+            window.addEventListener('afterprint', handleAfterPrint);
+            
+            const printTimeout = setTimeout(() => {
+                window.print();
+            }, 50);
+
+            return () => {
+                clearTimeout(printTimeout);
+                window.removeEventListener('afterprint', handleAfterPrint);
+            };
         }
     }, [documentToPrint]);
 

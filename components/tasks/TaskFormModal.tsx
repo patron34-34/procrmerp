@@ -11,7 +11,7 @@ interface TaskFormModalProps {
   isOpen: boolean;
   onClose: () => void;
   task: Task | null;
-  prefilledData?: Partial<Task> | null;
+  prefilledData?: Partial<Task> & { assignedToIds?: number[] } | null;
   onSubmit: (data: Omit<Task, 'id' | 'assignedToName' | 'relatedEntityName'>, subtaskTitles: string[]) => void;
 }
 
@@ -44,6 +44,7 @@ const TaskFormModal: React.FC<TaskFormModalProps> = ({ isOpen, onClose, task, pr
     };
     
     const [formData, setFormData] = useState(initialFormState);
+    const [assignedToIds, setAssignedToIds] = useState<number[]>([]);
     const [relatedEntityType, setRelatedEntityType] = useState<'none' | 'customer' | 'project' | 'deal'>('none');
     const [errors, setErrors] = useState<FormErrors>({});
     const [suggestedSubtasks, setSuggestedSubtasks] = useState<SuggestedSubtask[]>([]);
@@ -53,23 +54,26 @@ const TaskFormModal: React.FC<TaskFormModalProps> = ({ isOpen, onClose, task, pr
         if (task) {
             const populatedData = { ...initialFormState, ...task };
             setFormData(populatedData);
+            setAssignedToIds([task.assignedToId]);
             setRelatedEntityType(populatedData.relatedEntityType || 'none');
         } else if (prefilledData) {
             setFormData({ ...initialFormState, ...prefilledData });
+            setAssignedToIds(prefilledData.assignedToIds || [employees[0]?.id || 0]);
             setRelatedEntityType(prefilledData.relatedEntityType || 'none');
         } else {
             setFormData(initialFormState);
+            setAssignedToIds([employees[0]?.id || 0]);
             setRelatedEntityType('none');
         }
         setSuggestedSubtasks([]);
         setErrors({});
-    }, [task, prefilledData, isOpen]);
+    }, [task, prefilledData, isOpen, employees]);
 
     const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
         const { name, value } = e.target;
         let finalValue: string | number | undefined = value;
 
-        if (name === 'assignedToId' || name === 'relatedEntityId') {
+        if (name === 'relatedEntityId') {
             finalValue = parseInt(value);
         } else if (name === 'estimatedTime') {
             finalValue = parseFloat(value) * 60; // Convert hours to minutes
@@ -78,6 +82,11 @@ const TaskFormModal: React.FC<TaskFormModalProps> = ({ isOpen, onClose, task, pr
         }
 
         setFormData(prev => ({ ...prev, [name]: finalValue }));
+    };
+
+    const handleAssigneeChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+        const selectedOptions = Array.from(e.target.selectedOptions, option => Number(option.value));
+        setAssignedToIds(selectedOptions);
     };
     
     const validateForm = (): boolean => {
@@ -127,18 +136,21 @@ const TaskFormModal: React.FC<TaskFormModalProps> = ({ isOpen, onClose, task, pr
             return;
         }
 
-        const finalFormData: Omit<Task, 'id' | 'assignedToName' | 'relatedEntityName'> = { ...formData };
-        if (relatedEntityType === 'none') {
-            delete finalFormData.relatedEntityType;
-            delete finalFormData.relatedEntityId;
-        } else {
-            finalFormData.relatedEntityType = relatedEntityType;
-        }
-        
         const subtaskTitles = suggestedSubtasks.filter(st => st.checked && st.title.trim()).map(st => st.title.trim());
-        
-        onSubmit(finalFormData, subtaskTitles);
+
+        assignedToIds.forEach(assigneeId => {
+            const finalFormData: Omit<Task, 'id' | 'assignedToName' | 'relatedEntityName'> = { ...formData, assignedToId: assigneeId };
+            if (relatedEntityType === 'none') {
+                delete finalFormData.relatedEntityType;
+                delete finalFormData.relatedEntityId;
+            } else {
+                finalFormData.relatedEntityType = relatedEntityType;
+            }
+            onSubmit(finalFormData, subtaskTitles);
+        });
     };
+
+    const isMultiAssign = (task === null && !prefilledData) || (prefilledData?.assignedToIds && prefilledData.assignedToIds.length > 1);
 
     return (
         <Modal isOpen={isOpen} onClose={onClose} title={task && task.id ? "Görevi Düzenle" : "Yeni Görev Oluştur"}>
@@ -183,8 +195,17 @@ const TaskFormModal: React.FC<TaskFormModalProps> = ({ isOpen, onClose, task, pr
                 
                 <div className="grid grid-cols-2 gap-4">
                     <div>
-                        <label htmlFor="assignedToId" className="block text-sm font-medium text-text-secondary">Atanan Kişi *</label>
-                        <select name="assignedToId" id="assignedToId" value={formData.assignedToId} onChange={handleInputChange} required className="mt-1 block w-full p-2 border rounded-md dark:bg-slate-700 dark:border-dark-border">
+                        <label htmlFor="assignedToId" className="block text-sm font-medium text-text-secondary">Atanan Kişi(ler) *</label>
+                        <select
+                            name="assignedToId"
+                            id="assignedToId"
+                            // FIX: Convert number array to string array for the select value prop
+                            value={assignedToIds.map(String)}
+                            onChange={handleAssigneeChange}
+                            multiple={isMultiAssign}
+                            required
+                            className="mt-1 block w-full p-2 border rounded-md dark:bg-slate-700 dark:border-dark-border"
+                        >
                             {employees.map(e => <option key={e.id} value={e.id}>{e.name}</option>)}
                         </select>
                     </div>

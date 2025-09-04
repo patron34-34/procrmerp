@@ -1,11 +1,11 @@
-
-
 import React, { useState, useMemo } from 'react';
 import { useApp } from '../../context/AppContext';
 import { SalesActivity, Comment, SalesActivityType } from '../../types';
 import { ICONS } from '../../constants';
 import Button from '../ui/Button';
 import LogActivityModal from './LogActivityModal';
+import { generateSalesSummary, summarizeText } from '../../services/geminiService';
+import { useNotification } from '../../context/NotificationContext';
 
 interface ActivityTimelineProps {
   dealId: number;
@@ -15,8 +15,11 @@ type TimelineItem = (SalesActivity | Comment) & { itemType: 'activity' | 'commen
 
 const ActivityTimeline: React.FC<ActivityTimelineProps> = ({ dealId }) => {
   const { salesActivities, comments, addComment, currentUser, hasPermission } = useApp();
+  const { addToast } = useNotification();
   const [newComment, setNewComment] = useState('');
   const [isLogModalOpen, setIsLogModalOpen] = useState(false);
+  const [summary, setSummary] = useState('');
+  const [isSummarizing, setIsSummarizing] = useState(false);
 
   const canManageDeals = hasPermission('anlasma:yonet');
   const canManageComments = hasPermission('yorum:yonet');
@@ -41,6 +44,29 @@ const ActivityTimeline: React.FC<ActivityTimelineProps> = ({ dealId }) => {
     }
   };
 
+  const handleSummarize = async () => {
+    if(timelineItems.length === 0) {
+        addToast("Özetlenecek aktivite bulunmuyor.", "info");
+        return;
+    }
+    setIsSummarizing(true);
+    setSummary('');
+    try {
+        const textToSummarize = timelineItems
+            .map(item => `${item.userName} (${item.timestamp}): ${item.itemType === 'activity' ? (item as SalesActivity).notes : (item as Comment).text}`)
+            .join('\n\n');
+        
+        const result = await summarizeText(textToSummarize);
+        setSummary(result);
+        addToast("Aktivite özeti oluşturuldu.", "success");
+    } catch (error) {
+        console.error("Summarization error:", error);
+        addToast("Özet oluşturulurken bir hata oluştu.", "error");
+    } finally {
+        setIsSummarizing(false);
+    }
+};
+
   const getItemIcon = (item: TimelineItem) => {
     const iconStyle = "w-5 h-5 text-white";
     let type: SalesActivityType | 'comment' = 'comment';
@@ -58,11 +84,12 @@ const ActivityTimeline: React.FC<ActivityTimelineProps> = ({ dealId }) => {
 
   return (
     <>
-      {canManageDeals && (
-        <div className="p-4 bg-slate-50 dark:bg-slate-800/50 rounded-lg mb-4 flex flex-wrap gap-2">
-           <Button variant="secondary" onClick={() => setIsLogModalOpen(true)}>
+      <div className="p-4 bg-slate-50 dark:bg-slate-800/50 rounded-lg mb-4 flex flex-wrap gap-2">
+           {canManageDeals && (
+            <Button variant="secondary" onClick={() => setIsLogModalOpen(true)}>
                 <span className="flex items-center gap-1">{ICONS.add} Aktivite Ekle</span>
            </Button>
+           )}
             <form onSubmit={handleCommentSubmit} className="flex-grow flex gap-2">
                 <input
                     type="text"
@@ -74,20 +101,31 @@ const ActivityTimeline: React.FC<ActivityTimelineProps> = ({ dealId }) => {
                 />
                 <Button type="submit" disabled={!newComment.trim() || !canManageComments}>Kaydet</Button>
             </form>
-        </div>
-      )}
+             <Button variant="secondary" onClick={handleSummarize} disabled={isSummarizing}>
+                <span className="flex items-center gap-2">{ICONS.magic} {isSummarizing ? 'Özetleniyor...' : 'AI ile Özetle'}</span>
+            </Button>
+      </div>
+       {summary && (
+            <div className="mb-4 p-4 bg-primary-50 dark:bg-primary-900/30 rounded-lg border border-primary-200 dark:border-primary-800">
+                <h4 className="font-semibold text-primary-700 dark:text-primary-300 flex items-center gap-2">{ICONS.magic} AI Özeti</h4>
+                <p className="text-sm mt-2 whitespace-pre-wrap">{summary}</p>
+            </div>
+        )}
 
       <div className="space-y-6 max-h-[600px] overflow-y-auto pr-2">
         {timelineItems.length > 0 ? timelineItems.map(item => (
           <div key={`${item.itemType}-${item.id}`} className="flex items-start gap-3">
             {getItemIcon(item)}
             <div className="flex-1">
-              <p className="text-sm text-text-main dark:text-dark-text-main whitespace-pre-wrap">
-                {item.itemType === 'activity' ? (item as SalesActivity).notes : (item as Comment).text}
-              </p>
-              <p className="text-xs text-text-secondary dark:text-dark-text-secondary mt-1">
-                <span className="font-semibold">{item.userName}</span> • {new Date(item.timestamp).toLocaleString('tr-TR')}
-              </p>
+              <div className="p-3 bg-slate-50 dark:bg-slate-800/50 rounded-lg">
+                <p className="text-sm text-text-main dark:text-dark-text-main whitespace-pre-wrap">
+                  {item.itemType === 'activity' ? (item as SalesActivity).notes : (item as Comment).text}
+                </p>
+              </div>
+              <div className="text-xs text-text-secondary dark:text-dark-text-secondary mt-1 flex justify-between px-1">
+                <span><span className="font-semibold">{item.userName}</span></span>
+                <span>{new Date(item.timestamp).toLocaleString('tr-TR')}</span>
+              </div>
             </div>
           </div>
         )) : (

@@ -10,10 +10,10 @@ interface AgendaViewProps {
 const AgendaView: React.FC<AgendaViewProps> = ({ events, onEventClick }) => {
     const groupedEvents = useMemo(() => {
         const groups: { [key: string]: CalendarEvent[] } = {};
-        const sortedEvents = [...events].sort((a, b) => a.date.getTime() - b.date.getTime());
+        const sortedEvents = [...events].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
         
         sortedEvents.forEach(event => {
-            const dateKey = event.date.toISOString().split('T')[0];
+            const dateKey = new Date(event.date).toISOString().split('T')[0];
             if (!groups[dateKey]) {
                 groups[dateKey] = [];
             }
@@ -41,7 +41,7 @@ const AgendaView: React.FC<AgendaViewProps> = ({ events, onEventClick }) => {
                             >
                                 <span className="w-3 h-3 rounded-full flex-shrink-0" style={{ backgroundColor: event.color }}></span>
                                 <span className="w-20 text-sm font-semibold">
-                                    {event.isAllDay ? 'Tüm gün' : event.date.toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' })}
+                                    {event.isAllDay ? 'Tüm gün' : new Date(event.date).toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' })}
                                 </span>
                                 <span className="flex-1">{event.title}</span>
                             </div>

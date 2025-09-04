@@ -12,10 +12,11 @@ interface DealFormModalProps {
   prefilledData?: Partial<Omit<Deal, 'id' | 'customerName' | 'assignedToName' | 'value' | 'lastActivityDate'>> | null;
 }
 
-type DealFormData = Omit<Deal, 'id' | 'customerName' | 'assignedToName' | 'value' | 'lastActivityDate'>;
+type DealFormData = Omit<Deal, 'id' | 'customerName' | 'assignedToName' | 'value' | 'lastActivityDate' | 'createdDate'>;
 
 const DealFormModal: React.FC<DealFormModalProps> = ({ isOpen, onClose, deal, prefilledData }) => {
-    const { addDeal, updateDeal, customers, employees, products } = useApp();
+    const { api, customers, employees, products } = useApp();
+    const [isLoading, setIsLoading] = useState(false);
 
     const initialFormState: DealFormData = {
         title: '',
@@ -119,15 +120,17 @@ const DealFormModal: React.FC<DealFormModalProps> = ({ isOpen, onClose, deal, pr
         setFormData(prev => ({ ...prev, lineItems: prev.lineItems.filter((_, i) => i !== index) }));
     };
 
-    const handleSubmit = (e: React.FormEvent) => {
+    const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         if (formData.title && formData.customerId) {
+            setIsLoading(true);
             const { winReason, lossReason, ...dealDataForSubmit } = formData;
             if (deal) {
-                updateDeal({ ...deal, ...dealDataForSubmit });
+                await api.updateDeal({ ...deal, ...dealDataForSubmit });
             } else {
-                addDeal(dealDataForSubmit);
+                await api.addDeal(dealDataForSubmit);
             }
+            setIsLoading(false);
             onClose();
         } else {
             alert("Lütfen tüm zorunlu alanları doldurun.");
@@ -210,8 +213,10 @@ const DealFormModal: React.FC<DealFormModalProps> = ({ isOpen, onClose, deal, pr
                     </select>
                 </div>
                 <div className="flex justify-end pt-4 gap-2">
-                    <Button type="button" variant="secondary" onClick={onClose}>İptal</Button>
-                    <Button type="submit">{deal ? "Güncelle" : "Ekle"}</Button>
+                    <Button type="button" variant="secondary" onClick={onClose} disabled={isLoading}>İptal</Button>
+                    <Button type="submit" disabled={isLoading}>
+                         {isLoading ? <div className="spinner !w-4 !h-4"></div> : (deal ? "Güncelle" : "Ekle")}
+                    </Button>
                 </div>
             </form>
         </Modal>
