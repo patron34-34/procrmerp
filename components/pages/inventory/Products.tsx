@@ -1,3 +1,4 @@
+
 import React, { useState, useMemo, useRef, useEffect } from 'react';
 import { useApp } from '../../../context/AppContext';
 import { Product, StockItem, StockItemStatus } from '../../../types';

@@ -9,7 +9,7 @@ if (!API_KEY) {
   console.warn("API_KEY environment variable not set. AI features will be disabled.");
 }
 
-// FIX: Add a safety check for an empty API key
+// Add a safety check for an empty API key
 const ai = API_KEY ? new GoogleGenAI({ apiKey: API_KEY }) : null;
 
 const journalResponseSchema = {
@@ -42,13 +42,13 @@ export const generateJournalEntryFromPrompt = async (
   prompt: string,
   chartOfAccounts: Account[]
 ): Promise<Partial<JournalEntryItem>[]> => {
-  // FIX: Check if ai is initialized
+  // Check if ai is initialized
   if (!ai) {
     throw new Error("API Anahtarı ayarlanmadığı için yapay zeka özelliği kullanılamıyor.");
   }
   try {
-    // FIX: Use the correct model name 'gemini-1.5-flash'
-    const model = 'gemini-1.5-flash';
+    // Use the correct model name 'gemini-2.5-flash'
+    const model = 'gemini-2.5-flash';
 
     const systemInstruction = `You are an expert accounting assistant. Your task is to analyze a user's description of a financial transaction and convert it into a standard double-entry bookkeeping journal entry.
 
@@ -70,6 +70,7 @@ export const generateJournalEntryFromPrompt = async (
       },
     });
     
+    // Use the .text property to get the response text, avoiding incorrect methods.
     const jsonString = response.text.trim();
     const generatedItems = JSON.parse(jsonString);
 
@@ -116,13 +117,13 @@ const puantajResponseSchema = {
 };
 
 export const generatePuantajFromPrompt = async (prompt: string): Promise<Record<string, any>> => {
-    // FIX: Check if ai is initialized
+    // Check if ai is initialized
   if (!ai) {
     throw new Error("API Anahtarı ayarlanmadığı için yapay zeka özelliği kullanılamıyor.");
     }
     try {
-        // FIX: Use the correct model name 'gemini-1.5-flash'
-        const model = 'gemini-1.5-flash';
+        // Use the correct model name 'gemini-2.5-flash'
+        const model = 'gemini-2.5-flash';
         const systemInstruction = `You are an HR assistant for a Turkish company. Your task is to parse a user's natural language input about an employee's timesheet (puantaj) for a month and convert it into a structured JSON object.
 
         The user will provide a sentence in Turkish. Analyze it and extract the values for the corresponding fields.
@@ -147,6 +148,7 @@ export const generatePuantajFromPrompt = async (prompt: string): Promise<Record<
             },
         });
         
+        // Use the .text property to get the response text, avoiding incorrect methods.
         const jsonString = response.text.trim();
         return JSON.parse(jsonString);
 
@@ -167,13 +169,13 @@ const subtaskResponseSchema = {
 };
 
 export const generateSubtasksFromPrompt = async (taskTitle: string): Promise<string[]> => {
-    // FIX: Check if ai is initialized
+    // Check if ai is initialized
   if (!ai) {
     throw new Error("API Anahtarı ayarlanmadığı için yapay zeka özelliği kullanılamıyor.");
     }
     try {
-        // FIX: Use the correct model name 'gemini-1.5-flash'
-        const model = 'gemini-1.5-flash';
+        // Use the correct model name 'gemini-2.5-flash'
+        const model = 'gemini-2.5-flash';
         const systemInstruction = `You are a project management assistant. Your task is to break down a larger task into smaller, actionable subtasks.
         The user will provide a task title in Turkish.
         Analyze the title and generate a list of 3 to 7 relevant subtasks.
@@ -190,6 +192,7 @@ export const generateSubtasksFromPrompt = async (taskTitle: string): Promise<str
             },
         });
 
+        // Use the .text property to get the response text, avoiding incorrect methods.
         const jsonString = response.text.trim();
         const result = JSON.parse(jsonString);
         
@@ -224,13 +227,13 @@ const suggestionResponseSchema = {
 };
 
 export const generateCustomerSuggestions = async (customerContext: any): Promise<any[]> => {
-    // FIX: Check if ai is initialized
+    // Check if ai is initialized
   if (!ai) {
     throw new Error("API Anahtarı ayarlanmadığı için yapay zeka özelliği kullanılamıyor.");
     }
     try {
-        // FIX: Use the correct model name 'gemini-1.5-flash'
-        const model = 'gemini-1.5-flash';
+        // Use the correct model name 'gemini-2.5-flash'
+        const model = 'gemini-2.5-flash';
 
         const systemInstruction = `You are a proactive CRM assistant. Based on the provided customer data, generate 2-3 actionable "Next Best Action" suggestions for a sales/account manager. The suggestions should be concise, relevant, and help build a stronger customer relationship or uncover new opportunities.
 
@@ -254,6 +257,7 @@ export const generateCustomerSuggestions = async (customerContext: any): Promise
             },
         });
 
+        // Use the .text property to get the response text, avoiding incorrect methods.
         const jsonString = response.text.trim();
         const result = JSON.parse(jsonString);
 
@@ -269,17 +273,18 @@ export const generateCustomerSuggestions = async (customerContext: any): Promise
 };
 
 export const summarizeText = async (text: string): Promise<string> => {
-    // FIX: Check if ai is initialized
+    // Check if ai is initialized
   if (!ai) {
     throw new Error("API Anahtarı ayarlanmadığı için yapay zeka özelliği kullanılamıyor.");
     }
     try {
-        // FIX: Use the correct model name 'gemini-1.5-flash'
-        const model = 'gemini-1.5-flash';
+        // Use the correct model name 'gemini-2.5-flash'
+        const model = 'gemini-2.5-flash';
         const response = await ai.models.generateContent({
             model,
             contents: `Summarize the following text concisely in Turkish:\n\n${text}`,
         });
+        // Use the .text property to get the response text.
         return response.text;
     } catch (error) {
         console.error("Error summarizing text:", error);
@@ -288,13 +293,13 @@ export const summarizeText = async (text: string): Promise<string> => {
 };
 
 export const generateSalesSummary = async (analyticsData: SalesAnalyticsData): Promise<string> => {
-    // FIX: Check if ai is initialized
+    // Check if ai is initialized
   if (!ai) {
     throw new Error("API Anahtarı ayarlanmadığı için yapay zeka özelliği kullanılamıyor.");
     }
     try {
-      // FIX: Use the correct model name 'gemini-1.5-flash'
-      const model = 'gemini-1.5-flash';
+      // Use the correct model name 'gemini-2.5-flash'
+      const model = 'gemini-2.5-flash';
       const prompt = `Aşağıdaki satış analizi verilerini analiz ederek Türkçe, doğal bir dilde kısa bir performans özeti oluştur: ${JSON.stringify(analyticsData)}. Önemli trendlere, potansiyel risklere ve odaklanılması gereken alanlara dikkat çek.`;
   
       const response = await ai.models.generateContent({
@@ -302,6 +307,7 @@ export const generateSalesSummary = async (analyticsData: SalesAnalyticsData): P
         contents: prompt,
       });
   
+      // Use the .text property to get the response text.
       return response.text;
     } catch (error) {
       console.error("Error generating sales summary with AI:", error);
@@ -310,13 +316,13 @@ export const generateSalesSummary = async (analyticsData: SalesAnalyticsData): P
 };
 
 export const summarizeProject = async (project: Project, comments: Comment[], tasks: Task[]): Promise<string> => {
-    // FIX: Check if ai is initialized
+    // Check if ai is initialized
   if (!ai) {
     throw new Error("API Anahtarı ayarlanmadığı için yapay zeka özelliği kullanılamıyor.");
     }
     try {
-      // FIX: Use the correct model name 'gemini-1.5-flash'
-      const model = 'gemini-1.5-flash';
+      // Use the correct model name 'gemini-2.5-flash'
+      const model = 'gemini-2.5-flash';
       
       const taskSummary = {
           total: tasks.length,
@@ -354,6 +360,7 @@ export const summarizeProject = async (project: Project, comments: Comment[], ta
       3.  **Next Steps/Focus Areas:** What should the project manager focus on next?`;
 
       const response = await ai.models.generateContent({ model, contents: prompt });
+      // Use the .text property to get the response text.
       return response.text;
     } catch (error) {
       console.error("Error generating project summary with AI:", error);
@@ -363,13 +370,13 @@ export const summarizeProject = async (project: Project, comments: Comment[], ta
 
 
 export const generateProductivitySummary = async (analyticsData: any): Promise<string> => {
-    // FIX: Check if ai is initialized
+    // Check if ai is initialized
   if (!ai) {
     throw new Error("API Anahtarı ayarlanmadığı için yapay zeka özelliği kullanılamıyor.");
     }
     try {
-      // FIX: Use the correct model name 'gemini-1.5-flash'
-      const model = 'gemini-1.5-flash';
+      // Use the correct model name 'gemini-2.5-flash'
+      const model = 'gemini-2.5-flash';
       const prompt = `Aşağıdaki görev verimliliği verilerini analiz ederek Türkçe, doğal bir dilde kısa bir yönetici özeti oluştur: ${JSON.stringify(analyticsData)}.
       
       Özette şu noktalara odaklan:
@@ -379,6 +386,7 @@ export const generateProductivitySummary = async (analyticsData: any): Promise<s
       4.  **Eyleme Yönelik Öneriler:** Analize dayanarak yöneticinin atabileceği 1-2 somut adımı öner. (Örn: "Ahmet'in iş yükünü gözden geçirin" veya "Planlama görevleri için süreci iyileştirin").`;
   
       const response = await ai.models.generateContent({ model, contents: prompt });
+      // Use the .text property to get the response text.
       return response.text;
     } catch (error) {
       console.error("Error generating productivity summary with AI:", error);
@@ -408,13 +416,13 @@ export const findAvailableSlots = async (
     participantsEvents: { name: string; events: { start: string, end: string }[] }[],
     durationMinutes: number
 ): Promise<{ start: string, end: string }[]> => {
-    // FIX: Check if ai is initialized
+    // Check if ai is initialized
   if (!ai) {
     throw new Error("API Anahtarı ayarlanmadığı için yapay zeka özelliği kullanılamıyor.");
     }
     try {
-        // FIX: Use the correct model name 'gemini-1.5-flash'
-        const model = 'gemini-1.5-flash';
+        // Use the correct model name 'gemini-2.5-flash'
+        const model = 'gemini-2.5-flash';
         const systemInstruction = `You are a scheduling assistant. Your task is to find the top 3 available time slots for a meeting, given the participants' schedules and a required duration.
 
         - Consider standard business hours (09:00 to 17:00).
@@ -438,6 +446,7 @@ export const findAvailableSlots = async (
             },
         });
 
+        // Use the .text property to get the response text, avoiding incorrect methods.
         const jsonString = response.text.trim();
         const result = JSON.parse(jsonString);
         

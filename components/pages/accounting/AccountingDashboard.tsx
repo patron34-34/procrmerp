@@ -9,7 +9,7 @@ const AccountingDashboard: React.FC = () => {
 
     const stats = useMemo(() => {
         const totalCash = bankAccounts.reduce((sum, acc) => sum + acc.balance, 0);
-        const totalPayable = bills.filter(b => b.status === BillStatus.Payable).reduce((sum, b) => sum + b.totalAmount, 0);
+        const totalPayable = bills.filter(b => b.status === BillStatus.Approved || b.status === BillStatus.PendingApproval).reduce((sum, b) => sum + b.totalAmount, 0);
 
         const thirtyDaysAgo = new Date();
         thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);

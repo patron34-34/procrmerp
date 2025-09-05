@@ -4,28 +4,26 @@ import { useApp } from '../../context/AppContext';
 import { Customer, SortConfig } from '../../types';
 import Button from '../ui/Button';
 import EmptyState from '../ui/EmptyState';
-import ConfirmationModal from '../ui/ConfirmationModal';
 import { ICONS } from '../../constants';
 import HealthScoreIndicator from './HealthScoreIndicator';
 
 interface CustomerListViewProps {
     customers: (Customer & { assignedToName: string, healthScoreBreakdown?: string[] })[];
     onEdit: (customer: Customer) => void;
+    onDeleteRequest: (customer: Customer) => void;
     onUpdate: (customer: Customer) => void;
     onSelectionChange: (selectedIds: number[]) => void;
     sortConfig: SortConfig;
     onSort: (config: SortConfig) => void;
+    canManageCustomers: boolean;
 }
 
 const CustomerListView: React.FC<CustomerListViewProps> = (props) => {
-  const { employees, deleteCustomer, hasPermission, systemLists } = useApp();
-  const { customers, onEdit, onUpdate, onSelectionChange, sortConfig, onSort } = props;
+  const { employees, systemLists } = useApp();
+  const { customers, onEdit, onDeleteRequest, onUpdate, onSelectionChange, sortConfig, onSort, canManageCustomers } = props;
   
-  const [customerToDelete, setCustomerToDelete] = useState<Customer | null>(null);
   const [selectedIds, setSelectedIds] = useState<number[]>([]);
   const [editingCell, setEditingCell] = useState<{ id: number; key: 'status' | 'assignedToId' } | null>(null);
-  
-  const canManageCustomers = hasPermission('musteri:yonet');
   
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(10);
@@ -45,13 +43,6 @@ const CustomerListView: React.FC<CustomerListViewProps> = (props) => {
   }, [customers, currentPage, itemsPerPage]);
   
   const totalPages = Math.ceil(customers.length / itemsPerPage);
-  
-  const handleDeleteConfirm = () => {
-    if (customerToDelete) {
-      deleteCustomer(customerToDelete.id);
-      setCustomerToDelete(null);
-    }
-  };
 
   const handleSelectAll = (e: React.ChangeEvent<HTMLInputElement>) => {
     if(e.target.checked) {
@@ -161,7 +152,7 @@ const CustomerListView: React.FC<CustomerListViewProps> = (props) => {
                   </td>
                   {canManageCustomers && <td className="p-4"><div className="flex items-center gap-3">
                      <button onClick={() => onEdit(customer)} className="text-slate-500 hover:text-primary-600">{ICONS.edit}</button>
-                     <button onClick={() => setCustomerToDelete(customer)} className="text-slate-500 hover:text-red-600">{ICONS.trash}</button>
+                     <button onClick={() => onDeleteRequest(customer)} className="text-slate-500 hover:text-red-600">{ICONS.trash}</button>
                   </div></td>}
               </tr>
               ))}
@@ -185,14 +176,6 @@ const CustomerListView: React.FC<CustomerListViewProps> = (props) => {
         </div>
       </div>
     )}
-    
-    {canManageCustomers && <ConfirmationModal 
-        isOpen={!!customerToDelete}
-        onClose={() => setCustomerToDelete(null)}
-        onConfirm={handleDeleteConfirm}
-        title="Müşteriyi Sil"
-        message={`'${customerToDelete?.name}' adlı müşteriyi kalıcı olarak silmek istediğinizden emin misiniz? Bu işlem geri alınamaz.`}
-    />}
     </>
   );
 };

@@ -1,8 +1,10 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useState } from 'react';
 import { useApp } from '../../context/AppContext';
 import { CommunicationLog, ActivityLog, CommunicationLogType, Comment } from '../../types';
 import { ICONS } from '../../constants';
-import InlineCommunicationLogger from './InlineCommunicationLogger';
+import Button from '../ui/Button';
+import { useNotification } from '../../context/NotificationContext';
+import { summarizeText } from '../../services/geminiService';
 
 interface ActivityFeedProps {
     customerId: number;
@@ -11,9 +13,10 @@ interface ActivityFeedProps {
 type TimelineItem = (CommunicationLog | ActivityLog | Comment) & { itemType: 'log' | 'activity' | 'comment' };
 
 const ActivityFeed: React.FC<ActivityFeedProps> = ({ customerId }) => {
-    const { communicationLogs, activityLogs, comments, deals, projects, hasPermission } = useApp();
-    
-    const canManageCustomers = hasPermission('musteri:yonet');
+    const { communicationLogs, activityLogs, comments, deals, projects } = useApp();
+    const { addToast } = useNotification();
+    const [summary, setSummary] = useState('');
+    const [isSummarizing, setIsSummarizing] = useState(false);
 
     const timelineItems = useMemo(() => {
         const customerDeals = deals.filter(d => d.customerId === customerId).map(d => d.id);
@@ -38,6 +41,29 @@ const ActivityFeed: React.FC<ActivityFeedProps> = ({ customerId }) => {
         return [...logs, ...activities, ...customerComments].sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
     }, [communicationLogs, activityLogs, comments, deals, projects, customerId]);
 
+    const handleSummarize = async () => {
+        if (timelineItems.length === 0) {
+            addToast("Özetlenecek aktivite bulunmuyor.", "info");
+            return;
+        }
+        setIsSummarizing(true);
+        setSummary('');
+        try {
+            const textToSummarize = timelineItems
+                .map(item => `${item.userName} (${item.timestamp}): ${item.itemType === 'activity' ? (item as ActivityLog).details : (item as CommunicationLog).content || (item as Comment).text}`)
+                .join('\n\n');
+            
+            const result = await summarizeText(textToSummarize);
+            setSummary(result);
+            addToast("Aktivite özeti oluşturuldu.", "success");
+        } catch (error) {
+            console.error("Summarization error:", error);
+            addToast("Özet oluşturulurken bir hata oluştu.", "error");
+        } finally {
+            setIsSummarizing(false);
+        }
+    };
+
     const getTimelineIcon = (item: TimelineItem) => {
         const iconMap = {
             [CommunicationLogType.Note]: ICONS.note,
@@ -58,7 +84,18 @@ const ActivityFeed: React.FC<ActivityFeedProps> = ({ customerId }) => {
     
     return (
         <div className="space-y-6">
-            {canManageCustomers && <InlineCommunicationLogger customerId={customerId} />}
+            <div className="flex justify-end">
+                <Button variant="secondary" onClick={handleSummarize} disabled={isSummarizing}>
+                    <span className="flex items-center gap-2">{ICONS.magic} {isSummarizing ? 'Özetleniyor...' : 'AI ile Özetle'}</span>
+                </Button>
+            </div>
+
+            {summary && (
+                <div className="mb-4 p-4 bg-primary-50 dark:bg-primary-900/30 rounded-lg border border-primary-200 dark:border-primary-800">
+                    <h4 className="font-semibold text-primary-700 dark:text-primary-300 flex items-center gap-2">{ICONS.magic} AI Özeti</h4>
+                    <p className="text-sm mt-2 whitespace-pre-wrap">{summary}</p>
+                </div>
+            )}
             
             <div className="space-y-6 max-h-[600px] overflow-y-auto pr-2">
                 {timelineItems.length > 0 ? timelineItems.map(item => (

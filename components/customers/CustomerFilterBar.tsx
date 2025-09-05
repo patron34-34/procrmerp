@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useCallback } from 'react';
 import { useApp } from '../../context/AppContext';
 import { SortConfig } from '../../types';
 import Button from '../ui/Button';
@@ -21,6 +21,8 @@ const CustomerFilterBar: React.FC<CustomerFilterBarProps> = ({
   const { customers, employees, savedViews, addSavedView, hasPermission, systemLists } = useApp();
   const [isSaveViewModalOpen, setIsSaveViewModalOpen] = useState(false);
   const [newViewName, setNewViewName] = useState('');
+  // FIX: Control the saved view select with local state
+  const [savedViewSelection, setSavedViewSelection] = useState('');
   
   const canManageCustomers = hasPermission('musteri:yonet');
   
@@ -51,6 +53,14 @@ const CustomerFilterBar: React.FC<CustomerFilterBarProps> = ({
       setNewViewName('');
     }
   };
+
+  // FIX: Create a handler for the controlled select
+  const handleLoadViewChange = useCallback((viewId: string) => {
+    if (viewId) {
+        onLoadView(viewId);
+        setSavedViewSelection(''); // Reset after loading
+    }
+  }, [onLoadView]);
 
   return (
     <>
@@ -101,9 +111,9 @@ const CustomerFilterBar: React.FC<CustomerFilterBarProps> = ({
 
         <div className="flex items-center gap-2">
           <select 
-            onChange={(e) => onLoadView(e.target.value)}
+            onChange={(e) => handleLoadViewChange(e.target.value)}
             className="p-2 border rounded-md dark:bg-slate-700 dark:border-dark-border appearance-none"
-            value=""
+            value={savedViewSelection}
           >
             <option value="" disabled>Kayıtlı Görünüm Seç...</option>
             {savedViews.map(view => (

@@ -42,12 +42,10 @@ import Quotations from './components/pages/Quotations';
 import QuotationForm from './components/sales/QuotationForm';
 
 // Invoicing Sub-routes
-import InvoicingDashboard from './components/pages/invoicing/InvoicingDashboard';
 import OutgoingInvoices from './components/pages/invoicing/OutgoingInvoices';
 import DraftInvoices from './components/pages/invoicing/DraftInvoices';
 import InvoiceForm from './components/invoicing/InvoiceForm';
 import SalesReturns from './components/pages/invoicing/SalesReturns';
-import SalesReturnForm from './components/invoicing/SalesReturnForm';
 import Bills from './components/pages/accounting/Bills';
 import OutgoingInvoiceArchive from './components/pages/invoicing/OutgoingInvoiceArchive';
 import IncomingInvoiceArchive from './components/pages/invoicing/IncomingInvoiceArchive';
@@ -225,14 +223,12 @@ const App: React.FC = () => {
                   <Route path="/documents" element={<ProtectedRoute permission="dokuman:goruntule"><Documents /></ProtectedRoute>} />
 
                   {/* Invoicing */}
-                  <Route path="/invoicing" element={<ProtectedRoute permission="fatura:goruntule"><InvoicingDashboard /></ProtectedRoute>} />
+                  <Route path="/invoicing" element={<Navigate to="/invoicing/outgoing" replace />} />
                   <Route path="/invoicing/outgoing" element={<ProtectedRoute permission="fatura:goruntule"><OutgoingInvoices /></ProtectedRoute>} />
                   <Route path="/invoicing/drafts" element={<ProtectedRoute permission="fatura:goruntule"><DraftInvoices /></ProtectedRoute>} />
                   <Route path="/invoicing/new" element={<ProtectedRoute permission="fatura:yonet"><InvoiceForm /></ProtectedRoute>} />
                   <Route path="/invoicing/edit/:id" element={<ProtectedRoute permission="fatura:yonet"><InvoiceForm /></ProtectedRoute>} />
                   <Route path="/invoicing/returns" element={<ProtectedRoute permission="fatura:yonet"><SalesReturns /></ProtectedRoute>} />
-                  <Route path="/invoicing/returns/new" element={<ProtectedRoute permission="fatura:yonet"><SalesReturnForm /></ProtectedRoute>} />
-                  <Route path="/invoicing/returns/edit/:id" element={<ProtectedRoute permission="fatura:yonet"><SalesReturnForm /></ProtectedRoute>} />
                   <Route path="/invoicing/incoming" element={<ProtectedRoute permission="muhasebe:yonet"><Bills /></ProtectedRoute>} />
                   <Route path="/invoicing/archive/outgoing" element={<ProtectedRoute permission="fatura:goruntule"><OutgoingInvoiceArchive /></ProtectedRoute>} />
                   <Route path="/invoicing/archive/incoming" element={<ProtectedRoute permission="muhasebe:goruntule"><IncomingInvoiceArchive /></ProtectedRoute>} />

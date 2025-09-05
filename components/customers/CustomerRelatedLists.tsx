@@ -3,6 +3,7 @@ import { useApp } from '../../context/AppContext';
 import { Link } from 'react-router-dom';
 import Card from '../ui/Card';
 import ActivityFeed from './ActivityFeed';
+import InlineCommunicationLogger from './InlineCommunicationLogger';
 
 interface CustomerRelatedListsProps {
     customerId: number;
@@ -17,8 +18,10 @@ interface CustomerRelatedListsProps {
 type ActiveTab = 'activity' | 'deals' | 'projects' | 'invoices' | 'tickets' | 'sales_orders';
 
 const CustomerRelatedLists: React.FC<CustomerRelatedListsProps> = ({ customerId }) => {
-    const { deals, projects, invoices, tickets, salesOrders } = useApp();
+    const { deals, projects, invoices, tickets, salesOrders, hasPermission } = useApp();
     const [activeTab, setActiveTab] = useState<ActiveTab>('activity');
+    
+    const canManageCustomers = hasPermission('musteri:yonet');
 
     const relatedDeals = useMemo(() => deals.filter(d => d.customerId === customerId), [deals, customerId]);
     const relatedProjects = useMemo(() => projects.filter(p => p.customerId === customerId), [projects, customerId]);
@@ -55,6 +58,9 @@ const CustomerRelatedLists: React.FC<CustomerRelatedListsProps> = ({ customerId 
 
     return (
         <Card>
+             {canManageCustomers && <div className="p-4 border-b dark:border-dark-border">
+                <InlineCommunicationLogger customerId={customerId} />
+            </div>}
             <div className="border-b dark:border-dark-border">
                 <nav className="-mb-px flex space-x-4 overflow-x-auto" aria-label="Tabs">
                     <TabButton tabName="activity" label="Aktivite" count={0} />

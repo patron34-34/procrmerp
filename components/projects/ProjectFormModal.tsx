@@ -18,7 +18,7 @@ interface FormErrors {
 }
 
 const ProjectFormModal: React.FC<ProjectFormModalProps> = ({ isOpen, onClose, project, prefilledData }) => {
-    const { customers, addProject, updateProject } = useApp();
+    const { customers, addProject, updateProject, taskTemplates } = useApp();
     
     const initialFormState: Omit<Project, 'id' | 'client'> = {
         name: '',
@@ -36,6 +36,7 @@ const ProjectFormModal: React.FC<ProjectFormModalProps> = ({ isOpen, onClose, pr
 
     const [formData, setFormData] = useState(initialFormState);
     const [errors, setErrors] = useState<FormErrors>({});
+    const [selectedTaskTemplateId, setSelectedTaskTemplateId] = useState<number | undefined>();
 
     useEffect(() => {
         let initialState = { ...initialFormState };
@@ -46,8 +47,9 @@ const ProjectFormModal: React.FC<ProjectFormModalProps> = ({ isOpen, onClose, pr
             initialState = { ...initialState, ...prefilledData };
         }
         setFormData(initialState);
+        setSelectedTaskTemplateId(taskTemplates[0]?.id);
         setErrors({});
-    }, [project, prefilledData, isOpen, customers]);
+    }, [project, prefilledData, isOpen, customers, taskTemplates]);
 
 
     const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
@@ -77,7 +79,7 @@ const ProjectFormModal: React.FC<ProjectFormModalProps> = ({ isOpen, onClose, pr
             if(project) {
                 updateProject({ ...project, ...formData, client: customer.company });
             } else {
-                addProject(formData);
+                addProject(formData, selectedTaskTemplateId);
             }
             onClose();
         }
@@ -122,6 +124,15 @@ const ProjectFormModal: React.FC<ProjectFormModalProps> = ({ isOpen, onClose, pr
                         <input type="number" name="spent" id="spent" value={formData.spent} onChange={handleInputChange} className="mt-1 block w-full p-2 border border-slate-300 rounded-md shadow-sm dark:bg-slate-700 dark:border-dark-border dark:text-white"/>
                     </div>
                 </div>
+                 {!project && taskTemplates.length > 0 && (
+                 <div>
+                    <label htmlFor="taskTemplateId" className="block text-sm font-medium">Görev Şablonu (Opsiyonel)</label>
+                     <select name="taskTemplateId" id="taskTemplateId" value={selectedTaskTemplateId} onChange={(e) => setSelectedTaskTemplateId(Number(e.target.value))} className="mt-1 w-full">
+                         <option value="">Şablonsuz oluştur</option>
+                         {taskTemplates.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
+                     </select>
+                </div>
+               )}
                 <TagInput tags={formData.tags} setTags={(tags) => setFormData(prev => ({...prev, tags}))} label="Etiketler" />
                 <div className="flex justify-end pt-4 gap-2">
                     <Button type="button" variant="secondary" onClick={onClose}>İptal</Button>

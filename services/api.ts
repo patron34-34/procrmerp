@@ -51,6 +51,22 @@ export class ApiService {
         this.logActivity(T.ActionType.UPDATED, `Müşteri '${customerToUpdate.name}' güncellendi.`, 'customer', customerToUpdate.id);
         return customerToUpdate;
     }
+    
+    async addSalesActivity(activityData: Omit<T.SalesActivity, "id" | "userName" | "userAvatar" | "timestamp">): Promise<void> {
+        await delay(SIMULATED_DELAY/2);
+        const currentUser = this.state.currentUser as T.Employee;
+        const newActivity: T.SalesActivity = {
+            ...activityData,
+            id: Date.now(),
+            userName: currentUser.name,
+            userAvatar: currentUser.avatar,
+            timestamp: new Date().toISOString(),
+        };
+        this.setState('salesActivities', (prev: T.SalesActivity[]) => [newActivity, ...prev]);
+        this.setState('deals', (prev: T.Deal[]) => 
+            prev.map(d => d.id === activityData.dealId ? { ...d, lastActivityDate: newActivity.timestamp.split('T')[0] } : d)
+        );
+    }
 
     // --- DEAL API ---
     async addDeal(dealData: Omit<T.Deal, 'id' | 'customerName' | 'assignedToName' | 'value' | 'lastActivityDate' | 'createdDate'>): Promise<T.Deal> {

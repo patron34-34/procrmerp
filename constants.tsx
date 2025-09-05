@@ -23,10 +23,12 @@ import {
     TransactionType, TransactionCategory, DocumentType, CommunicationLogType, SalesActivityType,
     HrParameters,
     Quotation, QuotationStatus,
-    SalesReturn,
+    SalesReturn, SalesReturnStatus,
     Lead, LeadStatus,
     CommissionRecord
 } from './types';
+import { numberToWords } from './utils/numberToWords';
+
 
 export const Logo: React.FC<{ className?: string }> = ({ className }) => (
     <svg className={className} viewBox="0 0 208 50" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -65,6 +67,7 @@ export const ICONS = {
     list: <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5" /></svg>,
     export: <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3" /></svg>,
     import: <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5m-13.5-9L12 3m0 0l4.5 4.5M12 3v13.5" /></svg>,
+    archive: <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M20.25 7.5l-.625 10.632a2.25 2.25 0 01-2.247 2.118H6.622a2.25 2.25 0 01-2.247-2.118L3.75 7.5M10 11.25h4M3.375 7.5h17.25c.621 0 1.125-.504 1.125-1.125v-1.5c0-.621-.504-1.125-1.125-1.125H3.375c-.621 0-1.125.504-1.125 1.125v1.5c0 .621.504 1.125 1.125 1.125z" /></svg>,
     kanban: <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M3.75 6A2.25 2.25 0 016 3.75h2.25A2.25 2.25 0 0110.5 6v12a2.25 2.25 0 01-2.25 2.25H6A2.25 2.25 0 013.75 18V6zM13.5 15.75a2.25 2.25 0 012.25-2.25h2.25a2.25 2.25 0 012.25 2.25V18a2.25 2.25 0 01-2.25 2.25h-2.25A2.25 2.25 0 0113.5 18v-2.25z" /></svg>,
     map: <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M9 6.75V15m6-6v8.25m.5-10.5h.008v.008h-.008v-.008zm0 2.25h.008v.008h-.008V8.25zm0 2.25h.008v.008h-.008v-.008zm0 2.25h.008v.008h-.008v-.008zM4.5 6.75v8.25c0 .621.504 1.125 1.125 1.125h9.75c.621 0 1.125-.504 1.125-1.125V6.75c0-.621-.504-1.125-1.125-1.125H5.625c-.621 0-1.125.504-1.125 1.125zM19.5 6.75h.008v.008h-.008V6.75z" /></svg>,
     close: <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>,
@@ -136,15 +139,33 @@ export const ICONS = {
     dataManagement: <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M20.25 6.375c0 2.278-3.694 4.125-8.25 4.125S3.75 8.653 3.75 6.375m16.5 0c0-2.278-3.694-4.125-8.25-4.125S3.75 4.097 3.75 6.375m16.5 0v11.25c0 2.278-3.694 4.125-8.25 4.125s-8.25-1.847-8.25-4.125V6.375m16.5 0v3.75m-16.5-3.75v3.75m16.5 0v3.75C20.25 16.153 16.556 18 12 18s-8.25-1.847-8.25-4.125v-3.75m16.5 0c0 2.278-3.694 4.125-8.25 4.125s-8.25-1.847-8.25-4.125" /></svg>,
     budget: <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M2.25 18.75a60.07 60.07 0 0115.797 2.101c.727.198 1.453-.342 1.453-1.096V18.75M3.75 4.5v.75A.75.75 0 013 6h-.75m0 0v-.375c0-.621.504-1.125 1.125-1.125H20.25M2.25 6v9m18-10.5v.75c0 .414.336.75.75.75h.75m-1.5-1.5h.375c.621 0 1.125.504 1.125 1.125v15c0 .621-.504 1.125-1.125 1.125h-3.75a1.125 1.125 0 01-1.125-1.125v-15c0-.621.504-1.125 1.125-1.125h3.75z" /></svg>,
 };
-export const MOCK_CUSTOMERS: Customer[] = [];
+export const MOCK_CUSTOMERS: Customer[] = [
+    { id: 101, name: 'Tekno A.Ş.', company: 'Teknoloji Çözümleri A.Ş.', email: 'info@teknoas.com', phone: '0212 111 2233', lastContact: '2024-07-15', status: 'aktif', avatar: 'https://i.pravatar.cc/150?u=101', industry: 'Teknoloji', tags: ['e-fatura', 'büyük müşteri'], assignedToId: 2, leadSource: 'Website', accountType: 'Tüzel Kişi', accountCode: 'CUST-001', taxId: '8350012345', taxOffice: 'Maslak', billingAddress: { country: 'Türkiye', city: 'İstanbul', district: 'Sarıyer', streetAddress: 'Büyükdere Cad. No:1', postalCode: '34467', email: 'muhasebe@teknoas.com', phone: '0212 111 2233'}, shippingAddress: { country: 'Türkiye', city: 'İstanbul', district: 'Sarıyer', streetAddress: 'Büyükdere Cad. No:1', postalCode: '34467', email: 'lojistik@teknoas.com', phone: '0212 111 2234'}, iban: 'TR110006200000100000123456', openingBalance: 0, currency: 'TRY', openingDate: '2023-01-10', eInvoiceMailbox: 'urn:mail:pk_teknoas@hs01.kep.tr' },
+    { id: 102, name: 'Lojistik Ltd.', company: 'Hızlı Lojistik Ltd. Şti.', email: 'destek@hizlilojistik.com', phone: '0312 444 5566', lastContact: '2024-06-20', status: 'aktif', avatar: 'https://i.pravatar.cc/150?u=102', industry: 'Lojistik', tags: ['sadık müşteri'], assignedToId: 4, leadSource: 'Referans', accountType: 'Tüzel Kişi', accountCode: 'CUST-002', taxId: '4640023456', taxOffice: 'Çankaya', billingAddress: { country: 'Türkiye', city: 'Ankara', district: 'Çankaya', streetAddress: 'Atatürk Blv. No:50', postalCode: '06420', email: 'muhasebe@hizlilojistik.com', phone: '0312 444 5566'}, shippingAddress: { country: 'Türkiye', city: 'Ankara', district: 'Çankaya', streetAddress: 'Atatürk Blv. No:50', postalCode: '06420', email: 'operasyon@hizlilojistik.com', phone: '0312 444 5567'}, iban: 'TR220001000002000002345678', openingBalance: 0, currency: 'TRY', openingDate: '2022-05-20', eInvoiceMailbox: 'urn:mail:pk_hizlilojistik@hs01.kep.tr' },
+    { id: 103, name: 'Gıda Pazarlama', company: 'Anadolu Gıda Pazarlama A.Ş.', email: 'siparis@anadolugida.com', phone: '0232 777 8899', lastContact: '2024-05-10', status: 'pasif', avatar: 'https://i.pravatar.cc/150?u=103', industry: 'Gıda', tags: [], assignedToId: 2, leadSource: 'Soğuk Arama', accountType: 'Tüzel Kişi', accountCode: 'CUST-003', taxId: '0710034567', taxOffice: 'Konak', billingAddress: { country: 'Türkiye', city: 'İzmir', district: 'Konak', streetAddress: 'Mimar Kemalettin Cad. No:8', postalCode: '35210', email: 'muhasebe@anadolugida.com', phone: '0232 777 8899'}, shippingAddress: { country: 'Türkiye', city: 'İzmir', district: 'Konak', streetAddress: 'Mimar Kemalettin Cad. No:8', postalCode: '35210', email: 'depo@anadolugida.com', phone: '0232 777 8890'}, iban: 'TR330006400000300000345678', openingBalance: 0, currency: 'TRY', openingDate: '2023-11-01' },
+];
 export const MOCK_CONTACTS: Contact[] = [];
 export const MOCK_DEALS: Deal[] = [];
 export const MOCK_PROJECTS: Project[] = [];
 export const MOCK_TASKS: Task[] = [];
 export const MOCK_NOTIFICATIONS: Notification[] = [];
-export const MOCK_INVOICES: Invoice[] = [];
-export const MOCK_PRODUCTS: Product[] = [];
-export const MOCK_SUPPLIERS: Supplier[] = [];
+export const MOCK_INVOICES: Invoice[] = [
+    { id: 1, invoiceNumber: 'FAT-20240001', customerId: 101, customerName: 'Tekno A.Ş.', issueDate: '2024-07-20', dueDate: '2024-08-20', status: InvoiceStatus.Sent, items: [{ id: 1, productId: 201, productName: 'Danışmanlık Hizmeti', quantity: 20, unit: Unit.Saat, unitPrice: 500, discountRate: 0, taxRate: 20, discountAmount: 0, taxAmount: 2000, totalPrice: 10000, vatIncludedPrice: 12000 }], subTotal: 10000, totalDiscount: 0, totalTax: 2000, grandTotal: 12000, totalWithholding: 0, customizationId: 'TR1.2', scenario: EInvoiceScenario.EFatura, invoiceType: 'Satış', documentCurrency: 'TRY', amountInWords: numberToWords(12000, 'TRY'), issueTime: "10:30" },
+    { id: 2, invoiceNumber: 'FAT-20240002', customerId: 102, customerName: 'Lojistik Ltd.', issueDate: '2024-06-15', dueDate: '2024-07-15', status: InvoiceStatus.Paid, items: [{ id: 2, productId: 202, productName: 'Yazılım Lisansı', quantity: 2, unit: Unit.Adet, unitPrice: 2500, discountRate: 10, taxRate: 20, discountAmount: 500, taxAmount: 900, totalPrice: 4500, vatIncludedPrice: 5400 }], subTotal: 5000, totalDiscount: 500, totalTax: 900, grandTotal: 5400, totalWithholding: 0, customizationId: 'TR1.2', scenario: EInvoiceScenario.EArsiv, invoiceType: 'Satış', documentCurrency: 'TRY', amountInWords: numberToWords(5400, 'TRY'), issueTime: "14:00" },
+    { id: 3, invoiceNumber: 'FAT-20240003', customerId: 101, customerName: 'Tekno A.Ş.', issueDate: '2024-05-10', dueDate: '2024-06-10', status: InvoiceStatus.Overdue, items: [{ id: 3, productId: 203, productName: 'Bakım Anlaşması', quantity: 1, unit: Unit.Adet, unitPrice: 15000, discountRate: 0, taxRate: 20, discountAmount: 0, taxAmount: 3000, totalPrice: 15000, vatIncludedPrice: 18000 }], subTotal: 15000, totalDiscount: 0, totalTax: 3000, grandTotal: 18000, totalWithholding: 0, customizationId: 'TR1.2', scenario: EInvoiceScenario.EFatura, invoiceType: 'Satış', documentCurrency: 'TRY', amountInWords: numberToWords(18000, 'TRY'), issueTime: "11:45" },
+    { id: 4, invoiceNumber: '', customerId: 103, customerName: 'Gıda Pazarlama', issueDate: '2024-07-25', dueDate: '2024-08-25', status: InvoiceStatus.Draft, items: [{ id: 4, productId: 201, productName: 'Danışmanlık Hizmeti', quantity: 5, unit: Unit.Saat, unitPrice: 500, discountRate: 0, taxRate: 20, discountAmount: 0, taxAmount: 500, totalPrice: 2500, vatIncludedPrice: 3000 }], subTotal: 2500, totalDiscount: 0, totalTax: 500, grandTotal: 3000, totalWithholding: 0, customizationId: 'TR1.2', scenario: EInvoiceScenario.EArsiv, invoiceType: 'Satış', documentCurrency: 'TRY', amountInWords: numberToWords(3000, 'TRY'), issueTime: "09:00" },
+    { id: 5, invoiceNumber: 'FAT-20230150', customerId: 102, customerName: 'Lojistik Ltd.', issueDate: '2023-12-20', dueDate: '2024-01-20', status: InvoiceStatus.Archived, items: [], subTotal: 8000, totalDiscount: 0, totalTax: 1600, grandTotal: 9600, totalWithholding: 0, customizationId: 'TR1.2', scenario: EInvoiceScenario.EArsiv, invoiceType: 'Satış', documentCurrency: 'TRY', amountInWords: numberToWords(9600, 'TRY'), issueTime: "16:20" },
+];
+export const MOCK_PRODUCTS: Product[] = [
+    { id: 201, productType: ProductType.Hizmet, eInvoiceType: EInvoiceType.Hizmet, name: 'Danışmanlık Hizmeti', sku: 'SRV-CONS-01', unit: Unit.Saat, category: 'Hizmetler', lowStockThreshold: 0, trackBy: 'none', financials: { purchasePrice: 0, purchaseCurrency: 'TRY', salePrice: 500, saleCurrency: 'TRY', vatRate: 20 }, price: 500 },
+    { id: 202, productType: ProductType.TicariMal, eInvoiceType: EInvoiceType.Urun, name: 'Yazılım Lisansı - Yıllık', sku: 'LIC-SOFT-Y', unit: Unit.Adet, category: 'Yazılım', lowStockThreshold: 100, trackBy: 'none', financials: { purchasePrice: 1000, purchaseCurrency: 'TRY', salePrice: 2500, saleCurrency: 'TRY', vatRate: 20 }, price: 2500 },
+    { id: 203, productType: ProductType.Hizmet, eInvoiceType: EInvoiceType.Hizmet, name: 'Yıllık Bakım Anlaşması', sku: 'SRV-MAIN-Y', unit: Unit.Adet, category: 'Hizmetler', lowStockThreshold: 0, trackBy: 'none', financials: { purchasePrice: 0, purchaseCurrency: 'TRY', salePrice: 15000, saleCurrency: 'TRY', vatRate: 20 }, price: 15000 },
+    { id: 204, productType: ProductType.TicariMal, eInvoiceType: EInvoiceType.Urun, name: 'Ofis Sandalyesi', sku: 'HW-CHR-01', unit: Unit.Adet, category: 'Donanım', lowStockThreshold: 5, trackBy: 'none', financials: { purchasePrice: 1200, purchaseCurrency: 'TRY', salePrice: 1800, saleCurrency: 'TRY', vatRate: 20 }, price: 1800 },
+];
+export const MOCK_SUPPLIERS: Supplier[] = [
+    { id: 301, name: 'Ofis Malzemeleri A.Ş.', email: 'satis@ofismalzemeleri.com', phone: '0216 123 4567', avatar: 'https://i.pravatar.cc/150?u=301', tags: ['güvenilir'], accountType: 'Tüzel Kişi', accountCode: 'SUP-001', taxId: '6350045678', taxOffice: 'Kadıköy', address: { country: 'Türkiye', city: 'İstanbul', district: 'Kadıköy', streetAddress: 'Söğütlüçeşme Cad.', postalCode: '34710', email: 'satis@ofismalzemeleri.com', phone: '0216 123 4567' }, iban: 'TR440006200000400000456789', openingBalance: 0, currency: 'TRY', openingDate: '2023-02-15' },
+    { id: 302, name: 'Sunucu Hizmetleri Ltd.', email: 'info@sunucuhizmet.net', phone: '0850 987 6543', avatar: 'https://i.pravatar.cc/150?u=302', tags: [], accountType: 'Tüzel Kişi', accountCode: 'SUP-002', taxId: '8210056789', taxOffice: 'Şişli', address: { country: 'Türkiye', city: 'İstanbul', district: 'Şişli', streetAddress: 'Halaskargazi Cad.', postalCode: '34371', email: 'info@sunucuhizmet.net', phone: '0850 987 6543' }, iban: 'TR550001000005000005678901', openingBalance: 0, currency: 'USD', openingDate: '2022-08-01' },
+];
 export const MOCK_PURCHASE_ORDERS: PurchaseOrder[] = [];
 export const MOCK_EMPLOYEES: Employee[] = [
     {
@@ -202,7 +223,14 @@ export const MOCK_JOURNAL_ENTRIES: JournalEntry[] = [];
 export const MOCK_RECURRING_JOURNAL_ENTRIES: RecurringJournalEntry[] = [];
 export const MOCK_BUDGETS: Budget[] = [];
 export const MOCK_COST_CENTERS: CostCenter[] = [];
-export const MOCK_BILLS: Bill[] = [];
+export const MOCK_BILLS: Bill[] = [
+    { id: 401, supplierId: 302, supplierName: 'Sunucu Hizmetleri Ltd.', billNumber: 'SH-2024-58', issueDate: '2024-07-18', dueDate: '2024-08-01', totalAmount: 1200, status: BillStatus.PendingApproval },
+    { id: 402, supplierId: 301, supplierName: 'Ofis Malzemeleri A.Ş.', billNumber: 'OM-9876', issueDate: '2024-07-15', dueDate: '2024-07-30', totalAmount: 850, status: BillStatus.Approved },
+    { id: 403, supplierId: 301, supplierName: 'Ofis Malzemeleri A.Ş.', billNumber: 'OM-9801', issueDate: '2024-06-12', dueDate: '2024-06-27', totalAmount: 620, status: BillStatus.Paid },
+    { id: 404, supplierId: 302, supplierName: 'Sunucu Hizmetleri Ltd.', billNumber: 'SH-2024-45', issueDate: '2024-06-18', dueDate: '2024-07-01', totalAmount: 1200, status: BillStatus.Paid },
+    { id: 405, supplierId: 301, supplierName: 'Ofis Malzemeleri A.Ş.', billNumber: 'OM-9750', issueDate: '2024-05-20', dueDate: '2024-06-05', totalAmount: 450, status: BillStatus.Archived },
+    { id: 406, supplierId: 301, supplierName: 'Ofis Malzemeleri A.Ş.', billNumber: 'OM-9912', issueDate: '2024-07-20', dueDate: '2024-08-20', totalAmount: 330, status: BillStatus.Rejected },
+];
 export const MOCK_TAX_RATES: TaxRate[] = [];
 export const MOCK_PRICE_LISTS: PriceList[] = [];
 export const MOCK_PRICE_LIST_ITEMS: PriceListItem[] = [];
@@ -222,7 +250,9 @@ export const MOCK_TASK_TEMPLATES: TaskTemplate[] = [];
 export const MOCK_SCHEDULED_TASKS: ScheduledTask[] = [];
 export const MOCK_EXPENSES: Expense[] = [];
 export const MOCK_ASSETS: Asset[] = [];
-export const MOCK_SALES_RETURNS: SalesReturn[] = [];
+export const MOCK_SALES_RETURNS: SalesReturn[] = [
+    { id: 501, returnNumber: 'IADE-2024001', customerId: 102, customerName: 'Lojistik Ltd.', issueDate: '2024-07-18', status: SalesReturnStatus.Approved, items: [{ id: 5, productId: 202, productName: 'Yazılım Lisansı', quantity: 1, unit: Unit.Adet, unitPrice: 2500, discountRate: 10, taxRate: 20, discountAmount: 250, taxAmount: 450, totalPrice: 2250, vatIncludedPrice: 2700 }], subTotal: 2500, totalTax: 450, grandTotal: 2700, originalInvoiceId: 2 },
+];
 export const MOCK_QUOTATIONS: Quotation[] = [];
 export const MOCK_LEADS: Lead[] = [];
 export const MOCK_COMMISSION_RECORDS: CommissionRecord[] = [];

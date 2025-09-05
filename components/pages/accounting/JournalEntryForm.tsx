@@ -3,12 +3,12 @@ import { useApp } from '../../../context/AppContext';
 import { JournalEntry, JournalEntryItem, JournalEntryType, JournalEntryStatus } from '../../../types';
 import Button from '../../ui/Button';
 import { ICONS } from '../../../constants';
-import { useNavigate, useParams, useLocation } from 'react-router-dom';
-import AccountSelector from '../../accounting/AccountSelector';
+import { useNavigate, useParams, Link, useLocation } from 'react-router-dom';
 import Card from '../../ui/Card';
 import Modal from '../../ui/Modal';
 import { useNotification } from '../../../context/NotificationContext';
 import { generateJournalEntryFromPrompt } from '../../../services/geminiService';
+import JournalEntryRow from '../../accounting/JournalEntryRow';
 
 const JournalEntryForm: React.FC = () => {
     const { accounts, addJournalEntry, updateJournalEntry, journalEntries, accountingLockDate } = useApp();
@@ -25,9 +25,7 @@ const JournalEntryForm: React.FC = () => {
         { accountId: undefined, description: '', debit: 0, credit: 0, documentDate: '', documentNumber: '' },
         { accountId: undefined, description: '', debit: 0, credit: 0, documentDate: '', documentNumber: '' },
     ]);
-    const [activeRowIndex, setActiveRowIndex] = useState<number | null>(null);
-    const gridRef = useRef<HTMLDivElement>(null);
-
+    
     // AI Assistant State
     const [isAiModalOpen, setIsAiModalOpen] = useState(false);
     const [aiPrompt, setAiPrompt] = useState('');
@@ -75,23 +73,7 @@ const JournalEntryForm: React.FC = () => {
         const difference = totalDebit - totalCredit;
         return { totalDebit, totalCredit, difference, isBalanced: Math.abs(difference) < 0.01 && totalDebit > 0 };
     }, [items]);
-
-    const handleItemChange = (index: number, field: keyof JournalEntryItem, value: any) => {
-        const newItems = [...items];
-        const currentItem = { ...newItems[index] };
-        
-        if (field === 'debit' || field === 'credit') {
-            currentItem[field] = parseFloat(value) || 0;
-            if (field === 'debit' && currentItem.debit > 0) currentItem.credit = 0;
-            if (field === 'credit' && currentItem.credit > 0) currentItem.debit = 0;
-        } else {
-            (currentItem as any)[field] = value;
-        }
-        
-        newItems[index] = currentItem;
-        setItems(newItems);
-    };
-
+    
     const addItem = () => {
         setItems(prev => [...prev, { accountId: undefined, description: '', debit: 0, credit: 0, documentDate: '', documentNumber: '' }]);
     };
@@ -106,45 +88,18 @@ const JournalEntryForm: React.FC = () => {
         addToast("Satır silindi.", "info");
     };
     
-    const handleFocus = (index: number) => {
-        setActiveRowIndex(index);
-        
+    const handleItemChange = (index: number, updatedItem: Partial<JournalEntryItem>) => {
         const newItems = [...items];
-        const currentItem = { ...newItems[index] };
-        let itemChanged = false;
+        newItems[index] = updatedItem;
         
-        if (!currentItem.description && memo) {
-            currentItem.description = memo;
-            itemChanged = true;
-        }
-        if (!currentItem.documentDate && date) {
-            currentItem.documentDate = date;
-            itemChanged = true;
-        }
-        if (!currentItem.documentNumber && documentNumber) {
-            currentItem.documentNumber = documentNumber;
-            itemChanged = true;
+        // Auto-add new row if last row is being edited
+        if (index === items.length - 1 && updatedItem.accountId) {
+             addItem();
         }
         
-        if(itemChanged) {
-            newItems[index] = currentItem;
-            setItems(newItems);
-        }
+        setItems(newItems);
+    };
 
-        if (index === items.length - 1) {
-            addItem();
-        }
-    };
-    
-    const handleKeyDown = (e: React.KeyboardEvent, index: number, field: string) => {
-        if (e.key === 'Enter' && field === 'credit') {
-            e.preventDefault();
-            const nextRowInput = gridRef.current?.querySelector<HTMLInputElement>(`[data-row-index="${index + 1}"] [data-cell-index="0"] input`);
-            if (nextRowInput) {
-                nextRowInput.focus();
-            }
-        }
-    };
 
     const handleSubmit = (andCreateNew: boolean) => {
         if (accountingLockDate && date <= accountingLockDate) {
@@ -296,8 +251,9 @@ const JournalEntryForm: React.FC = () => {
                         <input type="text" id="memo" value={memo} onChange={e => setMemo(e.target.value)} required placeholder="örn: Aylık ofis kirası" className="mt-1 w-full p-2 border rounded-md dark:bg-slate-800 dark:border-dark-border"/>
                     </div>
                 </div>
-
-                <div ref={gridRef}>
+                
+                 {/* Journal Entry Grid */}
+                <div className="p-2">
                     <div className="grid grid-cols-[2.5fr_3fr_1.5fr_1.5fr_1fr_1fr_auto] gap-4 p-2 bg-slate-50 dark:bg-slate-900/50 font-semibold text-sm">
                         <div>Hesap</div>
                         <div>Açıklama</div>
@@ -307,79 +263,21 @@ const JournalEntryForm: React.FC = () => {
                         <div className="text-right">Alacak</div>
                         <div></div>
                     </div>
-                    <div className="space-y-1 p-2">
-                    {items.map((item, index) => (
-                        <div
-                            key={index}
-                            data-row-index={index}
-                            className={`group grid grid-cols-[2.5fr_3fr_1.5fr_1.5fr_1fr_1fr_auto] gap-4 items-center p-1 rounded-md ${activeRowIndex === index ? 'bg-primary-100 dark:bg-primary-900/50' : ''}`}
-                            onKeyDown={(e) => {
-                                if ((e.ctrlKey || e.metaKey) && (e.key === 'Delete' || e.key === 'Backspace')) {
-                                    e.preventDefault();
-                                    handleDeleteItem(index);
-                                }
-                            }}
-                        >
-                            <div data-cell-index="0" onFocus={() => handleFocus(index)}>
-                               <AccountSelector accounts={accounts} value={item.accountId || 0} onChange={accId => handleItemChange(index, 'accountId', accId)} />
-                            </div>
-                            <input
-                                type="text"
-                                placeholder="Satır açıklaması"
-                                value={item.description || ''}
-                                onChange={e => handleItemChange(index, 'description', e.target.value)}
-                                onFocus={() => handleFocus(index)}
-                                className="w-full p-2 border rounded-md dark:bg-slate-800 dark:border-dark-border"
+                    <div className="space-y-1">
+                        {items.map((item, index) => (
+                            <JournalEntryRow
+                                key={index}
+                                item={item}
+                                index={index}
+                                onChange={handleItemChange}
+                                onDelete={handleDeleteItem}
+                                accounts={accounts}
+                                isLastRow={index === items.length - 1}
+                                globalMemo={memo}
+                                globalDate={date}
+                                globalDocNumber={documentNumber}
                             />
-                             <input
-                                type="date"
-                                value={item.documentDate || ''}
-                                onChange={e => handleItemChange(index, 'documentDate', e.target.value)}
-                                onFocus={() => handleFocus(index)}
-                                className="w-full p-2 border rounded-md dark:bg-slate-800 dark:border-dark-border"
-                            />
-                            <input
-                                type="text"
-                                placeholder="Satır belge no"
-                                value={item.documentNumber || ''}
-                                onChange={e => handleItemChange(index, 'documentNumber', e.target.value)}
-                                onFocus={() => handleFocus(index)}
-                                className="w-full p-2 border rounded-md dark:bg-slate-800 dark:border-dark-border"
-                            />
-                            <input
-                                type="number"
-                                step="0.01"
-                                placeholder="0.00"
-                                value={item.debit || ''}
-                                onChange={e => handleItemChange(index, 'debit', e.target.value)}
-                                onFocus={() => handleFocus(index)}
-                                onKeyDown={(e) => handleKeyDown(e, index, 'debit')}
-                                className="w-full p-2 border rounded-md dark:bg-slate-800 dark:border-dark-border text-right"
-                            />
-                             <input
-                                type="number"
-                                step="0.01"
-                                placeholder="0.00"
-                                value={item.credit || ''}
-                                onChange={e => handleItemChange(index, 'credit', e.target.value)}
-                                onFocus={() => handleFocus(index)}
-                                onKeyDown={(e) => handleKeyDown(e, index, 'credit')}
-                                className="w-full p-2 border rounded-md dark:bg-slate-800 dark:border-dark-border text-right"
-                            />
-                            <div className="flex items-center justify-center">
-                                <button
-                                    type="button"
-                                    onClick={() => handleDeleteItem(index)}
-                                    className="text-slate-400 hover:text-red-500 opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 transition-opacity"
-                                    aria-label="Satırı sil"
-                                    tabIndex={-1}
-                                    disabled={items.length <= 2}
-                                >
-                                    {ICONS.trash}
-                                </button>
-                            </div>
-                        </div>
-                    ))}
+                        ))}
                     </div>
                 </div>
                  <div className="flex justify-end p-4 border-t dark:border-dark-border">
@@ -420,7 +318,7 @@ const JournalEntryForm: React.FC = () => {
                 />
                 <div className="flex justify-end">
                     <Button onClick={handleGenerateWithAI} disabled={isGenerating || !aiPrompt.trim()}>
-                        {isGenerating ? 'Oluşturuluyor...' : 'Kaydı Oluştur'}
+                        {isGenerating ? <div className="spinner !w-5 !h-5" /> : 'Kaydı Oluştur'}
                     </Button>
                 </div>
             </div>

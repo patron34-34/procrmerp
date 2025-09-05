@@ -1198,7 +1198,9 @@ export interface CostCenter {
 }
 
 export enum BillStatus {
-    Payable = 'Ödenecek',
+    PendingApproval = 'Onay Bekliyor',
+    Approved = 'Onaylandı',
+    Rejected = 'Reddedildi',
     Paid = 'Ödendi',
     Archived = 'Arşivlendi',
 }

@@ -1,54 +1,62 @@
-import React, { useMemo } from 'react';
+import React, { useState, useMemo } from 'react';
 import { useApp } from '../../../context/AppContext';
-import { InvoiceStatus } from '../../../types';
+import { Invoice, InvoiceStatus } from '../../../types';
 import GenericInvoiceList from '../../invoicing/GenericInvoiceList';
+import ConfirmationModal from '../../ui/ConfirmationModal';
+import InvoicePreviewModal from '../../invoicing/InvoicePreviewModal';
 import Card from '../../ui/Card';
+import { useNavigate } from 'react-router-dom';
+import Button from '../../ui/Button';
 
 const DraftInvoices: React.FC = () => {
-    const { invoices, customers, bulkUpdateInvoiceStatus, deleteInvoice } = useApp();
-
-    const draftInvoices = invoices.filter(inv => inv.status === InvoiceStatus.Draft);
-
-    const stats = useMemo(() => {
-        const draftCount = draftInvoices.length;
-        const draftTotalAmount = draftInvoices.reduce((sum, inv) => sum + inv.grandTotal, 0);
-        return { draftCount, draftTotalAmount };
-    }, [draftInvoices]);
-
-
-    const handleApprove = (selectedIds: number[]) => {
-        bulkUpdateInvoiceStatus(selectedIds, InvoiceStatus.Sent);
-    };
-
-    const handleDelete = (selectedIds: number[]) => {
-        selectedIds.forEach(id => deleteInvoice(id));
+    const { invoices, deleteInvoice, bulkUpdateInvoiceStatus } = useApp();
+    const navigate = useNavigate();
+    const [invoiceToPreview, setInvoiceToPreview] = useState<Invoice | null>(null);
+    const [invoiceToDelete, setInvoiceToDelete] = useState<Invoice | null>(null);
+    
+    const draftInvoices = useMemo(() => 
+        invoices.filter(inv => inv.status === InvoiceStatus.Draft), 
+        [invoices]
+    );
+    
+    const handleDeleteConfirm = () => {
+        if (invoiceToDelete) {
+            deleteInvoice(invoiceToDelete.id);
+            setInvoiceToDelete(null);
+        }
     };
 
     return (
-        <div className="space-y-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                <Card>
-                    <h4 className="text-text-secondary">Taslak Sayısı</h4>
-                    <p className="text-3xl font-bold">{stats.draftCount}</p>
-                </Card>
-                <Card>
-                    <h4 className="text-text-secondary">Taslak Toplam Tutarı</h4>
-                    <p className="text-3xl font-bold">${stats.draftTotalAmount.toLocaleString()}</p>
-                </Card>
-            </div>
+        <Card>
             <GenericInvoiceList
                 title="Taslak Faturalar"
-                invoices={draftInvoices}
-                entities={customers}
-                entityType="customer"
-                entityLabel="Müşteri"
-                showSelectAll={true}
-                bulkActions={[
-                    { label: 'Onayla', handler: handleApprove, variant: 'primary' },
-                    { label: 'Sil', handler: handleDelete, variant: 'danger' }
-                ]}
+                items={draftInvoices}
+                type="invoice"
+                statusFilterOptions={[InvoiceStatus.Sent, InvoiceStatus.Archived]}
+                onPreview={(item) => setInvoiceToPreview(item as Invoice)}
+                onDelete={(item) => setInvoiceToDelete(item as Invoice)}
+                onBulkUpdateStatus={bulkUpdateInvoiceStatus}
+                emptyStateTitle="Taslak Fatura Bulunamadı"
+                emptyStateDescription="Oluşturduğunuz ama henüz onaylamadığınız faturalar burada listelenir."
+                emptyStateAction={<Button onClick={() => navigate('/invoicing/new')}>Yeni Fatura Oluştur</Button>}
             />
-        </div>
+            
+            {invoiceToPreview && (
+                <InvoicePreviewModal 
+                    isOpen={!!invoiceToPreview}
+                    onClose={() => setInvoiceToPreview(null)}
+                    invoice={invoiceToPreview}
+                />
+            )}
+            
+            <ConfirmationModal
+                isOpen={!!invoiceToDelete}
+                onClose={() => setInvoiceToDelete(null)}
+                onConfirm={handleDeleteConfirm}
+                title="Faturayı Sil"
+                message={`'${invoiceToDelete?.invoiceNumber || 'Taslak'}' numaralı faturayı kalıcı olarak silmek istediğinizden emin misiniz?`}
+            />
+        </Card>
     );
 };
 

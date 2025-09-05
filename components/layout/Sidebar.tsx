@@ -107,12 +107,15 @@ const Sidebar: React.FC = () => {
                     <h3 className="px-3 mb-2 text-xs font-semibold text-text-secondary uppercase tracking-wider">Modüller</h3>
                      <ul className="space-y-1">
                         <CollapsibleNavItem text="Faturalandırma" icon={ICONS.invoices} basePaths={['/invoicing']}>
-                            <NavItem to="/invoicing" text="Kontrol Paneli" icon={ICONS.dashboard} permission="fatura:goruntule" end />
+                            <h4 className="px-3 pt-2 text-xs font-semibold text-text-secondary/80">Satış Faturaları</h4>
                             <NavItem to="/invoicing/new" text="Fatura Oluştur" icon={ICONS.add} permission="fatura:yonet" />
                             <NavItem to="/invoicing/drafts" text="Taslaklar" icon={ICONS.edit} permission="fatura:goruntule" />
                             <NavItem to="/invoicing/outgoing" text="Giden Faturalar" icon={ICONS.export} permission="fatura:goruntule" />
                             <NavItem to="/invoicing/returns" text="Satış İadeleri" icon={ICONS.reverse} permission="fatura:yonet" />
+                            <NavItem to="/invoicing/archive/outgoing" text="Giden Arşiv" icon={ICONS.archive} permission="fatura:goruntule" />
+                            <h4 className="px-3 pt-3 text-xs font-semibold text-text-secondary/80">Gider Yönetimi</h4>
                             <NavItem to="/invoicing/incoming" text="Gelen Faturalar (Gider)" icon={ICONS.import} permission="muhasebe:yonet" />
+                            <NavItem to="/invoicing/archive/incoming" text="Gelen Arşiv" icon={ICONS.archive} permission="muhasebe:goruntule" />
                         </CollapsibleNavItem>
 
                         <CollapsibleNavItem text="Envanter" icon={ICONS.inventory} basePaths={['/inventory']}>

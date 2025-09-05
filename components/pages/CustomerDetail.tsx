@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useState } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { useApp } from '../../context/AppContext';
 import { calculateHealthScore } from '../../utils/healthScoreCalculator';
@@ -15,8 +15,7 @@ import SalesOrderFormModal from '../inventory/SalesOrderFormModal';
 
 const CustomerDetail: React.FC = () => {
     const { id } = useParams<{ id: string }>();
-    // FIX: Get all context data from useApp
-    const { deals, invoices, tickets, addTask, customers } = useApp();
+    const { deals, invoices, tickets, addTask, customers, addProject } = useApp();
     const customerId = parseInt(id || '', 10);
     const navigate = useNavigate();
 
@@ -26,7 +25,7 @@ const CustomerDetail: React.FC = () => {
     const [isTicketFormOpen, setIsTicketFormOpen] = useState(false);
     const [isSalesOrderFormOpen, setIsSalesOrderFormOpen] = useState(false);
 
-    const customer = useMemo(() => {
+    const customer = React.useMemo(() => {
         const cust = customers.find(c => c.id === customerId);
         if (!cust) return null;
         const { score, breakdown } = calculateHealthScore(cust, deals, invoices, tickets);

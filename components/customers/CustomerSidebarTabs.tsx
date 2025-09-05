@@ -3,7 +3,7 @@ import { Customer } from '../../types';
 import KeyContacts from './KeyContacts';
 import CustomerInfoCard from './CustomerInfoCard';
 import ProactiveInsights from './ProactiveInsights';
-import InlineCommunicationLogger from './InlineCommunicationLogger';
+import ActivityFeed from './ActivityFeed';
 
 interface CustomerSidebarTabsProps {
     customer: Customer;
@@ -30,14 +30,13 @@ const CustomerSidebarTabs: React.FC<CustomerSidebarTabsProps> = ({ customer }) =
             <div className="border-b border-border dark:border-dark-border flex">
                 <TabButton tabId="contacts" label="Ana Kişiler" />
                 <TabButton tabId="info" label="Cari Bilgileri" />
-                <TabButton tabId="intelligence" label="Aktivite &amp; AI" />
+                <TabButton tabId="intelligence" label="AI Önerileri" />
             </div>
             <div className="p-6">
                 {activeTab === 'contacts' && <KeyContacts customerId={customer.id} />}
                 {activeTab === 'info' && <CustomerInfoCard customer={customer} />}
                 {activeTab === 'intelligence' && (
                     <div className="space-y-6">
-                        <InlineCommunicationLogger customerId={customer.id} />
                         <div>
                              <h4 className="font-semibold text-lg mb-2">Proaktif Öneriler</h4>
                             <ProactiveInsights customer={customer} />

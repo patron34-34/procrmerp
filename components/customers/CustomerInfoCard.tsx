@@ -1,15 +1,6 @@
 import React from 'react';
 import { Customer } from '../../types';
-
-const InfoRow: React.FC<{ label: string; value?: React.ReactNode }> = ({ label, value }) => {
-    if (value === undefined || value === null || value === '') return null;
-    return (
-        <div className="flex justify-between text-sm py-1.5 border-b border-slate-100 dark:border-slate-700/50 last:border-b-0">
-            <dt className="text-text-secondary dark:text-dark-text-secondary">{label}</dt>
-            <dd className="text-text-main dark:text-dark-text-main font-semibold text-right truncate" title={String(value)}>{value}</dd>
-        </div>
-    );
-};
+import InfoRow from '../ui/InfoRow';
 
 interface CustomerInfoCardProps {
     customer: Customer;

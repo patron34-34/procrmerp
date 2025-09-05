@@ -5,11 +5,12 @@ import Card from '../../ui/Card';
 import Button from '../../ui/Button';
 import { ICONS } from '../../../constants';
 import EmptyState from '../../ui/EmptyState';
-import { Link } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 
 const SalesReturns: React.FC = () => {
     const { salesReturns, hasPermission } = useApp();
     const canManage = hasPermission('fatura:yonet');
+    const navigate = useNavigate();
 
     const stats = useMemo(() => {
         const totalReturnedAmount = salesReturns.reduce((sum, sr) => sum + sr.grandTotal, 0);
@@ -40,13 +41,6 @@ const SalesReturns: React.FC = () => {
             </div>
             <Card
                 title="Satış İadeleri"
-                action={canManage && (
-                    <Link to="/invoicing/returns/new">
-                        <Button>
-                            <span className="flex items-center gap-2">{ICONS.add} Yeni İade</span>
-                        </Button>
-                    </Link>
-                )}
             >
                 <div className="overflow-x-auto">
                     {salesReturns.length > 0 ? (
@@ -63,16 +57,14 @@ const SalesReturns: React.FC = () => {
                                 {salesReturns.map(sr => (
                                     <tr key={sr.id} className="border-b dark:border-dark-border hover:bg-slate-50 dark:hover:bg-slate-800/50">
                                         <td className="p-3 font-mono">
-                                            <Link to={`/invoicing/returns/edit/${sr.id}`} className="text-primary-600 hover:underline">{sr.returnNumber}</Link>
+                                            <button onClick={() => navigate(`/invoicing/edit/${sr.id}`)} className="text-primary-600 hover:underline">{sr.returnNumber}</button>
                                         </td>
                                         <td className="p-3">{sr.customerName}</td>
                                         <td className="p-3">{sr.issueDate}</td>
                                         <td className="p-3 text-right font-mono">${sr.grandTotal.toLocaleString()}</td>
                                         <td className="p-3">{getStatusBadge(sr.status)}</td>
                                         {canManage && <td className="p-3">
-                                            <Link to={`/invoicing/returns/edit/${sr.id}`}>
-                                                <Button variant="secondary" size="sm">Düzenle</Button>
-                                            </Link>
+                                             <Button variant="secondary" size="sm" onClick={() => navigate(`/invoicing/edit/${sr.id}`)}>Görüntüle</Button>
                                         </td>}
                                     </tr>
                                 ))}
@@ -83,7 +75,7 @@ const SalesReturns: React.FC = () => {
                             icon={ICONS.reverse}
                             title="Henüz Satış İadesi Yok"
                             description="Yeni bir iade faturası oluşturarak başlayın."
-                            action={canManage && <Link to="/invoicing/returns/new"><Button>İade Oluştur</Button></Link>}
+                            action={canManage && <Button onClick={() => navigate('/invoicing/new')}>Fatura Oluştur</Button>}
                         />
                     )}
                 </div>

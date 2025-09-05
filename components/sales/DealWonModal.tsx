@@ -13,14 +13,15 @@ interface DealWonModalProps {
 }
 
 const DealWonModal: React.FC<DealWonModalProps> = ({ isOpen, onClose, deal }) => {
-    const { api } = useApp();
+    const { api, taskTemplates } = useApp();
     const { addToast } = useNotification();
+    
     const [winReason, setWinReason] = useState('');
     const [otherReason, setOtherReason] = useState('');
     const [createProject, setCreateProject] = useState(true);
-    const [createTasks, setCreateTasks] = useState(false);
+    const [useTaskTemplate, setUseTaskTemplate] = useState(false);
+    const [selectedTaskTemplateId, setSelectedTaskTemplateId] = useState<number | undefined>(taskTemplates[0]?.id);
     const [isLoading, setIsLoading] = useState(false);
-
 
     const handleConfirm = async () => {
         const finalReason = winReason === 'Diğer' ? otherReason : winReason;
@@ -28,13 +29,18 @@ const DealWonModal: React.FC<DealWonModalProps> = ({ isOpen, onClose, deal }) =>
             addToast('Lütfen bir kazanma nedeni belirtin.', 'warning');
             return;
         }
-
+        
         setIsLoading(true);
-        await api.winDeal(deal, finalReason, createProject, createTasks);
-        setIsLoading(false);
-
-        addToast(`'${deal.title}' anlaşması başarıyla kazanıldı!`, 'success');
-        onClose();
+        try {
+            await api.winDeal(deal, finalReason, createProject, useTaskTemplate, selectedTaskTemplateId);
+            addToast(`'${deal.title}' anlaşması başarıyla kazanıldı! İlgili kayıtlar oluşturuldu.`, 'success');
+            onClose();
+        } catch (error) {
+            console.error("Error winning deal:", error);
+            addToast("Anlaşma kazanılırken bir hata oluştu.", "error");
+        } finally {
+            setIsLoading(false);
+        }
     };
 
     return (
@@ -62,7 +68,7 @@ const DealWonModal: React.FC<DealWonModalProps> = ({ isOpen, onClose, deal }) =>
                             type="text"
                             value={otherReason}
                             onChange={(e) => setOtherReason(e.target.value)}
-                            className="mt-2 block w-full p-2 border rounded-md dark:bg-slate-700 dark:border-dark-border"
+                            className="mt-2 block w-full"
                             placeholder="Diğer nedeni belirtin..."
                             autoFocus
                         />
@@ -80,9 +86,21 @@ const DealWonModal: React.FC<DealWonModalProps> = ({ isOpen, onClose, deal }) =>
                             <span>Bu anlaşma için otomatik bir proje oluştur.</span>
                         </label>
                          <label className="flex items-center gap-2 p-2 rounded-md hover:bg-slate-50 dark:hover:bg-slate-800/50">
-                            <input type="checkbox" checked={createTasks} onChange={e => setCreateTasks(e.target.checked)} className="h-4 w-4 rounded text-primary-600 focus:ring-primary-500" />
+                            <input type="checkbox" checked={useTaskTemplate} onChange={e => setUseTaskTemplate(e.target.checked)} className="h-4 w-4 rounded text-primary-600 focus:ring-primary-500" disabled={!createProject} />
                             <span>Başlangıç görevleri oluştur (şablondan).</span>
                         </label>
+                        {createProject && useTaskTemplate && (
+                            <div className="pl-8">
+                                <label className="block text-sm font-medium text-text-secondary">Kullanılacak Görev Şablonu</label>
+                                <select 
+                                    value={selectedTaskTemplateId} 
+                                    onChange={(e) => setSelectedTaskTemplateId(Number(e.target.value))}
+                                    className="w-full"
+                                >
+                                    {taskTemplates.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
+                                </select>
+                            </div>
+                        )}
                     </div>
                 </div>
 

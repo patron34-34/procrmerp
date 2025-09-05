@@ -20,7 +20,6 @@ import { useSearchParams } from 'react-router-dom';
 type ViewMode = 'list' | 'kanban' | 'map';
 
 const Customers: React.FC = () => {
-    // FIX: Get all context data from useApp
     const { 
         employees, 
         hasPermission, 
@@ -35,7 +34,8 @@ const Customers: React.FC = () => {
         updateCustomer,
         updateCustomerStatus,
         loadSavedView,
-        bulkUpdateCustomerStatus
+        bulkUpdateCustomerStatus,
+        deleteCustomer
     } = useApp();
 
     const [viewMode, setViewMode] = useState<ViewMode>('list');
@@ -43,6 +43,8 @@ const Customers: React.FC = () => {
     const [isFormModalOpen, setIsFormModalOpen] = useState(false);
     const [isImportModalOpen, setIsImportModalOpen] = useState(false);
     const [editingCustomer, setEditingCustomer] = useState<Customer | null>(null);
+    const [customerToDelete, setCustomerToDelete] = useState<Customer | null>(null);
+
     
     const [searchParams, setSearchParams] = useSearchParams();
 
@@ -227,11 +229,13 @@ const Customers: React.FC = () => {
                     {viewMode === 'list' && (
                         <CustomerListView 
                             customers={filteredAndSortedCustomers}
-                            onEdit={handleOpenEditForm} 
+                            onEdit={handleOpenEditForm}
+                            onDeleteRequest={setCustomerToDelete}
                             onUpdate={updateCustomer}
                             onSelectionChange={setSelectedCustomerIds}
                             sortConfig={sortConfig}
                             onSort={setSortConfig}
+                            canManageCustomers={canManageCustomers}
                         />
                     )}
                     {viewMode === 'kanban' && (
@@ -302,6 +306,16 @@ const Customers: React.FC = () => {
                     onConfirm={handleDeleteConfirm}
                     title="Müşterileri Sil"
                     message={`${selectedCustomerIds.length} müşteriyi kalıcı olarak silmek istediğinizden emin misiniz? Bu işlem geri alınamaz.`}
+                />
+                 <ConfirmationModal 
+                    isOpen={!!customerToDelete}
+                    onClose={() => setCustomerToDelete(null)}
+                    onConfirm={() => {
+                        if (customerToDelete) deleteCustomer(customerToDelete.id);
+                        setCustomerToDelete(null);
+                    }}
+                    title="Müşteriyi Sil"
+                    message={`'${customerToDelete?.name}' adlı müşteriyi kalıcı olarak silmek istediğinizden emin misiniz? Bu işlem geri alınamaz.`}
                 />
             </>}
         </div>

@@ -1,7 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { useApp } from '../../context/AppContext';
 import { findAvailableSlots } from '../../services/geminiService';
-// FIX: Import TaskStatus and TaskPriority enums to ensure type safety.
 import { CalendarEvent, Task, TaskStatus, TaskPriority } from '../../types';
 import Modal from '../ui/Modal';
 import Button from '../ui/Button';
@@ -57,9 +56,7 @@ const SmartScheduleModal: React.FC<SmartScheduleModalProps> = ({ isOpen, onClose
             const taskData = {
                 title: title,
                 description: `Akıllı zamanlayıcı ile oluşturuldu. Katılımcılar: ${selectedParticipantIds.map(id => employees.find(e => e.id === id)?.name).join(', ')}`,
-                // FIX: Use TaskStatus enum instead of a string literal for type safety.
                 status: TaskStatus.Todo,
-                // FIX: Use TaskPriority enum instead of a string literal for type safety.
                 priority: TaskPriority.Normal,
                 startDate: slot.start,
                 dueDate: slot.end,

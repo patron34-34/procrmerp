@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { useApp } from '../../../context/AppContext';
 import Card from '../../ui/Card';
@@ -56,38 +57,41 @@ const JournalEntries: React.FC = () => {
                         </tr></thead>
                         <tbody>
                             {journalEntries.map(entry => {
-                                const totalDebit = entry.items.reduce((sum, item) => sum + item.debit, 0);
+                                const total = entry.items.reduce((sum, item) => sum + item.debit, 0);
                                 return (
                                 <tr key={entry.id} className="border-b dark:border-dark-border hover:bg-slate-50 dark:hover:bg-slate-800/50">
                                     <td className="p-3 font-mono">
-                                        <Link to={`/accounting/journal-entries/${entry.id}`} className="text-primary-600 hover:underline">
-                                            {entry.entryNumber}
-                                        </Link>
+                                        <Link to={`/accounting/journal-entries/${entry.id}`} className="text-primary-600 hover:underline">{entry.entryNumber}</Link>
                                     </td>
                                     <td className="p-3">{entry.date}</td>
                                     <td className="p-3">{entry.type}</td>
-                                    <td className="p-3 font-medium">{entry.memo}</td>
+                                    <td className="p-3 truncate max-w-xs">{entry.memo}</td>
                                     <td className="p-3">{getStatusBadge(entry.status)}</td>
-                                    <td className="p-3 text-right font-mono">${totalDebit.toLocaleString()}</td>
-                                    {canManage && <td className="p-3">
+                                    <td className="p-3 text-right font-mono">${total.toLocaleString()}</td>
+                                    {canManage && (
+                                    <td className="p-3">
                                         <div className="flex items-center gap-3">
-                                            <button onClick={() => navigate(`/accounting/journal-entries/${entry.id}/edit`)} className="text-slate-500 hover:text-primary-600 dark:hover:text-primary-400">{ICONS.edit}</button>
-                                            <button onClick={() => setEntryToDelete(entry)} className="text-slate-500 hover:text-red-600 dark:hover:text-red-500">{ICONS.trash}</button>
+                                            <button onClick={() => navigate(`/accounting/journal-entries/${entry.id}/edit`)} className="text-slate-500 hover:text-primary-600">{ICONS.edit}</button>
+                                            <button onClick={() => setEntryToDelete(entry)} className="text-slate-500 hover:text-red-600">{ICONS.trash}</button>
                                         </div>
-                                    </td>}
+                                    </td>
+                                    )}
                                 </tr>
-                            )})}
+                                )
+                            })}
                         </tbody>
                     </table>
                 </div>
             </Card>
-            {canManage && <ConfirmationModal 
+            {canManage && (
+            <ConfirmationModal
                 isOpen={!!entryToDelete}
                 onClose={() => setEntryToDelete(null)}
                 onConfirm={handleDeleteConfirm}
                 title="Yevmiye Fişini Sil"
                 message={`'${entryToDelete?.entryNumber}' numaralı yevmiye fişini kalıcı olarak silmek istediğinizden emin misiniz?`}
-            />}
+            />
+            )}
         </>
     );
 };
