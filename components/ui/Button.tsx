@@ -1,4 +1,4 @@
-import React, { ReactNode } from 'react';
+import React, { ReactNode, memo } from 'react';
 
 interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
   children: ReactNode;
@@ -7,7 +7,7 @@ interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
   className?: string;
 }
 
-const Button: React.FC<ButtonProps> = ({ children, variant = 'primary', size = 'md', className = '', ...props }) => {
+const Button: React.FC<ButtonProps> = memo(({ children, variant = 'primary', size = 'md', className = '', ...props }) => {
   const baseClasses = 'rounded-lg font-semibold focus:outline-none focus:ring-2 focus:ring-offset-2 dark:focus:ring-offset-background transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed inline-flex items-center justify-center';
 
   const variantClasses = {
@@ -30,6 +30,6 @@ const Button: React.FC<ButtonProps> = ({ children, variant = 'primary', size = '
       {children}
     </button>
   );
-};
+});
 
 export default Button;

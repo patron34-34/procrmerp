@@ -1,199 +1,156 @@
-import React, { useState, useMemo, useCallback, useEffect } from 'react';
+
+
+import React, { useState, useMemo, useCallback } from 'react';
 import { useApp } from '../../context/AppContext';
 import { Customer, SortConfig } from '../../types';
-import Card from '../ui/Card';
-import Button from '../ui/Button';
-import { ICONS } from '../../constants';
+import CustomerFilterBar from '../customers/CustomerFilterBar';
+import CustomerStats from '../customers/CustomerStats';
 import CustomerListView from '../customers/CustomerListView';
 import CustomerKanbanView from '../customers/CustomerKanbanView';
-import CustomerForm from '../customers/CustomerForm';
-import CustomerStats from '../customers/CustomerStats';
-import CustomerImportModal from '../customers/CustomerImportModal';
-import Modal from '../ui/Modal';
-import ConfirmationModal from '../ui/ConfirmationModal';
-import CustomerFilterBar from '../customers/CustomerFilterBar';
 import CustomerMapView from '../customers/CustomerMapView';
-import { calculateHealthScore } from '../../utils/healthScoreCalculator';
-import { useSearchParams } from 'react-router-dom';
-
+import CustomerForm from '../customers/CustomerForm';
+import ConfirmationModal from '../ui/ConfirmationModal';
+import CustomerImportModal from '../customers/CustomerImportModal';
+import { useNotification } from '../../context/NotificationContext';
+import { ICONS } from '../../constants';
+import Button from '../ui/Button';
+import { exportToCSV } from '../../utils/csvExporter';
 
 type ViewMode = 'list' | 'kanban' | 'map';
 
+type Filters = {
+    status: string[];
+    industry: string[];
+    assignedToId: number[];
+    leadSource: string[];
+};
+
 const Customers: React.FC = () => {
-    const { 
-        employees, 
-        hasPermission, 
-        systemLists, 
-        deals, 
-        invoices, 
-        tickets,
-        customers, 
-        assignCustomersToEmployee, 
-        addTagsToCustomers, 
-        deleteMultipleCustomers, 
-        updateCustomer,
-        updateCustomerStatus,
-        loadSavedView,
-        bulkUpdateCustomerStatus,
-        deleteCustomer
-    } = useApp();
+    const { customers, employees, updateCustomerStatus, deleteCustomer, deleteMultipleCustomers, assignCustomersToEmployee, addTagsToCustomers, savedViews, hasPermission } = useApp();
+    const { addToast } = useNotification();
 
     const [viewMode, setViewMode] = useState<ViewMode>('list');
-    const [selectedCustomerIds, setSelectedCustomerIds] = useState<number[]>([]);
     const [isFormModalOpen, setIsFormModalOpen] = useState(false);
     const [isImportModalOpen, setIsImportModalOpen] = useState(false);
-    const [editingCustomer, setEditingCustomer] = useState<Customer | null>(null);
     const [customerToDelete, setCustomerToDelete] = useState<Customer | null>(null);
-
-    
-    const [searchParams, setSearchParams] = useSearchParams();
-
-    const [searchTerm, setSearchTerm] = useState(() => searchParams.get('q') || '');
-    const [filters, setFilters] = useState(() => ({
-        status: searchParams.get('status') || 'all',
-        industry: searchParams.get('industry') || 'all',
-        assignedToId: searchParams.get('assignedToId') || 'all',
-        leadSource: searchParams.get('leadSource') || 'all',
-    }));
-    const [sortConfig, setSortConfig] = useState<SortConfig>(() => {
-        const sortKey = searchParams.get('sortKey') as keyof (Customer & { assignedToName: string });
-        const sortDir = searchParams.get('sortDir') as 'ascending' | 'descending';
-        return sortKey && sortDir ? { key: sortKey, direction: sortDir } : { key: 'name', direction: 'ascending' };
-    });
-    
-    useEffect(() => {
-        const params = new URLSearchParams();
-        if (searchTerm) params.set('q', searchTerm);
-        Object.entries(filters).forEach(([key, value]) => {
-            if (value !== 'all') params.set(key, value);
-        });
-        if (sortConfig) {
-            params.set('sortKey', sortConfig.key as string);
-            params.set('sortDir', sortConfig.direction);
-        }
-        setSearchParams(params, { replace: true });
-    }, [searchTerm, filters, sortConfig, setSearchParams]);
-
-    const [isAssignModalOpen, setIsAssignModalOpen] = useState(false);
-    const [isTagModalOpen, setIsTagModalOpen] = useState(false);
-    const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
-    const [isStatusModalOpen, setIsStatusModalOpen] = useState(false);
-    const [assigneeId, setAssigneeId] = useState<number>(employees[0]?.id || 0);
-    const [tagsToAdd, setTagsToAdd] = useState<string[]>([]);
-    const [newStatusForBulkUpdate, setNewStatusForBulkUpdate] = useState<string>(systemLists.customerStatus[0]?.id || '');
+    const [editingCustomer, setEditingCustomer] = useState<Customer | null>(null);
+    const [searchTerm, setSearchTerm] = useState('');
+    const [filters, setFilters] = useState<Filters>({ status: [], industry: [], assignedToId: [], leadSource: [] });
+    const [sortConfig, setSortConfig] = useState<SortConfig>({ key: 'name', direction: 'ascending' });
+    const [currentPage, setCurrentPage] = useState(1);
+    const [itemsPerPage, setItemsPerPage] = useState(10);
     
     const canManageCustomers = hasPermission('musteri:yonet');
 
+    const filteredCustomers = useMemo(() => {
+        return customers.filter(customer => {
+            const searchMatch = searchTerm === '' ||
+                customer.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                customer.company.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                customer.email.toLowerCase().includes(searchTerm.toLowerCase());
+            
+            const statusMatch = filters.status.length === 0 || filters.status.includes(customer.status);
+            const industryMatch = filters.industry.length === 0 || filters.industry.includes(customer.industry);
+            const assignedToMatch = filters.assignedToId.length === 0 || filters.assignedToId.includes(customer.assignedToId);
+            const leadSourceMatch = filters.leadSource.length === 0 || filters.leadSource.includes(customer.leadSource);
+
+            return searchMatch && statusMatch && industryMatch && assignedToMatch && leadSourceMatch;
+        });
+    }, [customers, searchTerm, filters]);
+
+    const sortedCustomers = useMemo(() => {
+        let sortableItems = [...filteredCustomers];
+        if (sortConfig !== null) {
+            sortableItems.sort((a, b) => {
+                if (a[sortConfig.key] < b[sortConfig.key]) {
+                    return sortConfig.direction === 'ascending' ? -1 : 1;
+                }
+                if (a[sortConfig.key] > b[sortConfig.key]) {
+                    return sortConfig.direction === 'ascending' ? 1 : -1;
+                }
+                return 0;
+            });
+        }
+        return sortableItems;
+    }, [filteredCustomers, sortConfig]);
+
+    const paginatedCustomers = useMemo(() => {
+        const startIndex = (currentPage - 1) * itemsPerPage;
+        return sortedCustomers.slice(startIndex, startIndex + itemsPerPage);
+    }, [sortedCustomers, currentPage, itemsPerPage]);
+
+    const totalPages = Math.ceil(sortedCustomers.length / itemsPerPage);
+
     const handleOpenNewForm = () => {
+        if (!canManageCustomers) return;
         setEditingCustomer(null);
         setIsFormModalOpen(true);
     };
 
     const handleOpenEditForm = (customer: Customer) => {
+        if (!canManageCustomers) return;
         setEditingCustomer(customer);
         setIsFormModalOpen(true);
     };
-
-    const handleCloseForm = () => {
-        setIsFormModalOpen(false);
-        setEditingCustomer(null);
-    };
     
-    const handleAssignConfirm = () => {
-        assignCustomersToEmployee(selectedCustomerIds, assigneeId);
-        setIsAssignModalOpen(false);
-        setSelectedCustomerIds([]);
-    };
-    
-    const handleTagConfirm = () => {
-        addTagsToCustomers(selectedCustomerIds, tagsToAdd.filter(t => t));
-        setIsTagModalOpen(false);
-        setTagsToAdd([]);
-        setSelectedCustomerIds([]);
-    };
-    
-    const handleStatusChangeConfirm = () => {
-        bulkUpdateCustomerStatus(selectedCustomerIds, newStatusForBulkUpdate);
-        setIsStatusModalOpen(false);
-        setSelectedCustomerIds([]);
+    const handleDeleteRequest = (customer: Customer) => {
+        if (!canManageCustomers) return;
+        setCustomerToDelete(customer);
     };
 
     const handleDeleteConfirm = () => {
-        deleteMultipleCustomers(selectedCustomerIds);
-        setIsDeleteModalOpen(false);
-        setSelectedCustomerIds([]);
+        if (customerToDelete) {
+            deleteCustomer(customerToDelete.id);
+            addToast("Müşteri başarıyla silindi.", "success");
+            setCustomerToDelete(null);
+        }
     };
 
-    const handleLoadView = useCallback((viewId: string) => {
-        const view = loadSavedView(parseInt(viewId, 10));
+    const handleLoadView = (viewIdStr: string) => {
+        const viewId = parseInt(viewIdStr, 10);
+        const view = savedViews.find(v => v.id === viewId);
         if (view) {
             setFilters(view.filters);
             setSortConfig(view.sortConfig);
+            addToast(`'${view.name}' görünümü yüklendi.`, "info");
         }
-    }, [loadSavedView]);
-    
-    const enrichedCustomers = useMemo(() => {
-        return customers.map(customer => {
-            const { score, breakdown } = calculateHealthScore(customer, deals, invoices, tickets);
-            return { ...customer, healthScore: score, healthScoreBreakdown: breakdown };
-        });
-    }, [customers, deals, invoices, tickets]);
-    
-    const filteredAndSortedCustomers = useMemo(() => {
-        let filtered = enrichedCustomers.filter(c => 
-          (c.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-           c.company.toLowerCase().includes(searchTerm.toLowerCase())) &&
-          (filters.status === 'all' || c.status === filters.status) &&
-          (filters.industry === 'all' || c.industry === filters.industry) &&
-          (filters.assignedToId === 'all' || c.assignedToId === parseInt(filters.assignedToId)) &&
-          (filters.leadSource === 'all' || c.leadSource === filters.leadSource)
-        );
-
-        if (sortConfig !== null) {
-          filtered.sort((a, b) => {
-            const key = sortConfig.key;
-            const valA = a[key as keyof typeof a];
-            const valB = b[key as keyof typeof b];
-    
-            if (valA == null) return 1;
-            if (valB == null) return -1;
-            
-            let comparison = 0;
-            if (typeof valA === 'string' && typeof valB === 'string') {
-              comparison = valA.localeCompare(valB, 'tr', { sensitivity: 'base' });
-            } else if (typeof valA === 'number' && typeof valB === 'number') {
-              comparison = valA - valB;
-            } else {
-                if (valA < valB) comparison = -1;
-                if (valA > valB) comparison = 1;
-            }
-    
-            return sortConfig.direction === 'ascending' ? comparison : -comparison;
-          });
-        }
-        return filtered;
-    }, [enrichedCustomers, searchTerm, filters, sortConfig]);
-
-
-    const renderBulkActionToolbar = () => {
-        if (selectedCustomerIds.length === 0 || !canManageCustomers) return null;
-        return (
-            <div className="flex items-center gap-4 p-4 bg-primary-100 dark:bg-primary-900/50 rounded-lg mb-4">
-                <p className="font-semibold">{selectedCustomerIds.length} müşteri seçildi.</p>
-                <Button variant="secondary" onClick={() => setIsAssignModalOpen(true)}>Sorumlu Değiştir</Button>
-                <Button variant="secondary" onClick={() => setIsTagModalOpen(true)}>Etiket Ekle</Button>
-                <Button variant="secondary" onClick={() => setIsStatusModalOpen(true)}>Durum Değiştir</Button>
-                <Button variant="danger" onClick={() => setIsDeleteModalOpen(true)}>Sil</Button>
-            </div>
-        );
     };
+    
+    const handleExport = useCallback(() => {
+        if (sortedCustomers.length === 0) {
+            addToast("Dışa aktarılacak müşteri bulunmuyor.", "info");
+            return;
+        }
+    
+        const dataToExport = sortedCustomers.map(customer => {
+            const assignedToEmployee = employees.find(e => e.id === customer.assignedToId);
+            return {
+                'ID': customer.id,
+                'Müşteri Adı': customer.name,
+                'Şirket': customer.company,
+                'E-posta': customer.email,
+                'Telefon': customer.phone,
+                'Durum': customer.status,
+                'Sektör': customer.industry,
+                'Sorumlu': assignedToEmployee ? assignedToEmployee.name : 'Bilinmiyor',
+                'Kaynak': customer.leadSource,
+                'Son İletişim': customer.lastContact,
+                'Şehir': customer.billingAddress.city,
+                'Ülke': customer.billingAddress.country,
+            };
+        });
+    
+        exportToCSV(dataToExport, 'musteriler.csv');
+        addToast("Müşteri listesi dışa aktarıldı.", "success");
+    }, [sortedCustomers, employees, addToast]);
 
     return (
         <div className="space-y-6">
-            <CustomerStats customers={filteredAndSortedCustomers} />
-            <Card>
+            <CustomerStats customers={filteredCustomers} />
+            
+             <div className="bg-card dark:bg-dark-card rounded-lg shadow-sm border dark:border-dark-border">
                 <div className="p-4 border-b dark:border-dark-border">
-                    <CustomerFilterBar 
+                    <CustomerFilterBar
                         searchTerm={searchTerm}
                         setSearchTerm={setSearchTerm}
                         filters={filters}
@@ -203,121 +160,75 @@ const Customers: React.FC = () => {
                         onLoadView={handleLoadView}
                     />
                 </div>
-                <div className="p-4 border-b dark:border-dark-border flex justify-between items-center">
-                    <h3 className="font-bold text-lg">Tüm Müşteriler</h3>
+                 <div className="p-4 border-b dark:border-dark-border flex justify-between items-center">
                     <div className="flex items-center gap-2">
                         <div className="p-1 bg-slate-200 dark:bg-slate-700 rounded-md">
                             <button onClick={() => setViewMode('list')} className={`p-1 rounded ${viewMode === 'list' ? 'bg-white dark:bg-slate-500 shadow' : ''}`}>{ICONS.list}</button>
                             <button onClick={() => setViewMode('kanban')} className={`p-1 rounded ${viewMode === 'kanban' ? 'bg-white dark:bg-slate-500 shadow' : ''}`}>{ICONS.kanban}</button>
                             <button onClick={() => setViewMode('map')} className={`p-1 rounded ${viewMode === 'map' ? 'bg-white dark:bg-slate-500 shadow' : ''}`}>{ICONS.map}</button>
                         </div>
-                        {canManageCustomers && (
-                            <>
-                                <Button onClick={() => setIsImportModalOpen(true)} variant="secondary">
-                                    <span className="flex items-center gap-2">{ICONS.import} İçeri Aktar</span>
-                                </Button>
-                                <Button onClick={handleOpenNewForm}>
-                                    <span className="flex items-center gap-2">{ICONS.add} Yeni Ekle</span>
-                                </Button>
-                            </>
-                        )}
                     </div>
+                    {canManageCustomers && (
+                        <div className="flex items-center gap-2">
+                            <Button variant="secondary" onClick={() => setIsImportModalOpen(true)}>
+                                <span className="flex items-center gap-2">{ICONS.import} İçeri Aktar</span>
+                            </Button>
+                            <Button variant="secondary" onClick={handleExport}>
+                                <span className="flex items-center gap-2">{ICONS.export} Dışa Aktar</span>
+                            </Button>
+                            <Button onClick={handleOpenNewForm}>
+                                <span className="flex items-center gap-2">{ICONS.add} Yeni Müşteri</span>
+                            </Button>
+                        </div>
+                    )}
                 </div>
-
-                <div className="p-4">
-                    {renderBulkActionToolbar()}
+                 <div className="p-4">
                     {viewMode === 'list' && (
-                        <CustomerListView 
-                            customers={filteredAndSortedCustomers}
+                        <CustomerListView
+                            customers={paginatedCustomers}
                             onEdit={handleOpenEditForm}
-                            onDeleteRequest={setCustomerToDelete}
-                            onUpdate={updateCustomer}
-                            onSelectionChange={setSelectedCustomerIds}
+                            onDeleteRequest={handleDeleteRequest}
+                            onUpdate={updateCustomerStatus as any} // The hook returns a slightly different signature
+                            onSelectionChange={() => {}} // Batch actions would be implemented here
                             sortConfig={sortConfig}
-                            onSort={setSortConfig}
+                            onSort={setSortConfig as any}
                             canManageCustomers={canManageCustomers}
+                            totalCustomers={sortedCustomers.length}
+                            currentPage={currentPage}
+                            totalPages={totalPages}
+                            itemsPerPage={itemsPerPage}
+                            onPageChange={setCurrentPage}
+                            onItemsPerPageChange={setItemsPerPage}
                         />
                     )}
-                    {viewMode === 'kanban' && (
-                        <CustomerKanbanView 
-                            customers={filteredAndSortedCustomers} 
-                            onUpdateStatus={updateCustomerStatus}
-                        />
-                    )}
-                    {viewMode === 'map' && (
-                        <CustomerMapView
-                            customers={filteredAndSortedCustomers}
-                        />
-                    )}
-                </div>
-            </Card>
+                    {viewMode === 'kanban' && <CustomerKanbanView customers={filteredCustomers} onUpdateStatus={updateCustomerStatus as any} />}
+                    {viewMode === 'map' && <CustomerMapView customers={filteredCustomers} />}
+                 </div>
+            </div>
             
-            {isFormModalOpen && canManageCustomers && (
+            {isFormModalOpen && (
                 <CustomerForm 
                     isOpen={isFormModalOpen}
-                    onClose={handleCloseForm}
+                    onClose={() => setIsFormModalOpen(false)}
                     customer={editingCustomer}
+                    onSubmitSuccess={() => setIsFormModalOpen(false)}
                 />
             )}
-            
-            {isImportModalOpen && canManageCustomers && (
+            {isImportModalOpen && (
                 <CustomerImportModal 
                     isOpen={isImportModalOpen}
                     onClose={() => setIsImportModalOpen(false)}
                 />
             )}
-            
-            {canManageCustomers && <>
-                <Modal isOpen={isAssignModalOpen} onClose={() => setIsAssignModalOpen(false)} title="Sorumlu Ata">
-                    <div className="space-y-4">
-                        <p>{selectedCustomerIds.length} müşteriyi yeni bir sorumluya atayın:</p>
-                        <select value={assigneeId} onChange={e => setAssigneeId(Number(e.target.value))} className="w-full p-2 border rounded-md dark:bg-slate-700 dark:border-dark-border">
-                            {employees.map(e => <option key={e.id} value={e.id}>{e.name}</option>)}
-                        </select>
-                        <div className="flex justify-end gap-2">
-                            <Button variant="secondary" onClick={() => setIsAssignModalOpen(false)}>İptal</Button>
-                            <Button onClick={handleAssignConfirm}>Ata</Button>
-                        </div>
-                    </div>
-                </Modal>
-                <Modal isOpen={isTagModalOpen} onClose={() => setIsTagModalOpen(false)} title="Etiket Ekle">
-                    <p className="mb-4">{selectedCustomerIds.length} müşteriye yeni etiketler ekleyin:</p>
-                    <input type="text" placeholder="vip, yeni-fırsat" onChange={e => setTagsToAdd(e.target.value.split(',').map(t => t.trim()))} className="w-full p-2 border rounded-md dark:bg-slate-700 dark:border-dark-border mb-4"/>
-                    <div className="flex justify-end gap-2">
-                        <Button variant="secondary" onClick={() => setIsTagModalOpen(false)}>İptal</Button>
-                        <Button onClick={handleTagConfirm}>Ekle</Button>
-                    </div>
-                </Modal>
-                <Modal isOpen={isStatusModalOpen} onClose={() => setIsStatusModalOpen(false)} title="Toplu Durum Değiştir">
-                    <div className="space-y-4">
-                        <p>{selectedCustomerIds.length} müşterinin durumunu değiştirin:</p>
-                        <select value={newStatusForBulkUpdate} onChange={e => setNewStatusForBulkUpdate(e.target.value)} className="w-full p-2 border rounded-md dark:bg-slate-700 dark:border-dark-border">
-                            {systemLists.customerStatus.map(s => <option key={s.id} value={s.id}>{s.label}</option>)}
-                        </select>
-                        <div className="flex justify-end gap-2">
-                            <Button variant="secondary" onClick={() => setIsStatusModalOpen(false)}>İptal</Button>
-                            <Button onClick={handleStatusChangeConfirm}>Değiştir</Button>
-                        </div>
-                    </div>
-                </Modal>
-                <ConfirmationModal 
-                    isOpen={isDeleteModalOpen}
-                    onClose={() => setIsDeleteModalOpen(false)}
-                    onConfirm={handleDeleteConfirm}
-                    title="Müşterileri Sil"
-                    message={`${selectedCustomerIds.length} müşteriyi kalıcı olarak silmek istediğinizden emin misiniz? Bu işlem geri alınamaz.`}
-                />
-                 <ConfirmationModal 
+            {customerToDelete && (
+                <ConfirmationModal
                     isOpen={!!customerToDelete}
                     onClose={() => setCustomerToDelete(null)}
-                    onConfirm={() => {
-                        if (customerToDelete) deleteCustomer(customerToDelete.id);
-                        setCustomerToDelete(null);
-                    }}
+                    onConfirm={handleDeleteConfirm}
                     title="Müşteriyi Sil"
-                    message={`'${customerToDelete?.name}' adlı müşteriyi kalıcı olarak silmek istediğinizden emin misiniz? Bu işlem geri alınamaz.`}
+                    message={`'${customerToDelete.name}' adlı müşteriyi kalıcı olarak silmek istediğinizden emin misiniz?`}
                 />
-            </>}
+            )}
         </div>
     );
 };

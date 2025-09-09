@@ -211,6 +211,7 @@ export const MOCK_COMMUNICATION_LOGS: CommunicationLog[] = [];
 export const MOCK_SAVED_VIEWS: SavedView[] = [];
 export const MOCK_CUSTOM_FIELD_DEFINITIONS: CustomFieldDefinition[] = [];
 export const MOCK_SALES_ACTIVITIES: SalesActivity[] = [];
+export const MOCK_ACTIVITY_LOGS: ActivityLog[] = [];
 export const MOCK_PERFORMANCE_REVIEWS: PerformanceReview[] = [];
 export const MOCK_JOB_OPENINGS: JobOpening[] = [];
 export const MOCK_CANDIDATES: Candidate[] = [];

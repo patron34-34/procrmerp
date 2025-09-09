@@ -1,4 +1,4 @@
-import React, { ReactNode } from 'react';
+import React, { ReactNode, memo } from 'react';
 
 interface CardProps {
   children?: ReactNode;
@@ -8,7 +8,7 @@ interface CardProps {
   style?: React.CSSProperties;
 }
 
-const Card: React.FC<CardProps> = ({ children, className = '', title, action, style }) => {
+const Card: React.FC<CardProps> = memo(({ children, className = '', title, action, style }) => {
   const hasHeader = !!title || !!action;
   
   return (
@@ -27,6 +27,6 @@ const Card: React.FC<CardProps> = ({ children, className = '', title, action, st
       </div>
     </div>
   );
-};
+});
 
 export default Card;

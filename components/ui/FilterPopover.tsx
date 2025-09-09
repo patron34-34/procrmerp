@@ -8,7 +8,7 @@ interface FilterPopoverProps {
     buttonText?: string;
 }
 
-const FilterPopover: React.FC<FilterPopoverProps> = ({ children, isFilterActive, onClear, buttonText = "Daha Fazla Filtre" }) => {
+const FilterPopover: React.FC<FilterPopoverProps> = ({ children, isFilterActive, onClear, buttonText = "Filtrele" }) => {
     const [isOpen, setIsOpen] = useState(false);
     const wrapperRef = useRef<HTMLDivElement>(null);
 
@@ -38,7 +38,7 @@ const FilterPopover: React.FC<FilterPopoverProps> = ({ children, isFilterActive,
                         {children}
                          <div className="flex justify-end pt-4 mt-4 border-t dark:border-dark-border">
                             <button onClick={() => { onClear(); setIsOpen(false); }} className="text-sm text-primary-600 hover:underline">
-                                Filtreleri Temizle
+                                Bu Filtreleri Temizle
                             </button>
                         </div>
                     </div>

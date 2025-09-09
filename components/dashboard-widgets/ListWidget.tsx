@@ -1,6 +1,7 @@
 
 
-import React from 'react';
+
+import React, { memo } from 'react';
 import { useApp } from '../../context/AppContext';
 import { TaskStatus, TaskPriority, Deal, Invoice, Project, Task } from '../../types';
 import { Link } from 'react-router-dom';
@@ -20,7 +21,7 @@ type TodayItem = {
     icon: JSX.Element;
 };
 
-const ListWidget: React.FC<ListWidgetProps> = ({ widgetId }) => {
+const ListWidget: React.FC<ListWidgetProps> = memo(({ widgetId }) => {
   const { tasks, currentUser, activityLogs, projects, deals, invoices } = useApp();
 
   const renderContent = () => {
@@ -102,6 +103,6 @@ const ListWidget: React.FC<ListWidgetProps> = ({ widgetId }) => {
   };
 
   return <div className="h-full flex flex-col">{renderContent()}</div>;
-};
+});
 
 export default ListWidget;

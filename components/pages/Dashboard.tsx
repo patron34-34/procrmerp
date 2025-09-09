@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useCallback } from 'react';
 import { useApp } from '../../context/AppContext';
 import { AVAILABLE_WIDGETS } from '../../constants';
 import { WidgetConfig } from '../../types';
@@ -26,20 +26,23 @@ const Dashboard: React.FC = () => {
   const canManageDashboard = hasPermission('dashboard:duzenle');
   const hasWidgets = dashboardLayout.length > 0;
 
-  const handleEditToggle = () => {
-    if (isEditMode) {
-      // Save logic would go here if we had a backend
-      setOriginalLayout(dashboardLayout); // "Save" the current layout
-    } else {
-      setOriginalLayout(dashboardLayout); // Store original layout on entering edit mode
-    }
-    setIsEditMode(!isEditMode);
-  };
+  const handleEditToggle = useCallback(() => {
+    setIsEditMode(prevIsEditMode => {
+        if (prevIsEditMode) {
+            // "Save" the current layout when exiting edit mode
+            setOriginalLayout(dashboardLayout);
+        } else {
+            // Store original layout on entering edit mode
+            setOriginalLayout(dashboardLayout);
+        }
+        return !prevIsEditMode;
+    });
+  }, [dashboardLayout]);
 
-  const handleCancelEdit = () => {
+  const handleCancelEdit = useCallback(() => {
     setDashboardLayout(originalLayout);
     setIsEditMode(false);
-  };
+  }, [originalLayout, setDashboardLayout]);
 
   const widgetsOnDashboard = new Set(dashboardLayout.map(w => w.widgetId));
   const availableWidgetsToAdd = AVAILABLE_WIDGETS.filter(w => !widgetsOnDashboard.has(w.id));

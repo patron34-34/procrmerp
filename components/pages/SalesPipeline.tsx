@@ -2,7 +2,7 @@ import React, { useState, useMemo } from 'react';
 import { useApp } from '../../context/AppContext';
 import { Deal, DealStage } from '../../types';
 import Button from '../ui/Button';
-import { ICONS } from '../../constants';
+import { ICONS, WIN_REASONS, LOSS_REASONS } from '../../constants';
 import SalesStats from '../sales/SalesStats';
 import SalesFilterBar from '../sales/SalesFilterBar';
 import DealFormModal from '../sales/DealFormModal';
@@ -10,13 +10,14 @@ import ConfirmationModal from '../ui/ConfirmationModal';
 import SalesKanbanView from '../sales/SalesKanbanView';
 import SalesListView from '../sales/SalesListView';
 import WinLossReasonModal from '../sales/WinLossReasonModal';
-import DealWonModal from '../sales/DealWonModal'; // Import the new modal
+import DealWonModal from '../sales/DealWonModal'; 
 import { useNotification } from '../../context/NotificationContext';
+import Modal from '../ui/Modal';
 
 type ViewMode = 'kanban' | 'list';
 
 const SalesPipeline: React.FC = () => {
-  const { deals, hasPermission, api, updateDealWinLossReason } = useApp();
+  const { deals, hasPermission, updateDealWinLossReason, deleteDeal, updateDealStage, bulkUpdateDealStage, deleteMultipleDeals } = useApp();
   const { addToast } = useNotification();
   const [isFormModalOpen, setIsFormModalOpen] = useState(false);
   const [editingDeal, setEditingDeal] = useState<Deal | null>(null);
@@ -28,6 +29,13 @@ const SalesPipeline: React.FC = () => {
   const [winLossModalState, setWinLossModalState] = useState<{isOpen: boolean, deal: Deal | null, newStage: DealStage.Lost | null}>({isOpen: false, deal: null, newStage: null});
   const [dealWonModalState, setDealWonModalState] = useState<{isOpen: boolean, deal: Deal | null}>({isOpen: false, deal: null});
   
+  // State for bulk actions
+  const [selectedDealIds, setSelectedDealIds] = useState<number[]>([]);
+  // FIX: Update the state type for 'bulkActionType' to include 'delete' to match the possible values passed to its setter function.
+  const [bulkActionType, setBulkActionType] = useState<'won' | 'lost' | 'delete' | null>(null);
+  const [isBulkWinLossModalOpen, setIsBulkWinLossModalOpen] = useState(false);
+  const [isBulkDeleteModalOpen, setIsBulkDeleteModalOpen] = useState(false);
+
   const canManageDeals = hasPermission('anlasma:yonet');
 
   const filteredDeals = useMemo(() => {
@@ -71,9 +79,9 @@ const SalesPipeline: React.FC = () => {
     setDealToDelete(deal);
   };
 
-  const handleDeleteConfirm = async () => {
+  const handleDeleteConfirm = () => {
     if (dealToDelete) {
-      await api.deleteDeal(dealToDelete.id);
+      deleteDeal(dealToDelete.id);
       addToast('Anlaşma başarıyla silindi.', 'success');
       setDealToDelete(null);
     }
@@ -85,7 +93,7 @@ const SalesPipeline: React.FC = () => {
     } else if (newStage === DealStage.Lost) {
       setWinLossModalState({ isOpen: true, deal, newStage });
     } else {
-      api.updateDealStage(deal.id, newStage);
+      updateDealStage(deal.id, newStage);
     }
   };
   
@@ -94,6 +102,31 @@ const SalesPipeline: React.FC = () => {
       updateDealWinLossReason(winLossModalState.deal.id, winLossModalState.newStage, reason);
     }
     setWinLossModalState({ isOpen: false, deal: null, newStage: null });
+  };
+  
+  const handleBulkAction = (action: 'won' | 'lost' | 'delete') => {
+      setBulkActionType(action);
+      if(action === 'delete') {
+          setIsBulkDeleteModalOpen(true);
+      } else {
+          setIsBulkWinLossModalOpen(true);
+      }
+  };
+  
+  const handleBulkDeleteConfirm = () => {
+      deleteMultipleDeals(selectedDealIds);
+      addToast(`${selectedDealIds.length} anlaşma başarıyla silindi.`, 'success');
+      setSelectedDealIds([]);
+      setIsBulkDeleteModalOpen(false);
+  };
+
+  const handleBulkWinLossSubmit = (reason: string) => {
+      const stage = bulkActionType === 'won' ? DealStage.Won : DealStage.Lost;
+      bulkUpdateDealStage(selectedDealIds, stage, reason);
+      addToast(`${selectedDealIds.length} anlaşma durumu '${stage}' olarak güncellendi.`, 'success');
+      setSelectedDealIds([]);
+      setIsBulkWinLossModalOpen(false);
+      setBulkActionType(null);
   };
   
   return (
@@ -117,9 +150,19 @@ const SalesPipeline: React.FC = () => {
             </div>
         </div>
 
+        {viewMode === 'list' && selectedDealIds.length > 0 && (
+          <div className="p-4 bg-primary-100 dark:bg-primary-900/50 flex items-center gap-4">
+            <span className="font-semibold">{selectedDealIds.length} anlaşma seçildi.</span>
+            <Button size="sm" onClick={() => handleBulkAction('won')}>Kazanıldı Olarak İşaretle</Button>
+            <Button size="sm" variant="secondary" onClick={() => handleBulkAction('lost')}>Kaybedildi Olarak İşaretle</Button>
+            <Button size="sm" variant="danger" onClick={() => handleBulkAction('delete')}>Sil</Button>
+            <Button size="sm" variant="secondary" onClick={() => setSelectedDealIds([])}>Seçimi Temizle</Button>
+          </div>
+        )}
+
         <div className="p-4">
           {viewMode === 'kanban' && <SalesKanbanView deals={filteredDeals} onEditDeal={openModalForEdit} onDeleteDeal={handleDeleteRequest} onStageChangeRequest={handleStageChangeRequest} canManage={canManageDeals} />}
-          {viewMode === 'list' && <SalesListView deals={filteredDeals} onEdit={openModalForEdit} onDelete={handleDeleteRequest} onStageChangeRequest={handleStageChangeRequest} />}
+          {viewMode === 'list' && <SalesListView deals={filteredDeals} onEdit={openModalForEdit} onDelete={handleDeleteRequest} onStageChangeRequest={handleStageChangeRequest} selectedIds={selectedDealIds} onSelectionChange={setSelectedDealIds} canManage={canManageDeals} />}
         </div>
       </div>
 
@@ -156,6 +199,25 @@ const SalesPipeline: React.FC = () => {
             onClose={() => setDealWonModalState({isOpen: false, deal: null})} 
             deal={dealWonModalState.deal}
         />
+      )}
+
+      {isBulkWinLossModalOpen && bulkActionType && (
+          <WinLossReasonModal
+            isOpen={isBulkWinLossModalOpen}
+            onClose={() => setIsBulkWinLossModalOpen(false)}
+            onSubmit={handleBulkWinLossSubmit}
+            stage={bulkActionType === 'won' ? DealStage.Won : DealStage.Lost}
+          />
+      )}
+      
+      {isBulkDeleteModalOpen && (
+          <ConfirmationModal
+              isOpen={isBulkDeleteModalOpen}
+              onClose={() => setIsBulkDeleteModalOpen(false)}
+              onConfirm={handleBulkDeleteConfirm}
+              title={`${selectedDealIds.length} Anlaşmayı Sil`}
+              message={`${selectedDealIds.length} adet anlaşmayı kalıcı olarak silmek istediğinizden emin misiniz? Bu işlem geri alınamaz.`}
+          />
       )}
     </div>
   );

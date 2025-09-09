@@ -6,6 +6,7 @@ import ProtectedRoute from './components/auth/ProtectedRoute';
 import ToastContainer from './components/ui/ToastContainer';
 
 // Portal Components
+// FIX: import useApp from context/AppContext
 import { useApp } from './context/AppContext';
 import PortalSidebar from './components/layout/PortalSidebar';
 import PortalDashboard from './components/pages/portal/PortalDashboard';

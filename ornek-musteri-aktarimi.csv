@@ -1,0 +1,4 @@
+name,company,email,phone,status,industry,tags,assignedToId,leadSource,accountType,taxId,taxOffice,billingAddress.country,billingAddress.city,billingAddress.district,billingAddress.streetAddress,currency
+"Yeni Medya Grubu","Yeni Medya Prodüksiyon A.Ş.","iletisim@yenimedya.com","02169876543","potansiyel","Medya","sosyal medya;reklam",2,"Referans","Tüzel Kişi","9876543210","Beşiktaş","Türkiye","İstanbul","Beşiktaş","Barbaros Bulvarı No:15","TRY"
+"Ahmet Veli","Ahmet Veli Danışmanlık","ahmet.veli@consulting.com","05331239876","aktif","Danışmanlık","finans",4,"Website","Gerçek Kişi","12345678901","Şişli","Türkiye","İstanbul","Şişli","Halaskargazi Cad. No:100","TRY"
+"Global İhracat A.Ş.","Global İhracat ve Ticaret A.Ş.","export@globalexport.com","02324567890","aktif","Ticaret","ihracat;uluslararası",2,"Fuar","Tüzel Kişi","4321098765","Konak","Türkiye","İzmir","Konak","Gazi Bulvarı No:22","USD"

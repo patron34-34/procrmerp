@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Customer } from '../../types';
 import Button from '../ui/Button';
@@ -91,7 +92,8 @@ const CustomerDetailHeader: React.FC<CustomerDetailHeaderProps> = ({
                 )}
             </div>
             
-            {isFormModalOpen && canManageCustomers && <CustomerForm isOpen={isFormModalOpen} onClose={() => setIsFormModalOpen(false)} customer={customer} />}
+            {/* FIX: Added required onSubmitSuccess prop */}
+            {isFormModalOpen && canManageCustomers && <CustomerForm isOpen={isFormModalOpen} onClose={() => setIsFormModalOpen(false)} customer={customer} onSubmitSuccess={() => setIsFormModalOpen(false)} />}
         </>
     );
 };

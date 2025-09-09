@@ -1,5 +1,6 @@
 
-import React from 'react';
+
+import React, { memo } from 'react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 import { useApp } from '../../context/AppContext';
 import { InvoiceStatus, TransactionType } from '../../types';
@@ -8,7 +9,7 @@ interface ChartWidgetProps {
   widgetId: string;
 }
 
-const ChartWidget: React.FC<ChartWidgetProps> = ({ widgetId }) => {
+const ChartWidget: React.FC<ChartWidgetProps> = memo(({ widgetId }) => {
   const { transactions, invoices } = useApp();
 
   if (widgetId === 'chart-financial-summary') {
@@ -78,6 +79,6 @@ const ChartWidget: React.FC<ChartWidgetProps> = ({ widgetId }) => {
   }
 
   return <div>Bilinmeyen Grafik Bileşeni</div>;
-};
+});
 
 export default ChartWidget;

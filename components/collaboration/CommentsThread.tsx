@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, memo } from 'react';
 import { useApp } from '../../context/AppContext';
 import Button from '../ui/Button';
 import { Comment } from '../../types';
@@ -9,7 +9,7 @@ interface CommentsThreadProps {
   entityId: number;
 }
 
-const CommentsThread: React.FC<CommentsThreadProps> = ({ entityType, entityId }) => {
+const CommentsThread: React.FC<CommentsThreadProps> = memo(({ entityType, entityId }) => {
   const { comments, addComment, updateComment, deleteComment, currentUser, hasPermission } = useApp();
   const [newComment, setNewComment] = useState('');
   const [editingComment, setEditingComment] = useState<Comment | null>(null);
@@ -100,6 +100,6 @@ const CommentsThread: React.FC<CommentsThreadProps> = ({ entityType, entityId })
       </div>
     </div>
   );
-};
+});
 
 export default CommentsThread;

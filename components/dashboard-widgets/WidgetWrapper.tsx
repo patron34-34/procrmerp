@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { memo } from 'react';
 import { DashboardWidget, WidgetConfig } from '../../types';
 import { useApp } from '../../context/AppContext';
 import { ICONS } from '../../constants';
@@ -11,7 +11,7 @@ interface WidgetWrapperProps {
   children: React.ReactNode;
 }
 
-const WidgetWrapper: React.FC<WidgetWrapperProps> = ({ widget, config, isEditMode, children }) => {
+const WidgetWrapper: React.FC<WidgetWrapperProps> = memo(({ widget, config, isEditMode, children }) => {
   const { removeWidgetFromDashboard } = useApp();
 
   return (
@@ -33,6 +33,6 @@ const WidgetWrapper: React.FC<WidgetWrapperProps> = ({ widget, config, isEditMod
         {children}
     </Card>
   );
-};
+});
 
 export default WidgetWrapper;

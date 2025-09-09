@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { memo } from 'react';
 import Modal from './Modal';
 import Button from './Button';
 
@@ -10,7 +10,7 @@ interface ConfirmationModalProps {
   message: string;
 }
 
-const ConfirmationModal: React.FC<ConfirmationModalProps> = ({ isOpen, onClose, onConfirm, title, message }) => {
+const ConfirmationModal: React.FC<ConfirmationModalProps> = memo(({ isOpen, onClose, onConfirm, title, message }) => {
   if (!isOpen) return null;
 
   return (
@@ -28,6 +28,6 @@ const ConfirmationModal: React.FC<ConfirmationModalProps> = ({ isOpen, onClose, 
       </div>
     </Modal>
   );
-};
+});
 
 export default ConfirmationModal;

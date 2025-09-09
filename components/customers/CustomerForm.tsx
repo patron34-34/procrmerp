@@ -5,11 +5,13 @@ import Modal from '../ui/Modal';
 import Button from '../ui/Button';
 import TagInput from '../ui/TagInput';
 import { ICONS } from '../../constants';
+import * as api from '../../services/api';
 
 interface CustomerFormProps {
   isOpen: boolean;
   onClose: () => void;
   customer: Customer | null;
+  onSubmitSuccess: () => void;
 }
 
 const AddressFields: React.FC<{ address: Address, type: 'billing' | 'shipping', onChange: (e: React.ChangeEvent<HTMLInputElement>) => void }> = ({ address, type, onChange }) => (
@@ -31,8 +33,8 @@ const AccordionSection: React.FC<{ title: string, children: ReactNode }> = ({ ti
     </details>
 );
 
-const CustomerForm: React.FC<CustomerFormProps> = ({ isOpen, onClose, customer }) => {
-    const { employees, api, systemLists, priceLists } = useApp();
+const CustomerForm: React.FC<CustomerFormProps> = ({ isOpen, onClose, customer, onSubmitSuccess }) => {
+    const { employees, systemLists, priceLists, currentUser } = useApp();
     const [isLoading, setIsLoading] = useState(false);
     
     const initialFormData: Omit<Customer, 'id' | 'avatar' | 'healthScore' | 'customFields'> = {
@@ -108,18 +110,23 @@ const CustomerForm: React.FC<CustomerFormProps> = ({ isOpen, onClose, customer }
         if (validate()) {
             setIsLoading(true);
             const customerData = { ...formData, company: formData.company || formData.name };
-            if (customer) {
-                await api.updateCustomer({ ...customer, ...customerData });
-                onClose();
-            } else {
-                await api.addCustomer(customerData);
+            try {
+                if (customer) {
+                    await api.updateCustomer({ ...customer, ...customerData }, currentUser);
+                } else {
+                    await api.addCustomer(customerData, currentUser);
+                }
+                onSubmitSuccess();
                 if (saveAndNew) {
                     setFormData(initialFormData);
                 } else {
                     onClose();
                 }
+            } catch (error) {
+                console.error("Failed to save customer", error);
+            } finally {
+                setIsLoading(false);
             }
-            setIsLoading(false);
         }
     };
 

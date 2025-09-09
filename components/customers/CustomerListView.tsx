@@ -6,6 +6,7 @@ import Button from '../ui/Button';
 import EmptyState from '../ui/EmptyState';
 import { ICONS } from '../../constants';
 import HealthScoreIndicator from './HealthScoreIndicator';
+import Dropdown, { DropdownItem } from '../ui/Dropdown';
 
 interface CustomerListViewProps {
     customers: (Customer & { assignedToName: string, healthScoreBreakdown?: string[] })[];
@@ -16,37 +17,31 @@ interface CustomerListViewProps {
     sortConfig: SortConfig;
     onSort: (config: SortConfig) => void;
     canManageCustomers: boolean;
+    totalCustomers: number;
+    currentPage: number;
+    totalPages: number;
+    itemsPerPage: number;
+    onPageChange: (page: number) => void;
+    onItemsPerPageChange: (size: number) => void;
 }
 
 const CustomerListView: React.FC<CustomerListViewProps> = (props) => {
   const { employees, systemLists } = useApp();
-  const { customers, onEdit, onDeleteRequest, onUpdate, onSelectionChange, sortConfig, onSort, canManageCustomers } = props;
+  const { 
+      customers, onEdit, onDeleteRequest, onUpdate, onSelectionChange, sortConfig, onSort, canManageCustomers,
+      totalCustomers, currentPage, totalPages, itemsPerPage, onPageChange, onItemsPerPageChange
+  } = props;
   
   const [selectedIds, setSelectedIds] = useState<number[]>([]);
   const [editingCell, setEditingCell] = useState<{ id: number; key: 'status' | 'assignedToId' } | null>(null);
   
-  const [currentPage, setCurrentPage] = useState(1);
-  const [itemsPerPage, setItemsPerPage] = useState(10);
-
-
   useEffect(() => {
     onSelectionChange(selectedIds);
   }, [selectedIds, onSelectionChange]);
   
-  useEffect(() => {
-    setCurrentPage(1);
-  }, [customers]);
-
-  const paginatedCustomers = useMemo(() => {
-    const startIndex = (currentPage - 1) * itemsPerPage;
-    return customers.slice(startIndex, startIndex + itemsPerPage);
-  }, [customers, currentPage, itemsPerPage]);
-  
-  const totalPages = Math.ceil(customers.length / itemsPerPage);
-
   const handleSelectAll = (e: React.ChangeEvent<HTMLInputElement>) => {
     if(e.target.checked) {
-        const newSelectedIds = paginatedCustomers.map(c => c.id)
+        const newSelectedIds = customers.map(c => c.id)
         setSelectedIds(newSelectedIds);
     } else {
         setSelectedIds([]);
@@ -74,6 +69,29 @@ const CustomerListView: React.FC<CustomerListViewProps> = (props) => {
     return <span className="px-2 py-1 text-xs font-medium rounded-full" style={{ backgroundColor: `${color}20`, color }}>{statusInfo?.label || statusId}</span>;
   };
 
+  const formatLastContact = (dateString: string) => {
+    const lastContactDate = new Date(dateString);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const diffTime = today.getTime() - lastContactDate.getTime();
+    const diffDays = Math.round(diffTime / (1000 * 60 * 60 * 24));
+
+    let relativeTime;
+    if (diffDays <= 0) {
+        relativeTime = 'Bugün';
+    } else if (diffDays === 1) {
+        relativeTime = 'Dün';
+    } else {
+        relativeTime = `${diffDays} gün önce`;
+    }
+    return (
+        <div>
+            <span>{new Date(dateString).toLocaleDateString('tr-TR')}</span>
+            <span className="block text-xs text-gray-500">{relativeTime}</span>
+        </div>
+    );
+  };
+
   const SortableHeader: React.FC<{ columnKey: keyof (Customer & { assignedToName: string }); title: string; }> = ({ columnKey, title }) => {
     const isSorted = sortConfig?.key === columnKey;
     const directionIcon = sortConfig?.direction === 'ascending' ? '▲' : '▼';
@@ -99,7 +117,7 @@ const CustomerListView: React.FC<CustomerListViewProps> = (props) => {
       {customers.length > 0 ? (
           <table className="w-full text-left">
           <thead className="border-b dark:border-dark-border"><tr className="bg-slate-50 dark:bg-slate-900/50 text-xs uppercase text-text-secondary">
-              {canManageCustomers && <th className="p-3"><input type="checkbox" onChange={handleSelectAll} checked={selectedIds.length === paginatedCustomers.length && paginatedCustomers.length > 0} /></th>}
+              {canManageCustomers && <th className="p-3"><input type="checkbox" onChange={handleSelectAll} checked={selectedIds.length === customers.length && customers.length > 0} /></th>}
               <SortableHeader columnKey="company" title="Müşteri Adı" />
               <SortableHeader columnKey="assignedToName" title="Sorumlu" />
               <SortableHeader columnKey="lastContact" title="Son İletişim" />
@@ -108,8 +126,8 @@ const CustomerListView: React.FC<CustomerListViewProps> = (props) => {
               {canManageCustomers && <th className="p-3 font-semibold">Eylemler</th>}
           </tr></thead>
           <tbody>
-              {paginatedCustomers.map((customer) => (
-              <tr key={customer.id} className="odd:bg-slate-50 dark:odd:bg-slate-800/50">
+              {customers.map((customer) => (
+              <tr key={customer.id} className="group odd:bg-white even:bg-slate-50 dark:odd:bg-sidebar dark:even:bg-slate-800/50">
                   {canManageCustomers && <td className="p-4"><input type="checkbox" checked={selectedIds.includes(customer.id)} onChange={(e) => handleSelectOne(e, customer.id)} /></td>}
                   <td className="p-4 flex items-center gap-4">
                       <img src={customer.avatar} alt={customer.name} className="h-10 w-10 rounded-full" />
@@ -133,7 +151,7 @@ const CustomerListView: React.FC<CustomerListViewProps> = (props) => {
                         <span className="cursor-pointer hover:bg-slate-200 dark:hover:bg-slate-700 p-1 rounded">{customer.assignedToName}</span>
                     )}
                   </td>
-                  <td className="p-4 text-text-secondary">{customer.lastContact}</td>
+                  <td className="p-4 text-text-secondary">{formatLastContact(customer.lastContact)}</td>
                   <td className="p-4"><HealthScoreIndicator score={customer.healthScore || 0} breakdown={customer.healthScoreBreakdown} /></td>
                   <td className="p-4" onClick={() => canManageCustomers && setEditingCell({ id: customer.id, key: 'status' })}>
                     {editingCell?.id === customer.id && editingCell.key === 'status' ? (
@@ -150,10 +168,26 @@ const CustomerListView: React.FC<CustomerListViewProps> = (props) => {
                         <div className="cursor-pointer">{getStatusChip(customer.status)}</div>
                     )}
                   </td>
-                  {canManageCustomers && <td className="p-4"><div className="flex items-center gap-3">
-                     <button onClick={() => onEdit(customer)} className="text-slate-500 hover:text-primary-600">{ICONS.edit}</button>
-                     <button onClick={() => onDeleteRequest(customer)} className="text-slate-500 hover:text-red-600">{ICONS.trash}</button>
-                  </div></td>}
+                  {canManageCustomers && <td className="p-4 text-center">
+                    <div className="flex items-center justify-center gap-2">
+                        <button 
+                            onClick={() => onEdit(customer)} 
+                            className="p-2 rounded-lg text-slate-500 hover:bg-slate-100 hover:text-primary-600 dark:hover:bg-slate-700 transition-colors"
+                            aria-label="Düzenle"
+                            title="Düzenle"
+                        >
+                            {React.cloneElement(ICONS.edit, { className: 'h-5 w-5' })}
+                        </button>
+                        <button 
+                            onClick={() => onDeleteRequest(customer)}
+                            className="p-2 rounded-lg text-slate-500 hover:bg-slate-100 hover:text-red-600 dark:hover:bg-slate-700 transition-colors"
+                            aria-label="Sil"
+                            title="Sil"
+                        >
+                            {React.cloneElement(ICONS.trash, { className: 'h-5 w-5' })}
+                        </button>
+                    </div>
+                  </td>}
               </tr>
               ))}
           </tbody>
@@ -168,11 +202,20 @@ const CustomerListView: React.FC<CustomerListViewProps> = (props) => {
     </div>
     {totalPages > 1 && (
       <div className="flex justify-between items-center mt-4 pt-4 border-t dark:border-dark-border">
-        <div className="text-sm text-text-secondary">Toplam {customers.length} müşteri</div>
+        <div className="text-sm text-text-secondary flex items-center gap-4">
+           <select 
+              value={itemsPerPage} 
+              onChange={e => onItemsPerPageChange(Number(e.target.value))}
+              className="p-1 border rounded-md dark:bg-slate-700 dark:border-dark-border"
+            >
+              {[10, 20, 50].map(size => <option key={size} value={size}>Sayfa başına {size}</option>)}
+            </select>
+            <span>Toplam {totalCustomers} müşteri</span>
+        </div>
         <div className="flex items-center gap-2">
-          <Button onClick={() => setCurrentPage(p => Math.max(1, p - 1))} disabled={currentPage === 1} variant="secondary">Önceki</Button>
+          <Button onClick={() => onPageChange(currentPage - 1)} disabled={currentPage === 1} variant="secondary">Önceki</Button>
           <span>Sayfa {currentPage} / {totalPages}</span>
-          <Button onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))} disabled={currentPage === totalPages} variant="secondary">Sonraki</Button>
+          <Button onClick={() => onPageChange(currentPage + 1)} disabled={currentPage === totalPages} variant="secondary">Sonraki</Button>
         </div>
       </div>
     )}

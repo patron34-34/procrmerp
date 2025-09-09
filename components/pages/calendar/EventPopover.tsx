@@ -1,4 +1,4 @@
-import React, { useRef, useEffect } from 'react';
+import React, { useRef, useEffect, memo } from 'react';
 import { Link } from 'react-router-dom';
 import { ICONS } from '../../../constants';
 import { CalendarEvent } from '../../../types';
@@ -10,7 +10,7 @@ interface EventPopoverProps {
     onClose: () => void;
 }
 
-const EventPopover: React.FC<EventPopoverProps> = ({ event, target, onClose }) => {
+const EventPopover: React.FC<EventPopoverProps> = memo(({ event, target, onClose }) => {
     const popoverRef = useRef<HTMLDivElement>(null);
     const { employees } = useApp();
     const owner = employees.find(e => e.id === event.ownerId);
@@ -104,6 +104,7 @@ const EventPopover: React.FC<EventPopoverProps> = ({ event, target, onClose }) =
              </div>
         </div>
     );
-};
+});
 
+// FIX: Add default export to make the component a module.
 export default EventPopover;

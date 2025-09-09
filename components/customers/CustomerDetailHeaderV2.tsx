@@ -1,12 +1,20 @@
-import React, { useMemo, useState } from 'react';
-import { Customer, DealStage, InvoiceStatus } from '../../types';
-import { useApp } from '../../context/AppContext';
+
+
+import React, { useState } from 'react';
+import { Customer, InvoiceStatus, DealStage } from '../../types';
 import Button from '../ui/Button';
-import HealthScoreIndicator from './HealthScoreIndicator';
+import { useApp } from '../../context/AppContext';
 import CustomerForm from './CustomerForm';
-import CommunicationLogForm from './CommunicationLogForm';
 import Dropdown, { DropdownItem } from '../ui/Dropdown';
 import { ICONS } from '../../constants';
+import DealFormModal from '../sales/DealFormModal';
+import ProjectFormModal from '../projects/ProjectFormModal';
+import InvoiceFormModal from '../invoicing/InvoiceFormModal';
+import TicketFormModal from '../support/TicketFormModal';
+import SalesOrderFormModal from '../inventory/SalesOrderFormModal';
+import HealthScoreIndicator from './HealthScoreIndicator';
+import CommunicationLogForm from './CommunicationLogForm';
+import { useMemo } from 'react';
 
 interface CustomerDetailHeaderV2Props {
     customer: Customer & { healthScore: number };
@@ -81,7 +89,7 @@ const CustomerDetailHeaderV2: React.FC<CustomerDetailHeaderV2Props> = ({ custome
                 <div className="mt-6 pt-6 border-t dark:border-dark-border grid grid-cols-2 md:grid-cols-4 gap-6">
                     <div>
                         <p className="text-sm text-text-secondary dark:text-dark-text-secondary mb-1">Sağlık Skoru</p>
-                        <HealthScoreIndicator score={customer.healthScore} />
+                        <HealthScoreIndicator score={customer.healthScore} breakdown={customer.healthScoreBreakdown} />
                     </div>
                     <Stat label="Yaşam Boyu Değeri" value={`$${stats.lifetimeValue.toLocaleString()}`} />
                     <Stat label="Açık Fırsat Değeri" value={`$${stats.openDealsValue.toLocaleString()}`} />
@@ -93,6 +101,8 @@ const CustomerDetailHeaderV2: React.FC<CustomerDetailHeaderV2Props> = ({ custome
                     isOpen={isFormModalOpen}
                     onClose={() => setIsFormModalOpen(false)}
                     customer={customer}
+                    // FIX: Added required onSubmitSuccess prop
+                    onSubmitSuccess={() => setIsFormModalOpen(false)}
                 />
             )}
             {isLogModalOpen && canManageCustomers && (

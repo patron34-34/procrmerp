@@ -15,7 +15,7 @@ interface DealFormModalProps {
 type DealFormData = Omit<Deal, 'id' | 'customerName' | 'assignedToName' | 'value' | 'lastActivityDate' | 'createdDate'>;
 
 const DealFormModal: React.FC<DealFormModalProps> = ({ isOpen, onClose, deal, prefilledData }) => {
-    const { api, customers, employees, products } = useApp();
+    const { addDeal, updateDeal, customers, employees, products } = useApp();
     const [isLoading, setIsLoading] = useState(false);
 
     const initialFormState: DealFormData = {
@@ -120,15 +120,15 @@ const DealFormModal: React.FC<DealFormModalProps> = ({ isOpen, onClose, deal, pr
         setFormData(prev => ({ ...prev, lineItems: prev.lineItems.filter((_, i) => i !== index) }));
     };
 
-    const handleSubmit = async (e: React.FormEvent) => {
+    const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
         if (formData.title && formData.customerId) {
             setIsLoading(true);
             const { winReason, lossReason, ...dealDataForSubmit } = formData;
             if (deal) {
-                await api.updateDeal({ ...deal, ...dealDataForSubmit });
+                updateDeal({ ...deal, ...dealDataForSubmit });
             } else {
-                await api.addDeal(dealDataForSubmit);
+                addDeal(dealDataForSubmit);
             }
             setIsLoading(false);
             onClose();

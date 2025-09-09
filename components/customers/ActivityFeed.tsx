@@ -13,7 +13,7 @@ interface ActivityFeedProps {
 type TimelineItem = (CommunicationLog | ActivityLog | Comment) & { itemType: 'log' | 'activity' | 'comment' };
 
 const ActivityFeed: React.FC<ActivityFeedProps> = ({ customerId }) => {
-    const { communicationLogs, activityLogs, comments, deals, projects } = useApp();
+    const { communicationLogs, activityLogs, comments, deals, projects, summarizeActivityFeed } = useApp();
     const { addToast } = useNotification();
     const [summary, setSummary] = useState('');
     const [isSummarizing, setIsSummarizing] = useState(false);
@@ -49,11 +49,7 @@ const ActivityFeed: React.FC<ActivityFeedProps> = ({ customerId }) => {
         setIsSummarizing(true);
         setSummary('');
         try {
-            const textToSummarize = timelineItems
-                .map(item => `${item.userName} (${item.timestamp}): ${item.itemType === 'activity' ? (item as ActivityLog).details : (item as CommunicationLog).content || (item as Comment).text}`)
-                .join('\n\n');
-            
-            const result = await summarizeText(textToSummarize);
+            const result = await summarizeActivityFeed(customerId);
             setSummary(result);
             addToast("Aktivite özeti oluşturuldu.", "success");
         } catch (error) {

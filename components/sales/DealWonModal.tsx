@@ -13,7 +13,7 @@ interface DealWonModalProps {
 }
 
 const DealWonModal: React.FC<DealWonModalProps> = ({ isOpen, onClose, deal }) => {
-    const { api, taskTemplates } = useApp();
+    const { winDeal, taskTemplates } = useApp();
     const { addToast } = useNotification();
     
     const [winReason, setWinReason] = useState('');
@@ -32,7 +32,7 @@ const DealWonModal: React.FC<DealWonModalProps> = ({ isOpen, onClose, deal }) =>
         
         setIsLoading(true);
         try {
-            await api.winDeal(deal, finalReason, createProject, useTaskTemplate, selectedTaskTemplateId);
+            await winDeal(deal, finalReason, createProject, useTaskTemplate, selectedTaskTemplateId);
             addToast(`'${deal.title}' anlaşması başarıyla kazanıldı! İlgili kayıtlar oluşturuldu.`, 'success');
             onClose();
         } catch (error) {

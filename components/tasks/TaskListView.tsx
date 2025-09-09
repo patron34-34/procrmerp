@@ -1,9 +1,8 @@
-
-
 import React, { useState, Fragment, useRef, useEffect } from 'react';
 import { Task, TaskStatus, TaskPriority } from '../../types';
 import { ICONS } from '../../constants';
 import { useApp } from '../../context/AppContext';
+import Dropdown, { DropdownItem } from '../ui/Dropdown';
 
 interface TaskListViewProps {
     tasks: Task[];
@@ -19,23 +18,8 @@ const TaskListView: React.FC<TaskListViewProps> = ({ tasks, selectedIds, onSelec
     const { tasks: allTasks, hasPermission, toggleTaskStar, employees } = useApp();
     const [expandedTasks, setExpandedTasks] = useState<Set<number>>(new Set());
     const [editingCell, setEditingCell] = useState<{ id: number; key: 'status' | 'priority' | 'assignedToId' } | null>(null);
-    const [openMenuId, setOpenMenuId] = useState<number | null>(null);
-    const menuRef = useRef<HTMLDivElement>(null);
-
 
     const canManageTasks = hasPermission('gorev:yonet');
-
-    useEffect(() => {
-        const handleClickOutside = (event: MouseEvent) => {
-            if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
-                setOpenMenuId(null);
-            }
-        };
-        document.addEventListener("mousedown", handleClickOutside);
-        return () => {
-            document.removeEventListener("mousedown", handleClickOutside);
-        };
-    }, []);
 
     const getPriorityIcon = (priority: TaskPriority) => {
         const styles: { [key in TaskPriority]: { icon: React.ReactNode, color: string } } = {
@@ -117,7 +101,7 @@ const TaskListView: React.FC<TaskListViewProps> = ({ tasks, selectedIds, onSelec
 
         return (
             <Fragment key={task.id}>
-                <tr className="border-b border-slate-200 hover:bg-slate-50 dark:border-dark-border dark:hover:bg-slate-800/50 group">
+                <tr className="group border-b border-slate-200 hover:bg-slate-50 dark:border-dark-border dark:hover:bg-slate-800/50">
                     <td className="p-4" style={{ paddingLeft: `${level * 24 + 16}px` }}>
                          <div className="flex items-center gap-2">
                              <input
@@ -180,19 +164,24 @@ const TaskListView: React.FC<TaskListViewProps> = ({ tasks, selectedIds, onSelec
                             </select>
                          ) : <div className="cursor-pointer">{getStatusBadge(task.status)}</div>}
                     </td>
-                    {canManageTasks && <td className="p-4">
-                        <div className="relative opacity-0 group-hover:opacity-100">
-                            <button onClick={() => setOpenMenuId(openMenuId === task.id ? null : task.id)}>
-                                {ICONS.ellipsisVertical}
+                    {canManageTasks && <td className="p-4 text-center">
+                        <div className="flex items-center justify-center gap-2">
+                            <button 
+                                onClick={() => onEditRequest(task)} 
+                                className="p-2 rounded-lg text-slate-500 hover:bg-slate-100 hover:text-primary-600 dark:hover:bg-slate-700 transition-colors"
+                                aria-label="Düzenle"
+                                title="Düzenle"
+                            >
+                                {React.cloneElement(ICONS.edit, { className: 'h-5 w-5' })}
                             </button>
-                            {openMenuId === task.id && (
-                                <div ref={menuRef} className="absolute right-0 mt-2 w-40 bg-card dark:bg-dark-card border border-border dark:border-dark-border rounded-md shadow-lg z-20">
-                                    <ul className="py-1">
-                                        <li><button onClick={() => { onEditRequest(task); setOpenMenuId(null); }} className="w-full text-left flex items-center gap-3 px-4 py-2 text-sm text-text-secondary hover:bg-slate-100 dark:hover:bg-slate-800">{ICONS.edit} Düzenle</button></li>
-                                        <li><button onClick={() => { onDeleteRequest(task); setOpenMenuId(null); }} className="w-full text-left flex items-center gap-3 px-4 py-2 text-sm text-red-600 hover:bg-slate-100 dark:hover:bg-slate-800">{ICONS.trash} Sil</button></li>
-                                    </ul>
-                                </div>
-                            )}
+                            <button 
+                                onClick={() => onDeleteRequest(task)}
+                                className="p-2 rounded-lg text-slate-500 hover:bg-slate-100 hover:text-red-600 dark:hover:bg-slate-700 transition-colors"
+                                aria-label="Sil"
+                                title="Sil"
+                            >
+                                 {React.cloneElement(ICONS.trash, { className: 'h-5 w-5' })}
+                            </button>
                         </div>
                     </td>}
                 </tr>

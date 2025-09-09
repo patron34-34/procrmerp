@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useApp } from '../../context/AppContext';
 import { ICONS } from '../../constants';
+import * as api from '../../services/api';
 import { Customer, Deal, Project, Invoice, Product, Supplier, PurchaseOrder, Employee, BankAccount, Transaction, SupportTicket, Task, Document } from '../../types';
 import { useNavigate } from 'react-router-dom';
 
@@ -21,7 +22,8 @@ type SearchResult =
 
 
 const GlobalSearch: React.FC = () => {
-    const { deals, projects, tasks, invoices, products, suppliers, purchaseOrders, employees, bankAccounts, transactions, tickets, documents, customers } = useApp();
+    // Other context data remains for now
+    const { customers, deals, projects, tasks, invoices, products, suppliers, purchaseOrders, employees, bankAccounts, transactions, tickets, documents } = useApp();
     const [query, setQuery] = useState('');
     const [results, setResults] = useState<SearchResult[]>([]);
     const [isFocused, setIsFocused] = useState(false);

@@ -1,9 +1,9 @@
-import React from 'react';
+import React, { memo } from 'react';
 import { Link } from 'react-router-dom';
 import { useApp } from '../../../context/AppContext';
 import { Task, TaskStatus } from '../../../types';
 
-const TodoListCard: React.FC = () => {
+const TodoListCard: React.FC = memo(() => {
     const { tasks, currentUser, updateTaskStatus, hasPermission } = useApp();
     const canManageTasks = hasPermission('gorev:yonet');
 
@@ -57,6 +57,6 @@ const TodoListCard: React.FC = () => {
             </div>
         </div>
     );
-};
+});
 
 export default TodoListCard;

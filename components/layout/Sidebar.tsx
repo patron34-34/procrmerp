@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, memo } from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
 import { Logo, ICONS } from '../../constants';
 import { useApp } from '../../context/AppContext';
@@ -12,7 +12,7 @@ interface NavItemProps {
   end?: boolean;
 }
 
-const NavItem: React.FC<NavItemProps> = ({ to, text, icon, permission, end }) => {
+const NavItem: React.FC<NavItemProps> = memo(({ to, text, icon, permission, end }) => {
     const { hasPermission } = useApp();
     if (!hasPermission(permission)) return null;
 
@@ -34,7 +34,7 @@ const NavItem: React.FC<NavItemProps> = ({ to, text, icon, permission, end }) =>
           </NavLink>
         </li>
     );
-};
+});
 
 interface CollapsibleNavItemProps {
   text: string;
@@ -43,7 +43,7 @@ interface CollapsibleNavItemProps {
   basePaths: string[];
 }
 
-const CollapsibleNavItem: React.FC<CollapsibleNavItemProps> = ({ text, icon, children, basePaths }) => {
+const CollapsibleNavItem: React.FC<CollapsibleNavItemProps> = memo(({ text, icon, children, basePaths }) => {
   const location = useLocation();
   const [isOpen, setIsOpen] = useState(basePaths.some(path => location.pathname.startsWith(path)));
 
@@ -70,7 +70,7 @@ const CollapsibleNavItem: React.FC<CollapsibleNavItemProps> = ({ text, icon, chi
       )}
     </li>
   );
-};
+});
 
 
 const Sidebar: React.FC = () => {
@@ -168,4 +168,4 @@ const Sidebar: React.FC = () => {
     );
 };
 
-export default Sidebar;
+export default memo(Sidebar);

@@ -68,6 +68,7 @@ const CustomerDetail: React.FC = () => {
                 <div className="lg:col-span-2">
                     <CustomerRelatedLists 
                         customerId={customer.id}
+                        onAddNewTask={() => setIsTaskFormOpen(true)}
                         onAddNewDeal={() => setIsDealFormOpen(true)}
                         onAddNewProject={() => setIsProjectFormOpen(true)}
                         onAddNewInvoice={() => navigate('/invoicing/new', { state: { customerId: customer.id } })}

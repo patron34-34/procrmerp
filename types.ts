@@ -1,3 +1,7 @@
+
+
+// FIX: Removed import for ApiService as it is not an exported member.
+
 // Toast (from NotificationContext)
 export type ToastType = 'success' | 'warning' | 'error' | 'info';
 export interface Toast {
@@ -254,7 +258,12 @@ export type SortConfig = { key: keyof (Customer & { assignedToName: string }); d
 export interface SavedView {
   id: number;
   name: string;
-  filters: { status: string; industry: string; assignedToId: string; leadSource: string; };
+  filters: {
+    status: string[];
+    industry: string[];
+    assignedToId: number[];
+    leadSource: string[];
+  };
   sortConfig: SortConfig;
 }
 
@@ -808,6 +817,7 @@ export enum ActionType {
     JOURNAL_ENTRY_DELETED = 'Yevmiye Fişi Silindi',
     JOURNAL_ENTRY_REVERSED = 'Yevmiye Fişi Ters Kayıt',
     TASK_CREATED = 'Görev Oluşturuldu',
+    TASK_CREATED_MULTIPLE = 'Çoklu Görev Oluşturuldu',
     TASK_UPDATED = 'Görev Güncellendi',
     TASK_UPDATED_MULTIPLE = 'Çoklu Görev Güncellendi',
     TASK_DELETED = 'Görev Silindi',
@@ -1578,21 +1588,21 @@ export interface SalesAnalyticsData {
     topPerformers: { name: string; value: number }[];
 }
 
-// Add ApiService to AppContextType
-import { ApiService } from '../services/api';
 
 export interface AppContextType {
-    api: ApiService;
+    // FIX: Changed ApiService to any as it is deprecated.
+    api: any;
     customers: (Customer & { assignedToName: string })[];
-    addCustomer: (customerData: Omit<Customer, 'id' | 'avatar'>) => Customer;
-    updateCustomer: (customer: Customer) => Customer;
-    updateCustomerStatus: (customerId: number, newStatus: string) => Customer | undefined;
+    // FIX: Update return types to reflect enriched customer objects.
+    addCustomer: (customerData: Omit<Customer, 'id' | 'avatar'>) => (Customer & { assignedToName: string });
+    updateCustomer: (customer: Customer) => (Customer & { assignedToName: string });
+    updateCustomerStatus: (customerId: number, newStatus: string) => (Customer & { assignedToName: string }) | undefined;
     bulkUpdateCustomerStatus: (customerIds: number[], newStatus: string) => void;
     assignCustomersToEmployee: (customerIds: number[], employeeId: number) => void;
     addTagsToCustomers: (customerIds: number[], tags: string[]) => void;
     deleteCustomer: (id: number) => void;
     deleteMultipleCustomers: (ids: number[]) => void;
-    importCustomers: (customersData: Omit<Customer, 'id' | 'avatar'>[]) => Customer[];
+    importCustomers: (customersData: Omit<Customer, 'id' | 'avatar'>[]) => (Customer & { assignedToName: string })[];
     contacts: Contact[];
     addContact: (contactData: Omit<Contact, 'id'>) => Contact;
     updateContact: (contact: Contact) => void;
@@ -1605,6 +1615,7 @@ export interface AppContextType {
     addSavedView: (name: string, filters: SavedView['filters'], sortConfig: SortConfig) => void;
     deleteSavedView: (id: number) => void;
     loadSavedView: (id: number) => SavedView | undefined;
+    summarizeActivityFeed: (customerId: number) => Promise<string>;
     
     deals: Deal[];
     projects: Project[];
@@ -1703,7 +1714,7 @@ export interface AppContextType {
     updateWorkOrderStatus: (workOrderId: number, newStatus: WorkOrderStatus) => void;
     getProductStockInfo: (productId: number) => { physical: number, committed: number, available: number };
     getProductStockByWarehouse: (productId: number, warehouseId: number) => { physical: number, committed: number, available: number };
-    addSalesOrder: (orderData: Omit<SalesOrder, "id" | "orderNumber" | "customerName">) => void;
+    addSalesOrder: (orderData: Omit<SalesOrder, "id" | "orderNumber" | "customerName">) => SalesOrder;
     updateSalesOrder: (order: SalesOrder) => void;
     deleteSalesOrder: (orderId: number) => void;
     updateSalesOrderStatus: (orderId: number, newStatus: SalesOrderStatus) => void;
@@ -1760,8 +1771,11 @@ export interface AppContextType {
     addDeal: (dealData: Omit<Deal, 'id' | 'customerName' | 'assignedToName' | 'value' | 'lastActivityDate' | 'createdDate'>) => Deal;
     updateDeal: (deal: Deal) => void;
     updateDealStage: (dealId: number, newStage: DealStage) => void;
+    bulkUpdateDealStage: (dealIds: number[], newStage: DealStage, reason?: string) => void;
     updateDealWinLossReason: (dealId: number, stage: DealStage.Won | DealStage.Lost, reason: string) => void;
+    winDeal: (deal: Deal, winReason: string, createProject: boolean, useTaskTemplate?: boolean, taskTemplateId?: number) => Promise<void>;
     deleteDeal: (id: number) => void;
+    deleteMultipleDeals: (dealIds: number[]) => void;
     addProject: (projectData: Omit<Project, 'id' | 'client'>, taskTemplateId?: number) => void;
     updateProject: (project: Project) => void;
     deleteProject: (id: number) => void;

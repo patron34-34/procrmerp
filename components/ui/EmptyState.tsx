@@ -1,4 +1,4 @@
-import React, { ReactNode, ReactElement } from 'react';
+import React, { ReactNode, ReactElement, memo } from 'react';
 
 interface EmptyStateProps {
     icon: ReactElement;
@@ -7,7 +7,7 @@ interface EmptyStateProps {
     action?: ReactNode;
 }
 
-const EmptyState: React.FC<EmptyStateProps> = ({ icon, title, description, action }) => {
+const EmptyState: React.FC<EmptyStateProps> = memo(({ icon, title, description, action }) => {
     return (
         <div className="text-center p-12 border-2 border-dashed border-border dark:border-dark-border rounded-lg">
             <div className="mx-auto h-12 w-12 text-slate-400 [&_svg]:h-full [&_svg]:w-full">{icon}</div>
@@ -16,6 +16,6 @@ const EmptyState: React.FC<EmptyStateProps> = ({ icon, title, description, actio
             {action && <div className="mt-6">{action}</div>}
         </div>
     );
-};
+});
 
 export default EmptyState;

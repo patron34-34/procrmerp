@@ -1,4 +1,4 @@
-import React, { ReactNode } from 'react';
+import React, { ReactNode, memo } from 'react';
 import { ICONS } from '../../constants';
 
 interface ModalProps {
@@ -9,7 +9,7 @@ interface ModalProps {
   size?: 'md' | 'lg' | 'xl' | '2xl' | '3xl' | '4xl' | '5xl';
 }
 
-const Modal: React.FC<ModalProps> = ({ isOpen, onClose, title, children, size = '2xl' }) => {
+const Modal: React.FC<ModalProps> = memo(({ isOpen, onClose, title, children, size = '2xl' }) => {
   if (!isOpen) return null;
 
   const sizeClasses: { [key: string]: string } = {
@@ -45,6 +45,6 @@ const Modal: React.FC<ModalProps> = ({ isOpen, onClose, title, children, size = 
       </div>
     </div>
   );
-};
+});
 
 export default Modal;

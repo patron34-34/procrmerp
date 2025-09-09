@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, memo } from 'react';
 import { useLocation, useParams, Link } from 'react-router-dom';
 import GlobalSearch from './GlobalSearch';
 import Notifications from './Notifications';
@@ -202,4 +202,4 @@ const Header: React.FC = () => {
   );
 };
 
-export default Header;
+export default memo(Header);

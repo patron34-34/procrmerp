@@ -91,7 +91,7 @@ const ProductForm: React.FC<ProductFormProps> = ({ isOpen, onClose, product }) =
             if (product) {
                 updateProduct({ ...product, ...finalData });
             } else {
-                addProduct(finalData);
+                addProduct(finalData, initialStock.quantity > 0 ? initialStock : undefined);
             }
             onClose();
         } else {
