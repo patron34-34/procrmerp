@@ -69,7 +69,7 @@ const WeekView: React.FC<WeekViewProps> = ({ date, events, onEventClick, onEvent
                                     onDragLeave={() => setDragOverInfo(null)}
                                     onDrop={(e) => handleDrop(e, day, hour)}
                                     onDoubleClick={() => handleDoubleClick(day, hour)}
-                                    className={`h-12 border-b dark:border-dark-border transition-colors ${dragOverInfo && isSameDay(dragOverInfo.day, day) && dragOverInfo.hour === hour ? 'bg-primary-100 dark:bg-primary-900/50' : ''}`}
+                                    className={`h-12 border-b dark:border-dark-border transition-colors ${dragOverInfo?.day.getTime() === day.getTime() && dragOverInfo.hour === hour ? 'bg-primary-100 dark:bg-primary-900/50' : ''}`}
                                 ></div>
                             ))}
                             {events.filter(e => isSameDay(new Date(e.date), day) && !e.isAllDay).map(event => {
@@ -101,5 +101,4 @@ const WeekView: React.FC<WeekViewProps> = ({ date, events, onEventClick, onEvent
         </div>
     );
 };
-
 export default WeekView;

@@ -7,7 +7,7 @@ interface CustomerOrgChartProps {
 }
 
 const ContactNode: React.FC<{ contact: Contact }> = ({ contact }) => (
-    <div className="flex flex-col items-center p-3 bg-card dark:bg-dark-card border border-border dark:border-dark-border rounded-lg shadow-sm w-48 text-center">
+    <div className="flex flex-col items-center p-3 bg-card border border-border rounded-lg shadow-sm w-48 text-center">
         <p className="font-bold text-text-main">{contact.name}</p>
         <p className="text-sm text-text-secondary">{contact.title}</p>
         <p className="text-xs text-text-secondary mt-2">{contact.email}</p>
@@ -40,7 +40,7 @@ const CustomerOrgChart: React.FC<CustomerOrgChartProps> = ({ customerId }) => {
     };
 
     return (
-        <div className="overflow-x-auto p-4 bg-background dark:bg-dark-background rounded-lg">
+        <div className="overflow-x-auto p-4 bg-background rounded-lg">
             <div className="org-chart">
                  {rootContacts.length > 0 ? (
                     <ul>

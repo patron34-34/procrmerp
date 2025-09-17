@@ -1,10 +1,8 @@
-
 import React, { useState, useMemo, useEffect } from 'react';
 import { useApp } from '../../context/AppContext';
 import { Task, TaskPriority, TaskStatus, ActionType } from '../../types';
 import Button from '../ui/Button';
 import { ICONS } from '../../constants';
-import TaskFormModal from '../tasks/TaskFormModal';
 import TaskDetailModal from '../tasks/TaskDetailModal';
 import TaskListView from '../tasks/TaskListView';
 import TaskKanbanView from '../tasks/TaskKanbanView';
@@ -34,13 +32,10 @@ interface FocusSuggestion {
 }
 
 const Tasks: React.FC = () => {
-    const { tasks, hasPermission, currentUser, deleteTask, deleteMultipleTasks, updateTask, addTaskDependency, removeTaskDependency, toggleTaskStar, updateRecurringTask, addTask, logActivity } = useApp();
+    const { tasks, hasPermission, currentUser, deleteTask, deleteMultipleTasks, updateTask, addTaskDependency, removeTaskDependency, toggleTaskStar, updateRecurringTask, logActivity, setIsTaskFormOpen } = useApp();
     const { addToast } = useNotification();
     const [viewMode, setViewMode] = useState<ViewMode>('list');
-    const [isFormModalOpen, setIsFormModalOpen] = useState(false);
-    const [editingTask, setEditingTask] = useState<Task | null>(null);
     const [detailTask, setDetailTask] = useState<Task | null>(null);
-    const [quickAddData, setQuickAddData] = useState<Partial<Task> | null>(null);
     const [taskToDelete, setTaskToDelete] = useState<Task | null>(null);
     const [recurringUpdateState, setRecurringUpdateState] = useState<{task: Task, updateData: Partial<Task>} | null>(null);
     const [tasksToPrint, setTasksToPrint] = useState<Task[] | null>(null);
@@ -173,27 +168,22 @@ const Tasks: React.FC = () => {
 
     const handleOpenNewForm = () => {
         if (!canManageTasks) return;
-        setEditingTask(null);
-        setQuickAddData(null);
-        setIsFormModalOpen(true);
+        setIsTaskFormOpen(true, null);
     };
     
     const handleCalendarDayClick = (date: Date) => {
         if (!canManageTasks) return;
-        setEditingTask(null);
-        setQuickAddData({ 
+        const prefilledData = { 
             dueDate: date.toISOString().split('T')[0],
             startDate: date.toISOString().split('T')[0],
-        });
-        setIsFormModalOpen(true);
+        };
+        setIsTaskFormOpen(true, null, prefilledData);
     };
 
     const handleOpenEditForm = (task: Task) => {
         if (!canManageTasks) return;
-        setEditingTask(task);
-        setQuickAddData(null);
         setDetailTask(null); // Close detail if editing
-        setIsFormModalOpen(true);
+        setIsTaskFormOpen(true, task);
     };
 
     const handleOpenDetailModal = (task: Task) => {
@@ -274,21 +264,6 @@ const Tasks: React.FC = () => {
         if (canManageTasks) {
             handleRecurringAwareUpdate(task, { dueDate: newDate.toISOString().split('T')[0] });
         }
-    };
-    
-    const handleFormSubmit = (formData: Omit<Task, 'id' | 'assignedToName' | 'relatedEntityName'>, subtaskTitles: string[]) => {
-        if (editingTask && editingTask.id) { // Editing existing task
-            const originalTask = allVisibleTasks.find(t => t.id === editingTask.id) || editingTask;
-             if (originalTask.seriesId) { // Editing an instance
-                handleRecurringAwareUpdate(originalTask, formData);
-            } else { // Editing a normal task or a series parent
-                updateTask({ ...originalTask, ...formData });
-            }
-        } else { // Adding a new task
-            addTask(formData, subtaskTitles);
-        }
-        setIsFormModalOpen(false);
-        setEditingTask(null);
     };
 
     const handleListUpdate = (updatedTask: Task) => {
@@ -461,16 +436,6 @@ const Tasks: React.FC = () => {
                         {viewMode === 'analytics' && <TaskAnalyticsView />}
                     </div>
                 </Card>
-
-                {isFormModalOpen && canManageTasks && (
-                    <TaskFormModal 
-                        isOpen={isFormModalOpen}
-                        onClose={() => setIsFormModalOpen(false)}
-                        task={editingTask}
-                        prefilledData={quickAddData}
-                        onSubmit={handleFormSubmit}
-                    />
-                )}
 
                 {detailTask && (
                     <TaskDetailModal

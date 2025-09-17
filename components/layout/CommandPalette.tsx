@@ -4,7 +4,7 @@ import { ICONS } from '../../constants';
 import { useNavigate } from 'react-router-dom';
 
 const CommandPalette: React.FC = () => {
-    const { setIsCommandPaletteOpen } = useApp();
+    const { setIsCommandPaletteOpen, setIsCustomerFormOpen, setIsDealFormOpen, setIsTaskFormOpen } = useApp();
     const [searchTerm, setSearchTerm] = useState('');
     const navigate = useNavigate();
 
@@ -18,12 +18,12 @@ const CommandPalette: React.FC = () => {
         { group: 'Navigasyon', name: 'Ürünler', action: () => navigate('/inventory/products'), icon: ICONS.inventory },
         { group: 'Navigasyon', name: 'İK Paneli', action: () => navigate('/hr'), icon: ICONS.hr },
         { group: 'Navigasyon', name: 'Ayarlar', action: () => navigate('/admin/settings'), icon: ICONS.settings },
-        { group: 'Eylemler', name: 'Yeni Müşteri Oluştur', action: () => { /* TODO */ }, icon: ICONS.add },
-        { group: 'Eylemler', name: 'Yeni Anlaşma Oluştur', action: () => { /* TODO */ }, icon: ICONS.add },
-        { group: 'Eylemler', name: 'Yeni Görev Oluştur', action: () => { /* TODO */ }, icon: ICONS.add },
+        { group: 'Eylemler', name: 'Yeni Müşteri Oluştur', action: () => setIsCustomerFormOpen(true, null), icon: ICONS.add },
+        { group: 'Eylemler', name: 'Yeni Anlaşma Oluştur', action: () => setIsDealFormOpen(true, null), icon: ICONS.add },
+        { group: 'Eylemler', name: 'Yeni Görev Oluştur', action: () => setIsTaskFormOpen(true, null), icon: ICONS.add },
         { group: 'Eylemler', name: 'Yeni Fatura Oluştur', action: () => navigate('/invoicing/new'), icon: ICONS.add },
 
-    ], [navigate]);
+    ], [navigate, setIsCustomerFormOpen, setIsDealFormOpen, setIsTaskFormOpen]);
 
     const filteredCommands = useMemo(() => {
         if (!searchTerm) return allCommands;

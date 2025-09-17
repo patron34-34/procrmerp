@@ -1,4 +1,4 @@
-import React, { useState, memo } from 'react';
+import React, { useState, memo, useMemo } from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
 import { Logo, ICONS } from '../../constants';
 import { useApp } from '../../context/AppContext';
@@ -41,12 +41,22 @@ interface CollapsibleNavItemProps {
   icon: JSX.Element;
   children: React.ReactNode;
   basePaths: string[];
+  permissions: Permission[];
 }
 
-const CollapsibleNavItem: React.FC<CollapsibleNavItemProps> = memo(({ text, icon, children, basePaths }) => {
+const CollapsibleNavItem: React.FC<CollapsibleNavItemProps> = memo(({ text, icon, children, basePaths, permissions }) => {
   const location = useLocation();
+  const { hasPermission } = useApp();
+  
+  const hasAccessToAnyChild = useMemo(() => 
+    permissions.some(p => hasPermission(p)),
+    [permissions, hasPermission]
+  );
+  
   const [isOpen, setIsOpen] = useState(basePaths.some(path => location.pathname.startsWith(path)));
-
+  
+  if (!hasAccessToAnyChild) return null;
+  
   const isActive = basePaths.some(path => location.pathname.startsWith(path));
 
   return (
@@ -91,7 +101,7 @@ const Sidebar: React.FC = () => {
                      <ul className="space-y-1">
                         <NavItem to="/" text="Kontrol Paneli" icon={ICONS.dashboard} permission="dashboard:goruntule" end />
                         <NavItem to="/customers" text="Müşteriler" icon={ICONS.customers} permission="musteri:goruntule" />
-                        <CollapsibleNavItem text="Satış" icon={ICONS.sales} basePaths={['/sales']}>
+                        <CollapsibleNavItem text="Satış" icon={ICONS.sales} basePaths={['/sales']} permissions={['anlasma:goruntule', 'rapor:goruntule']}>
                             <NavItem to="/sales" text="Satış Hattı" icon={ICONS.sales} permission="anlasma:goruntule" end />
                             <NavItem to="/sales/leads" text="Potansiyel Müşteriler" icon={ICONS.customers} permission="anlasma:goruntule" />
                             <NavItem to="/sales/quotations" text="Teklifler" icon={ICONS.documents} permission="anlasma:goruntule" />
@@ -106,32 +116,40 @@ const Sidebar: React.FC = () => {
                  <div>
                     <h3 className="px-3 mb-2 text-xs font-semibold text-text-secondary uppercase tracking-wider">Modüller</h3>
                      <ul className="space-y-1">
-                        <CollapsibleNavItem text="Faturalandırma" icon={ICONS.invoices} basePaths={['/invoicing']}>
-                            <h4 className="px-3 pt-2 text-xs font-semibold text-text-secondary/80">Satış Faturaları</h4>
-                            <NavItem to="/invoicing/new" text="Fatura Oluştur" icon={ICONS.add} permission="fatura:yonet" />
-                            <NavItem to="/invoicing/drafts" text="Taslaklar" icon={ICONS.edit} permission="fatura:goruntule" />
-                            <NavItem to="/invoicing/outgoing" text="Giden Faturalar" icon={ICONS.export} permission="fatura:goruntule" />
-                            <NavItem to="/invoicing/returns" text="Satış İadeleri" icon={ICONS.reverse} permission="fatura:yonet" />
-                            <NavItem to="/invoicing/archive/outgoing" text="Giden Arşiv" icon={ICONS.archive} permission="fatura:goruntule" />
-                            <h4 className="px-3 pt-3 text-xs font-semibold text-text-secondary/80">Gider Yönetimi</h4>
-                            <NavItem to="/invoicing/incoming" text="Gelen Faturalar (Gider)" icon={ICONS.import} permission="muhasebe:yonet" />
-                            <NavItem to="/invoicing/archive/incoming" text="Gelen Arşiv" icon={ICONS.archive} permission="muhasebe:goruntule" />
+                        <CollapsibleNavItem text="Faturalandırma" icon={ICONS.invoices} basePaths={['/invoicing']} permissions={['fatura:goruntule', 'fatura:yonet', 'muhasebe:yonet', 'muhasebe:goruntule']}>
+                            <NavItem to="/invoicing/dashboard" text="Kontrol Paneli" icon={ICONS.dashboard} permission="fatura:goruntule" />
+                            
+                            <CollapsibleNavItem text="Satış Faturaları" icon={ICONS.export} basePaths={['/invoicing/new', '/invoicing/drafts', '/invoicing/outgoing', '/invoicing/returns', '/invoicing/archive/outgoing']} permissions={['fatura:yonet', 'fatura:goruntule']}>
+                                <NavItem to="/invoicing/new" text="Yeni Fatura Oluştur" icon={ICONS.add} permission="fatura:yonet" />
+                                <NavItem to="/invoicing/drafts" text="Taslaklar" icon={ICONS.edit} permission="fatura:goruntule" />
+                                <NavItem to="/invoicing/outgoing" text="Giden Faturalar" icon={ICONS.documents} permission="fatura:goruntule" />
+                                <NavItem to="/invoicing/returns" text="Satış İadeleri" icon={ICONS.reverse} permission="fatura:yonet" />
+                                <NavItem to="/invoicing/archive/outgoing" text="Giden Fatura Arşivi" icon={ICONS.archive} permission="fatura:goruntule" />
+                            </CollapsibleNavItem>
+
+                            <CollapsibleNavItem text="Gider Faturaları" icon={ICONS.import} basePaths={['/invoicing/incoming', '/invoicing/archive/incoming']} permissions={['muhasebe:yonet', 'muhasebe:goruntule']}>
+                                <NavItem to="/invoicing/incoming" text="Gelen Faturalar" icon={ICONS.documents} permission="muhasebe:yonet" />
+                                <NavItem to="/invoicing/archive/incoming" text="Gelen Fatura Arşivi" icon={ICONS.archive} permission="muhasebe:goruntule" />
+                            </CollapsibleNavItem>
                         </CollapsibleNavItem>
 
-                        <CollapsibleNavItem text="Envanter" icon={ICONS.inventory} basePaths={['/inventory']}>
+                        <CollapsibleNavItem text="Envanter" icon={ICONS.inventory} basePaths={['/inventory', '/manufacturing']} permissions={['envanter:goruntule', 'envanter:yonet', 'satis-siparis:goruntule', 'depo:yonet', 'stok-hareketi:goruntule', 'sevkiyat:goruntule', 'toplama-listesi:goruntule']}>
                             <NavItem to="/inventory/dashboard" text="Kontrol Paneli" icon={ICONS.dashboard} permission="envanter:goruntule" />
                             <NavItem to="/inventory/products" text="Ürünler" icon={ICONS.list} permission="envanter:goruntule" />
                             <NavItem to="/inventory/suppliers" text="Tedarikçiler" icon={ICONS.suppliers} permission="envanter:goruntule" />
                             <NavItem to="/inventory/purchase-orders" text="Satın Alma" icon={ICONS.purchaseOrder} permission="envanter:yonet" />
                             <NavItem to="/inventory/sales-orders" text="Satış Siparişleri" icon={ICONS.salesOrder} permission="satis-siparis:goruntule" />
-                        </CollapsibleNavItem>
-
-                        <CollapsibleNavItem text="Üretim" icon={ICONS.manufacturing} basePaths={['/manufacturing']}>
-                            <NavItem to="/manufacturing/boms" text="Ürün Reçeteleri" icon={ICONS.list} permission="envanter:yonet" />
-                            <NavItem to="/manufacturing/work-orders" text="İş Emirleri" icon={ICONS.tasks} permission="envanter:yonet" />
+                            <NavItem to="/inventory/warehouses" text="Depolar" icon={ICONS.warehouse} permission="depo:yonet" />
+                            <NavItem to="/inventory/movements" text="Stok Hareketleri" icon={ICONS.transfer} permission="stok-hareketi:goruntule" />
+                            <NavItem to="/inventory/shipments" text="Sevkiyatlar" icon={ICONS.shipment} permission="sevkiyat:goruntule" />
+                            <NavItem to="/inventory/pick-lists" text="Toplama Listeleri" icon={ICONS.pickList} permission="toplama-listesi:goruntule" />
+                            <CollapsibleNavItem text="Üretim" icon={ICONS.manufacturing} basePaths={['/manufacturing']} permissions={['envanter:yonet']}>
+                                <NavItem to="/manufacturing/boms" text="Ürün Reçeteleri" icon={ICONS.list} permission="envanter:yonet" />
+                                <NavItem to="/manufacturing/work-orders" text="İş Emirleri" icon={ICONS.tasks} permission="envanter:yonet" />
+                            </CollapsibleNavItem>
                         </CollapsibleNavItem>
                         
-                        <CollapsibleNavItem text="İK" icon={ICONS.hr} basePaths={['/hr', '/my-team']}>
+                        <CollapsibleNavItem text="İK" icon={ICONS.hr} basePaths={['/hr', '/my-team']} permissions={['ik:goruntule', 'ik:izin-yonet', 'ik:bordro-yonet', 'ik:performans-yonet']}>
                             <NavItem to="/hr" text="İK Paneli" icon={ICONS.dashboard} permission="ik:goruntule" end />
                             <NavItem to="/hr/employees" text="Çalışanlar" icon={ICONS.employees} permission="ik:goruntule" />
                             <NavItem to="/hr/leaves" text="İzin Yönetimi" icon={ICONS.leave} permission="ik:izin-yonet" />
@@ -139,15 +157,11 @@ const Sidebar: React.FC = () => {
                             <NavItem to="/my-team" text="Ekibim" icon={ICONS.team} permission="ik:goruntule" />
                         </CollapsibleNavItem>
 
-                        <CollapsibleNavItem text="Finans" icon={ICONS.bank} basePaths={['/finance']}>
-                            <NavItem to="/finance/bank-accounts" text="Banka Hesapları" icon={ICONS.bank} permission="finans:yonet" />
-                            <NavItem to="/finance/transactions" text="Finansal İşlemler" icon={ICONS.transfer} permission="finans:yonet" />
-                        </CollapsibleNavItem>
-
-                        <CollapsibleNavItem text="Muhasebe" icon={ICONS.accounting} basePaths={['/accounting']}>
+                        <CollapsibleNavItem text="Muhasebe" icon={ICONS.accounting} basePaths={['/accounting', '/finance']} permissions={['muhasebe:goruntule', 'finans:goruntule', 'muhasebe:yonet']}>
                             <NavItem to="/accounting/dashboard" text="Kontrol Paneli" icon={ICONS.dashboard} permission="muhasebe:goruntule" />
                             <NavItem to="/accounting/chart-of-accounts" text="Hesap Planı" icon={ICONS.list} permission="muhasebe:goruntule" />
                             <NavItem to="/accounting/journal-entries" text="Yevmiye Kayıtları" icon={ICONS.ledger} permission="muhasebe:yonet" />
+                            <NavItem to="/finance/bank-accounts" text="Banka Hesapları" icon={ICONS.bank} permission="finans:goruntule" />
                         </CollapsibleNavItem>
                         
                         <NavItem to="/reports" text="Raporlar" icon={ICONS.reports} permission="rapor:goruntule" />
@@ -159,7 +173,7 @@ const Sidebar: React.FC = () => {
                 <div>
                      <h3 className="px-3 mb-2 text-xs font-semibold text-text-secondary uppercase tracking-wider">Yönetim</h3>
                      <ul className="space-y-1">
-                        <NavItem to="/admin/settings" text="Ayarlar" icon={ICONS.security} permission="ayarlar:goruntule" />
+                        <NavItem to="/admin/settings" text="Ayarlar" icon={ICONS.settings} permission="ayarlar:goruntule" />
                         <NavItem to="/admin/activity-log" text="Aktivite Kayıtları" icon={ICONS.list} permission="aktivite:goruntule" />
                      </ul>
                 </div>

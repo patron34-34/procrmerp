@@ -5,7 +5,6 @@ import Modal from '../ui/Modal';
 import Button from '../ui/Button';
 import TagInput from '../ui/TagInput';
 import { ICONS } from '../../constants';
-import * as api from '../../services/api';
 
 interface CustomerFormProps {
   isOpen: boolean;
@@ -34,12 +33,12 @@ const AccordionSection: React.FC<{ title: string, children: ReactNode }> = ({ ti
 );
 
 const CustomerForm: React.FC<CustomerFormProps> = ({ isOpen, onClose, customer, onSubmitSuccess }) => {
-    const { employees, systemLists, priceLists, currentUser } = useApp();
+    const { employees, systemLists, priceLists, addCustomer, updateCustomer } = useApp();
     const [isLoading, setIsLoading] = useState(false);
     
     const initialFormData: Omit<Customer, 'id' | 'avatar' | 'healthScore' | 'customFields'> = {
         name: '', email: '', company: '', phone: '',
-        status: (systemLists.customerStatus[0]?.id as Customer['status']) || 'potensiyel',
+        status: (systemLists.customerStatus[0]?.id as Customer['status']) || 'potansiyel',
         lastContact: new Date().toISOString().split('T')[0],
         industry: '',
         tags: [],
@@ -105,16 +104,16 @@ const CustomerForm: React.FC<CustomerFormProps> = ({ isOpen, onClose, customer, 
         return Object.keys(newErrors).length === 0;
     };
 
-    const handleSubmit = async (e: React.FormEvent, saveAndNew = false) => {
+    const handleSubmit = (e: React.FormEvent, saveAndNew = false) => {
         e.preventDefault();
         if (validate()) {
             setIsLoading(true);
             const customerData = { ...formData, company: formData.company || formData.name };
             try {
                 if (customer) {
-                    await api.updateCustomer({ ...customer, ...customerData }, currentUser);
+                    updateCustomer({ ...customer, ...customerData });
                 } else {
-                    await api.addCustomer(customerData, currentUser);
+                    addCustomer(customerData as Omit<Customer, 'id' | 'avatar'>);
                 }
                 onSubmitSuccess();
                 if (saveAndNew) {

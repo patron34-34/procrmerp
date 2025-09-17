@@ -62,7 +62,7 @@ const MonthView: React.FC<MonthViewProps> = ({ date, events, onEventClick, onEve
                         onDragLeave={() => setDragOverDate(null)}
                         onDrop={(e) => handleDrop(e, day)}
                         onDoubleClick={() => onNewTask(day)}
-                        className={`border-r border-b dark:border-dark-border min-h-[120px] p-2 flex flex-col transition-colors duration-200 ${isCurrentMonth ? '' : 'bg-slate-50 dark:bg-slate-800/20'} ${isDragOver ? 'bg-primary-100 dark:bg-primary-900/50' : ''}`}
+                        className={`border-r border-b dark:border-dark-border min-h-[120px] p-2 flex flex-col transition-colors duration-200 ${isCurrentMonth ? '' : 'bg-slate-50 dark:bg-slate-800/20 text-slate-400'} ${isDragOver ? 'bg-primary-100 dark:bg-primary-900/50' : ''}`}
                     >
                         <span className={`font-semibold self-start mb-1 ${isToday ? 'bg-primary-500 text-white rounded-full w-7 h-7 flex items-center justify-center' : ''} ${!isCurrentMonth ? 'text-slate-400' : ''}`}>
                             {day.getDate()}

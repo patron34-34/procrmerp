@@ -2,23 +2,26 @@ import React, { useState, useMemo } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { useApp } from '../../context/AppContext';
 import Card from '../ui/Card';
-import { DealStage, SalesActivityType, QuotationStatus } from '../../types';
+import { DealStage, SalesActivityType, QuotationStatus, Deal } from '../../types';
 import ActivityTimeline from '../sales/ActivityTimeline';
 import LogActivityModal from '../sales/LogActivityModal';
 import Button from '../ui/Button';
 import { ICONS } from '../../constants';
 import CommentsThread from '../collaboration/CommentsThread';
+import Dropdown, { DropdownItem } from '../ui/Dropdown';
+import ConfirmationModal from '../ui/ConfirmationModal';
 
 const DealDetail: React.FC = () => {
     const { id } = useParams<{ id: string }>();
     const navigate = useNavigate();
-    const { deals, customers, hasPermission, quotations } = useApp();
+    const { deals, customers, hasPermission, quotations, setIsDealFormOpen, deleteDeal } = useApp();
     const dealId = parseInt(id || '', 10);
     const deal = deals.find(d => d.id === dealId);
     const customer = customers.find(c => c.id === deal?.customerId);
     
     const [isLogActivityModalOpen, setIsLogActivityModalOpen] = useState(false);
     const [activityType, setActivityType] = useState<SalesActivityType>(SalesActivityType.Call);
+    const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
 
     const canManageDeals = hasPermission('anlasma:yonet');
 
@@ -35,6 +38,12 @@ const DealDetail: React.FC = () => {
 
     const handleCreateQuotation = () => {
         navigate('/sales/quotations/new', { state: { dealId: deal.id } });
+    };
+
+    const handleDeleteConfirm = () => {
+        deleteDeal(deal.id);
+        setIsDeleteModalOpen(false);
+        navigate('/sales');
     };
 
     const getStageBadge = (stage: DealStage) => {
@@ -92,7 +101,7 @@ const DealDetail: React.FC = () => {
                         </div>
                         <div>
                             <p className="text-text-secondary dark:text-dark-text-secondary">Son Aktivite</p>
-                            <p className="font-semibold">{deal.lastActivityDate}</p>
+                            <p className="font-semibold">{new Date(deal.lastActivityDate).toLocaleDateString('tr-TR')}</p>
                         </div>
                     </div>
                 </Card>
@@ -104,7 +113,18 @@ const DealDetail: React.FC = () => {
                         </Card>
                     </div>
                      <div className="lg:col-span-1 space-y-6">
-                         <Card title="Teklifler" action={canManageDeals && <Button size="sm" onClick={handleCreateQuotation}>Teklif Oluştur</Button>}>
+                         {canManageDeals && (
+                            <Card title="Eylemler">
+                                <div className="space-y-2">
+                                    <Button onClick={() => setIsDealFormOpen(true, deal)} variant="secondary" className="w-full justify-start"><span className="w-5">{ICONS.edit}</span> Anlaşmayı Düzenle</Button>
+                                    <Button onClick={() => handleOpenLogActivityModal(SalesActivityType.Call)} variant="secondary" className="w-full justify-start"><span className="w-5">{ICONS.phoneCall}</span> Arama Kaydet</Button>
+                                    <Button onClick={() => handleOpenLogActivityModal(SalesActivityType.Meeting)} variant="secondary" className="w-full justify-start"><span className="w-5">{ICONS.meeting}</span> Toplantı Kaydet</Button>
+                                    <Button onClick={handleCreateQuotation} variant="secondary" className="w-full justify-start"><span className="w-5">{ICONS.documents}</span> Teklif Oluştur</Button>
+                                    <Button onClick={() => setIsDeleteModalOpen(true)} variant="danger" className="w-full justify-start"><span className="w-5">{ICONS.trash}</span> Anlaşmayı Sil</Button>
+                                </div>
+                            </Card>
+                         )}
+                         <Card title="Teklifler">
                              <div className="space-y-2">
                                  {relatedQuotations.length > 0 ? (
                                     relatedQuotations.map(q => (
@@ -162,6 +182,15 @@ const DealDetail: React.FC = () => {
                     onClose={() => setIsLogActivityModalOpen(false)}
                     dealId={dealId}
                     activityType={activityType}
+                />
+            )}
+            {canManageDeals && (
+                 <ConfirmationModal
+                    isOpen={isDeleteModalOpen}
+                    onClose={() => setIsDeleteModalOpen(false)}
+                    onConfirm={handleDeleteConfirm}
+                    title="Anlaşmayı Sil"
+                    message={`'${deal.title}' adlı anlaşmayı kalıcı olarak silmek istediğinizden emin misiniz?`}
                 />
             )}
         </>

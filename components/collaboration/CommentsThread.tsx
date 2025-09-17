@@ -1,4 +1,4 @@
-import React, { useState, memo } from 'react';
+import React, { useState, memo, useMemo, useRef, useEffect } from 'react';
 import { useApp } from '../../context/AppContext';
 import Button from '../ui/Button';
 import { Comment } from '../../types';
@@ -10,9 +10,13 @@ interface CommentsThreadProps {
 }
 
 const CommentsThread: React.FC<CommentsThreadProps> = memo(({ entityType, entityId }) => {
-  const { comments, addComment, updateComment, deleteComment, currentUser, hasPermission } = useApp();
+  const { comments, addComment, updateComment, deleteComment, currentUser, hasPermission, employees } = useApp();
   const [newComment, setNewComment] = useState('');
   const [editingComment, setEditingComment] = useState<Comment | null>(null);
+  
+  const [isMentioning, setIsMentioning] = useState(false);
+  const [mentionQuery, setMentionQuery] = useState('');
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   const canManageComments = hasPermission('yorum:yonet');
 
@@ -35,20 +39,71 @@ const CommentsThread: React.FC<CommentsThreadProps> = memo(({ entityType, entity
       setEditingComment(null);
     }
   };
+  
+  const handleCommentChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    const text = e.target.value;
+    setNewComment(text);
+
+    const cursorPosition = e.target.selectionStart;
+    const textBeforeCursor = text.substring(0, cursorPosition);
+    const lastAt = textBeforeCursor.lastIndexOf('@');
+    const lastSpace = textBeforeCursor.lastIndexOf(' ');
+
+    if (lastAt > lastSpace) {
+      setIsMentioning(true);
+      setMentionQuery(textBeforeCursor.substring(lastAt + 1));
+    } else {
+      setIsMentioning(false);
+    }
+  };
+  
+  const handleMentionSelect = (employeeName: string) => {
+    const cursorPosition = textareaRef.current!.selectionStart;
+    const textBeforeCursor = newComment.substring(0, cursorPosition);
+    const lastAt = textBeforeCursor.lastIndexOf('@');
+    
+    const textAfterCursor = newComment.substring(cursorPosition);
+    
+    const newText = `${textBeforeCursor.substring(0, lastAt)}@${employeeName} ${textAfterCursor}`;
+    setNewComment(newText);
+    setIsMentioning(false);
+    textareaRef.current!.focus();
+  };
+  
+  const filteredEmployees = useMemo(() => {
+    if (!isMentioning) return [];
+    return employees.filter(e => e.name.toLowerCase().includes(mentionQuery.toLowerCase()));
+  }, [isMentioning, mentionQuery, employees]);
+
 
   return (
     <div className="space-y-4">
       {canManageComments && (
         <form onSubmit={handleSubmit} className="flex items-start gap-3">
           <img src={currentUser.avatar} alt={currentUser.name} className="h-9 w-9 rounded-full"/>
-          <div className="flex-1">
+          <div className="flex-1 relative">
             <textarea
+              ref={textareaRef}
               value={newComment}
-              onChange={(e) => setNewComment(e.target.value)}
+              onChange={handleCommentChange}
               placeholder="Bir yorum ekle... @ ile birinden bahsedin."
               className="w-full p-2 border rounded-md dark:bg-slate-700 dark:border-dark-border focus:ring-primary-500 focus:border-primary-500"
               rows={2}
             />
+             {isMentioning && filteredEmployees.length > 0 && (
+                <div className="absolute z-10 w-full bg-card border rounded-md shadow-lg max-h-40 overflow-y-auto mt-1 dark:border-dark-border">
+                    {filteredEmployees.map(employee => (
+                        <div 
+                            key={employee.id} 
+                            onClick={() => handleMentionSelect(employee.name)}
+                            className="p-2 hover:bg-slate-100 dark:hover:bg-slate-700 cursor-pointer flex items-center gap-2"
+                        >
+                            <img src={employee.avatar} alt={employee.name} className="w-6 h-6 rounded-full" />
+                            <span className="text-sm">{employee.name}</span>
+                        </div>
+                    ))}
+                </div>
+            )}
             <div className="text-right mt-2">
               <Button type="submit" disabled={!newComment.trim()}>Yorum Yap</Button>
             </div>

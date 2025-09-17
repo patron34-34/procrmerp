@@ -7,7 +7,7 @@ import { ICONS } from '../../constants';
 import { generateSalesSummary } from '../../services/geminiService';
 
 const SalesAnalytics: React.FC = () => {
-    const { deals } = useApp();
+    const { deals, employees } = useApp();
     const [summary, setSummary] = useState('');
     const [loading, setLoading] = useState(false);
 
@@ -24,8 +24,30 @@ const SalesAnalytics: React.FC = () => {
             return sum + (deal.value * probability);
         }, 0);
 
-        return { weightedPipelineValue, totalPipelineValue, winRate, avgSalesCycle: 30, topPerformers: [] };
-    }, [deals]);
+        const salesByEmployee = wonDeals.reduce((acc, deal) => {
+            acc[deal.assignedToId] = (acc[deal.assignedToId] || 0) + deal.value;
+            return acc;
+        }, {} as Record<number, number>);
+
+        const topPerformers = Object.entries(salesByEmployee)
+            .sort(([, a], [, b]) => b - a)
+            .slice(0, 5)
+            .map(([employeeId, value]) => ({
+                name: employees.find(e => e.id === parseInt(employeeId))?.name || 'Bilinmeyen',
+                value,
+            }));
+
+        const avgSalesCycle = closedDeals.length > 0 
+            ? closedDeals.reduce((sum, deal) => {
+                const created = new Date(deal.createdDate).getTime();
+                const closed = new Date(deal.closeDate).getTime();
+                const cycleDays = (closed - created) / (1000 * 3600 * 24);
+                return sum + cycleDays;
+            }, 0) / closedDeals.length
+            : 0;
+
+        return { weightedPipelineValue, totalPipelineValue, winRate, avgSalesCycle: Math.round(avgSalesCycle), topPerformers };
+    }, [deals, employees]);
 
     const handleGenerateSummary = async () => {
         setLoading(true);
@@ -53,6 +75,25 @@ const SalesAnalytics: React.FC = () => {
                     </Button>
                     {loading && <div className="spinner"></div>}
                     {summary && <div className="mt-4 p-4 bg-slate-50 dark:bg-slate-800/50 rounded-lg w-full whitespace-pre-wrap">{summary}</div>}
+                </div>
+            </Card>
+
+            <Card title="En İyi Performans Gösterenler (Kazanılan Değer)">
+                <div className="space-y-3">
+                    {analyticsData.topPerformers.map((performer, index) => (
+                        <div key={index} className="flex items-center">
+                            <span className="font-semibold w-8">{index + 1}.</span>
+                            <span className="flex-1">{performer.name}</span>
+                            <div className="w-1/2 bg-slate-200 dark:bg-slate-700 rounded-full h-4">
+                                <div 
+                                    className="bg-primary-500 h-4 rounded-full text-white text-xs flex items-center justify-end pr-2"
+                                    style={{ width: `${(performer.value / (analyticsData.topPerformers[0]?.value || 1)) * 100}%` }}
+                                >
+                                   ${performer.value.toLocaleString()}
+                                </div>
+                            </div>
+                        </div>
+                    ))}
                 </div>
             </Card>
         </div>

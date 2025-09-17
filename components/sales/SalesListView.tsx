@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { useApp } from '../../context/AppContext';
 import { Deal, DealStage } from '../../types';
@@ -107,10 +108,24 @@ const SalesListView: React.FC<SalesListViewProps> = ({ deals, onEdit, onDelete, 
                             )}
                         </td>
                         <td className="p-3 text-text-secondary dark:text-dark-text-secondary">{deal.closeDate}</td>
-                        {canManage && <td className="p-3"><div className="flex items-center gap-3">
-                            <button onClick={() => onEdit(deal)} className="text-slate-500 hover:text-primary-600">{ICONS.edit}</button>
-                            <button onClick={() => onDelete(deal)} className="text-slate-500 hover:text-red-600">{ICONS.trash}</button>
-                        </div></td>}
+                        {canManage && <td className="p-3 text-center">
+                            <div className="flex items-center justify-center gap-2">
+                                <button 
+                                    onClick={() => onEdit(deal)} 
+                                    className="p-2 rounded-lg text-slate-500 hover:bg-slate-100 hover:text-primary-600 dark:hover:bg-slate-700 transition-colors"
+                                    title="Düzenle"
+                                >
+                                    {React.cloneElement(ICONS.edit, { className: 'h-5 w-5' })}
+                                </button>
+                                <button 
+                                    onClick={() => onDelete(deal)}
+                                    className="p-2 rounded-lg text-slate-500 hover:bg-slate-100 hover:text-red-600 dark:hover:bg-slate-700 transition-colors"
+                                    title="Sil"
+                                >
+                                    {React.cloneElement(ICONS.trash, { className: 'h-5 w-5' })}
+                                </button>
+                            </div>
+                        </td>}
                     </tr>
                     ))}
                 </tbody>

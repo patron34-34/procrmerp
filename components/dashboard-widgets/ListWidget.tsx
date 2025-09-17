@@ -1,11 +1,13 @@
 
 
 
+
+
 import React, { memo } from 'react';
-import { useApp } from '../../context/AppContext';
-import { TaskStatus, TaskPriority, Deal, Invoice, Project, Task } from '../../types';
 import { Link } from 'react-router-dom';
-import { ICONS } from '../../constants';
+import { useApp } from '../../../context/AppContext';
+import { TaskStatus, TaskPriority, Deal, Invoice, Project, Task } from '../../../types';
+import { ICONS } from '../../../constants';
 import TodoListCard from '../pages/dashboard/TodoListCard';
 
 interface ListWidgetProps {

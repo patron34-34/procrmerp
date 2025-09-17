@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useApp } from '../../context/AppContext';
 import { ICONS } from '../../constants';
-import * as api from '../../services/api';
 import { Customer, Deal, Project, Invoice, Product, Supplier, PurchaseOrder, Employee, BankAccount, Transaction, SupportTicket, Task, Document } from '../../types';
 import { useNavigate } from 'react-router-dom';
 

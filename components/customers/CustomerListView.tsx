@@ -6,13 +6,14 @@ import Button from '../ui/Button';
 import EmptyState from '../ui/EmptyState';
 import { ICONS } from '../../constants';
 import HealthScoreIndicator from './HealthScoreIndicator';
-import Dropdown, { DropdownItem } from '../ui/Dropdown';
 
 interface CustomerListViewProps {
     customers: (Customer & { assignedToName: string, healthScoreBreakdown?: string[] })[];
     onEdit: (customer: Customer) => void;
     onDeleteRequest: (customer: Customer) => void;
-    onUpdate: (customer: Customer) => void;
+    onUpdateStatus: (customerId: number, newStatus: string) => void;
+    onUpdateAssignee: (customerId: number, newAssigneeId: number) => void;
+    selectedIds: number[];
     onSelectionChange: (selectedIds: number[]) => void;
     sortConfig: SortConfig;
     onSort: (config: SortConfig) => void;
@@ -28,38 +29,34 @@ interface CustomerListViewProps {
 const CustomerListView: React.FC<CustomerListViewProps> = (props) => {
   const { employees, systemLists } = useApp();
   const { 
-      customers, onEdit, onDeleteRequest, onUpdate, onSelectionChange, sortConfig, onSort, canManageCustomers,
+      customers, onEdit, onDeleteRequest, onUpdateStatus, onUpdateAssignee, selectedIds, onSelectionChange, sortConfig, onSort, canManageCustomers,
       totalCustomers, currentPage, totalPages, itemsPerPage, onPageChange, onItemsPerPageChange
   } = props;
   
-  const [selectedIds, setSelectedIds] = useState<number[]>([]);
   const [editingCell, setEditingCell] = useState<{ id: number; key: 'status' | 'assignedToId' } | null>(null);
-  
-  useEffect(() => {
-    onSelectionChange(selectedIds);
-  }, [selectedIds, onSelectionChange]);
   
   const handleSelectAll = (e: React.ChangeEvent<HTMLInputElement>) => {
     if(e.target.checked) {
-        const newSelectedIds = customers.map(c => c.id)
-        setSelectedIds(newSelectedIds);
+        onSelectionChange(customers.map(c => c.id));
     } else {
-        setSelectedIds([]);
+        onSelectionChange([]);
     }
   };
 
   const handleSelectOne = (e: React.ChangeEvent<HTMLInputElement>, id: number) => {
-    let newSelectedIds;
     if(e.target.checked) {
-        newSelectedIds = [...selectedIds, id];
+        onSelectionChange([...selectedIds, id]);
     } else {
-        newSelectedIds = selectedIds.filter(selectedId => selectedId !== id);
+        onSelectionChange(selectedIds.filter(selectedId => selectedId !== id));
     }
-    setSelectedIds(newSelectedIds);
   };
   
   const handleInlineUpdate = (customer: Customer, key: 'status' | 'assignedToId', value: string | number) => {
-    onUpdate({ ...customer, [key]: value });
+    if (key === 'status') {
+        onUpdateStatus(customer.id, value as string);
+    } else {
+        onUpdateAssignee(customer.id, value as number);
+    }
     setEditingCell(null);
   };
 
@@ -116,8 +113,8 @@ const CustomerListView: React.FC<CustomerListViewProps> = (props) => {
     <div className="overflow-x-auto">
       {customers.length > 0 ? (
           <table className="w-full text-left">
-          <thead className="border-b dark:border-dark-border"><tr className="bg-slate-50 dark:bg-slate-900/50 text-xs uppercase text-text-secondary">
-              {canManageCustomers && <th className="p-3"><input type="checkbox" onChange={handleSelectAll} checked={selectedIds.length === customers.length && customers.length > 0} /></th>}
+          <thead className="border-b border-border"><tr className="bg-slate-50 dark:bg-sidebar text-xs uppercase text-text-secondary">
+              {canManageCustomers && <th className="p-3"><input type="checkbox" onChange={handleSelectAll} checked={customers.length > 0 && selectedIds.length === customers.length} /></th>}
               <SortableHeader columnKey="company" title="Müşteri Adı" />
               <SortableHeader columnKey="assignedToName" title="Sorumlu" />
               <SortableHeader columnKey="lastContact" title="Son İletişim" />
@@ -127,12 +124,12 @@ const CustomerListView: React.FC<CustomerListViewProps> = (props) => {
           </tr></thead>
           <tbody>
               {customers.map((customer) => (
-              <tr key={customer.id} className="group odd:bg-white even:bg-slate-50 dark:odd:bg-sidebar dark:even:bg-slate-800/50">
+              <tr key={customer.id} className="group odd:bg-white even:bg-slate-50 dark:odd:bg-card dark:even:bg-slate-800/50">
                   {canManageCustomers && <td className="p-4"><input type="checkbox" checked={selectedIds.includes(customer.id)} onChange={(e) => handleSelectOne(e, customer.id)} /></td>}
                   <td className="p-4 flex items-center gap-4">
                       <img src={customer.avatar} alt={customer.name} className="h-10 w-10 rounded-full" />
                       <div>
-                        <Link to={`/customers/${customer.id}`} className="font-medium hover:text-primary-600 dark:hover:text-primary-400">{customer.company}</Link>
+                        <Link to={`/customers/${customer.id}`} className="font-medium hover:text-primary-600">{customer.company}</Link>
                         <p className="text-sm text-text-secondary">{customer.email}</p>
                       </div>
                   </td>
@@ -169,7 +166,7 @@ const CustomerListView: React.FC<CustomerListViewProps> = (props) => {
                     )}
                   </td>
                   {canManageCustomers && <td className="p-4 text-center">
-                    <div className="flex items-center justify-center gap-2">
+                    <div className="flex items-center justify-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
                         <button 
                             onClick={() => onEdit(customer)} 
                             className="p-2 rounded-lg text-slate-500 hover:bg-slate-100 hover:text-primary-600 dark:hover:bg-slate-700 transition-colors"
@@ -201,7 +198,7 @@ const CustomerListView: React.FC<CustomerListViewProps> = (props) => {
       )}
     </div>
     {totalPages > 1 && (
-      <div className="flex justify-between items-center mt-4 pt-4 border-t dark:border-dark-border">
+      <div className="flex justify-between items-center mt-4 pt-4 border-t border-border">
         <div className="text-sm text-text-secondary flex items-center gap-4">
            <select 
               value={itemsPerPage} 

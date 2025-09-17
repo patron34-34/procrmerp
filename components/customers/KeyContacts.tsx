@@ -47,7 +47,7 @@ const KeyContacts: React.FC<KeyContactsProps> = ({ customerId }) => {
                     <>
                         <Button size="sm" onClick={() => setIsOrgChartOpen(true)} variant="secondary" className="w-full justify-center mb-4">Organizasyon Şemasını Görüntüle</Button>
                         {customerContacts.map(contact => (
-                            <div key={contact.id} className="mb-4 pb-4 border-b last:border-0 last:pb-0 last:mb-0 dark:border-dark-border">
+                            <div key={contact.id} className="mb-4 pb-4 border-b last:border-0 last:pb-0 last:mb-0 border-border">
                                 <div className="flex justify-between items-start">
                                     <div>
                                         <p className="font-bold">{contact.name}</p>

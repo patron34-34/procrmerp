@@ -10,7 +10,7 @@ import { useNotification } from '../../../context/NotificationContext';
 const WorkOrderForm: React.FC = () => {
     const { id } = useParams<{ id: string }>();
     const navigate = useNavigate();
-    const { workOrders, products, boms, addWorkOrder, updateWorkOrderStatus } = useApp();
+    const { workOrders, products, boms, addWorkOrder, updateWorkOrderStatus, updateWorkOrder } = useApp();
     const { addToast } = useNotification();
 
     const isEditMode = !!id;
@@ -43,12 +43,14 @@ const WorkOrderForm: React.FC = () => {
     }, [boms, formData.productId]);
 
     useEffect(() => {
-        if (availableBoms.length > 0 && formData.bomId === 0) {
-            setFormData(prev => ({...prev, bomId: availableBoms[0].id}));
-        } else if (availableBoms.length === 0) {
-            setFormData(prev => ({...prev, bomId: 0}));
+        if (formData.productId && availableBoms.length > 0) {
+            if (!formData.bomId || !availableBoms.some(b => b.id === formData.bomId)) {
+                setFormData(prev => ({...prev, bomId: availableBoms[0].id}));
+            }
+        } else if (formData.productId && availableBoms.length === 0) {
+             setFormData(prev => ({...prev, bomId: 0}));
         }
-    }, [availableBoms, formData.bomId]);
+    }, [formData.productId, availableBoms, formData.bomId]);
 
 
     const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
@@ -78,8 +80,8 @@ const WorkOrderForm: React.FC = () => {
         }
         
         if (isEditMode && existingWO) {
-             // Basic data updates are saved here. Status changes have their own buttons.
-            updateWorkOrderStatus(existingWO.id, formData.status);
+            updateWorkOrder({ ...existingWO, ...formData });
+            addToast("İş emri güncellendi.", "success");
         } else {
             addWorkOrder(formData);
         }

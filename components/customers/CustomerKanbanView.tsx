@@ -8,18 +8,18 @@ const KanbanCard: React.FC<{ customer: Customer; onDragStart: (e: React.DragEven
         <div 
             draggable={canManage}
             onDragStart={(e) => canManage && onDragStart(e, customer.id)}
-            className={`bg-card p-3 mb-3 rounded-md shadow-sm border border-border dark:border-dark-border ${canManage ? 'cursor-grab active:cursor-grabbing' : 'cursor-default'}`}
+            className={`bg-card p-3 mb-3 rounded-lg shadow-sm border border-border ${canManage ? 'cursor-grab active:cursor-grabbing' : 'cursor-default'}`}
         >
             <div className="flex items-center gap-3">
                 <img src={customer.avatar} alt={customer.name} className="h-10 w-10 rounded-full" />
                 <div>
-                    <Link to={`/customers/${customer.id}`} className="font-bold text-sm hover:text-primary-600 dark:hover:text-primary-400">{customer.name}</Link>
-                    <p className="text-xs text-text-secondary dark:text-dark-text-secondary">{customer.company}</p>
+                    <Link to={`/customers/${customer.id}`} className="font-bold text-sm hover:text-primary-600">{customer.name}</Link>
+                    <p className="text-xs text-text-secondary">{customer.company}</p>
                 </div>
             </div>
              <div className="mt-2 flex flex-wrap gap-1">
                 {customer.tags.map(tag => (
-                    <span key={tag} className="px-2 py-0.5 text-xs rounded-full bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300">{tag}</span>
+                    <span key={tag} className="px-2 py-0.5 text-xs rounded-full bg-blue-100 text-blue-800 dark:bg-primary-900/40 dark:text-primary-300">{tag}</span>
                 ))}
             </div>
         </div>
@@ -44,11 +44,11 @@ const KanbanColumn: React.FC<{
             onDragOver={handleDragOver}
             onDragLeave={handleDragLeave}
             onDrop={handleDrop}
-            className={`flex-1 min-w-[300px] bg-slate-100 rounded-lg p-3 transition-colors duration-300 dark:bg-dark-sidebar ${isOver ? 'bg-slate-200 dark:bg-slate-800' : ''}`}
+            className={`flex-1 min-w-[300px] bg-slate-50 rounded-xl p-3 transition-colors duration-300 dark:bg-sidebar ${isOver ? 'bg-slate-100 dark:bg-slate-800' : ''}`}
         >
             <div className="p-2 mb-3 rounded-t-md border-t-4" style={{ borderTopColor: statusInfo.color || '#64748b' }}>
-                <h3 className="font-bold text-text-main dark:text-dark-text-main">{statusInfo.label}</h3>
-                <span className="text-sm text-text-secondary dark:text-dark-text-secondary">{customers.length} müşteri</span>
+                <h3 className="font-bold text-text-main">{statusInfo.label}</h3>
+                <span className="text-sm text-text-secondary">{customers.length} müşteri</span>
             </div>
             <div className="max-h-[calc(100vh-450px)] overflow-y-auto pr-2">
                 {customers.map(customer => (

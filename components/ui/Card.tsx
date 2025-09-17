@@ -13,7 +13,7 @@ const Card: React.FC<CardProps> = memo(({ children, className = '', title, actio
   
   return (
     <div 
-      className={`bg-card rounded-xl shadow-sm border border-border ${className}`}
+      className={`bg-card rounded-xl shadow border border-border ${className}`}
       style={style}
     >
       {hasHeader && (
@@ -22,7 +22,7 @@ const Card: React.FC<CardProps> = memo(({ children, className = '', title, actio
           {action && <div>{action}</div>}
         </div>
       )}
-      <div className={hasHeader ? 'p-6' : ''}>
+      <div className={children ? (hasHeader ? 'p-6' : 'p-6') : ''}>
         {children}
       </div>
     </div>

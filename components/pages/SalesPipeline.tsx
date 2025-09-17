@@ -5,7 +5,6 @@ import Button from '../ui/Button';
 import { ICONS, WIN_REASONS, LOSS_REASONS } from '../../constants';
 import SalesStats from '../sales/SalesStats';
 import SalesFilterBar from '../sales/SalesFilterBar';
-import DealFormModal from '../sales/DealFormModal';
 import ConfirmationModal from '../ui/ConfirmationModal';
 import SalesKanbanView from '../sales/SalesKanbanView';
 import SalesListView from '../sales/SalesListView';
@@ -17,10 +16,8 @@ import Modal from '../ui/Modal';
 type ViewMode = 'kanban' | 'list';
 
 const SalesPipeline: React.FC = () => {
-  const { deals, hasPermission, updateDealWinLossReason, deleteDeal, updateDealStage, bulkUpdateDealStage, deleteMultipleDeals } = useApp();
+  const { deals, hasPermission, updateDealWinLossReason, deleteDeal, updateDealStage, bulkUpdateDealStage, deleteMultipleDeals, setIsDealFormOpen } = useApp();
   const { addToast } = useNotification();
-  const [isFormModalOpen, setIsFormModalOpen] = useState(false);
-  const [editingDeal, setEditingDeal] = useState<Deal | null>(null);
   const [dealToDelete, setDealToDelete] = useState<Deal | null>(null);
   const [viewMode, setViewMode] = useState<ViewMode>('kanban');
   
@@ -31,7 +28,6 @@ const SalesPipeline: React.FC = () => {
   
   // State for bulk actions
   const [selectedDealIds, setSelectedDealIds] = useState<number[]>([]);
-  // FIX: Update the state type for 'bulkActionType' to include 'delete' to match the possible values passed to its setter function.
   const [bulkActionType, setBulkActionType] = useState<'won' | 'lost' | 'delete' | null>(null);
   const [isBulkWinLossModalOpen, setIsBulkWinLossModalOpen] = useState(false);
   const [isBulkDeleteModalOpen, setIsBulkDeleteModalOpen] = useState(false);
@@ -64,14 +60,12 @@ const SalesPipeline: React.FC = () => {
   
   const openModalForNew = () => {
     if (!canManageDeals) return;
-    setEditingDeal(null);
-    setIsFormModalOpen(true);
+    setIsDealFormOpen(true, null);
   };
 
   const openModalForEdit = (deal: Deal) => {
     if (!canManageDeals) return;
-    setEditingDeal(deal);
-    setIsFormModalOpen(true);
+    setIsDealFormOpen(true, deal);
   };
 
   const handleDeleteRequest = (deal: Deal) => {
@@ -165,14 +159,6 @@ const SalesPipeline: React.FC = () => {
           {viewMode === 'list' && <SalesListView deals={filteredDeals} onEdit={openModalForEdit} onDelete={handleDeleteRequest} onStageChangeRequest={handleStageChangeRequest} selectedIds={selectedDealIds} onSelectionChange={setSelectedDealIds} canManage={canManageDeals} />}
         </div>
       </div>
-
-      {isFormModalOpen && (
-        <DealFormModal
-          isOpen={isFormModalOpen}
-          onClose={() => setIsFormModalOpen(false)}
-          deal={editingDeal}
-        />
-      )}
 
       {dealToDelete && (
         <ConfirmationModal

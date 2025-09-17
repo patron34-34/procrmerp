@@ -1,6 +1,5 @@
+import { StringMappingType } from "react-router-dom/dist/history";
 
-
-// FIX: Removed import for ApiService as it is not an exported member.
 
 // Toast (from NotificationContext)
 export type ToastType = 'success' | 'warning' | 'error' | 'info';
@@ -376,6 +375,8 @@ export interface Notification {
     type: 'success' | 'warning' | 'error' | 'info';
     read: boolean;
     timestamp: string;
+    link?: string;
+    title?: string;
 }
 
 export interface InvoiceLineItem {
@@ -800,7 +801,7 @@ export type Permission =
     | 'otomasyon:goruntule' | 'otomasyon:yonet'
     ;
 
-export type EntityType = 'customer' | 'deal' | 'project' | 'task' | 'invoice' | 'product' | 'supplier' | 'purchase_order' | 'employee' | 'ticket' | 'document' | 'user' | 'role' | 'automation' | 'journal_entry' | 'payroll_run' | 'task_template' | 'scheduled_task' | 'sales_order' | 'shipment' | 'work_order' | 'bom' | 'bill' | 'warehouse' | 'inventory_transfer' | 'inventory_adjustment' | 'expense' | 'asset' | 'sales_return' | 'quotation' | 'lead' | 'commission';
+export type EntityType = 'customer' | 'deal' | 'project' | 'task' | 'invoice' | 'product' | 'supplier' | 'purchase_order' | 'employee' | 'ticket' | 'document' | 'user' | 'role' | 'automation' | 'journal_entry' | 'payroll_run' | 'task_template' | 'scheduled_task' | 'sales_order' | 'shipment' | 'work_order' | 'bom' | 'bill' | 'warehouse' | 'inventory_transfer' | 'inventory_adjustment' | 'expense' | 'asset' | 'sales_return' | 'quotation' | 'lead' | 'commission' | 'pick_list';
 
 export enum ActionType {
     CREATED = 'Oluşturuldu',
@@ -821,7 +822,7 @@ export enum ActionType {
     TASK_UPDATED = 'Görev Güncellendi',
     TASK_UPDATED_MULTIPLE = 'Çoklu Görev Güncellendi',
     TASK_DELETED = 'Görev Silindi',
-    TASK_DELETED_MULTIPLE = 'Çoklu Görev Silindi',
+    DELETED_MULTIPLE = 'Çoklu Kayıt Silindi',
     PROJECT_CREATED = 'Proje Oluşturuldu',
     PROJECT_UPDATED = 'Proje Güncellendi',
     PROJECT_DELETED = 'Proje Silindi',
@@ -833,6 +834,7 @@ export enum ActionType {
     SCHEDULED_TASK_UPDATED = 'Planlanmış Görev Güncellendi',
     SCHEDULED_TASK_DELETED = 'Planlanmış Görev Silindi',
     LEAD_CONVERTED = 'Potansiyel Müşteri Dönüştürüldü',
+    MENTIONED_IN_COMMENT = 'Yorumda bahsedildi',
 }
 
 export interface ActivityLog {
@@ -956,6 +958,21 @@ export interface SalesActivity {
     userName: string;
     userAvatar: string;
 }
+export interface Goal {
+    id: string;
+    description: string;
+    target: string;
+    status: 'Yolda' | 'Tamamlandı' | 'İlgi Gerekiyor' | 'Henüz Başlamadı';
+}
+
+export interface PeerFeedback {
+    id: string;
+    reviewerId: number;
+    reviewerName: string;
+    strengths: string;
+    areasForImprovement: string;
+}
+
 export interface PerformanceReview {
     id: number;
     employeeId: number;
@@ -970,6 +987,8 @@ export interface PerformanceReview {
     areasForImprovement: string;
     goalsForNextPeriod: string;
     status: 'Beklemede' | 'Tamamlandı';
+    goals: Goal[];
+    peerFeedback: PeerFeedback[];
 }
 export enum JobOpeningStatus {
     Open = 'Açık',
@@ -1059,6 +1078,7 @@ export interface Employee {
     avatar: string;
     role: string;
     managerId?: number;
+    contactId?: number;
     tcKimlikNo?: string;
     sgkSicilNo?: string;
     dogumTarihi?: string;
@@ -1096,6 +1116,7 @@ export interface CompanyInfo {
 export interface BrandingSettings {
     logoUrl: string;
     primaryColor: string;
+    fontSize: 'sm' | 'md' | 'lg';
 }
 
 export interface SecuritySettings {
@@ -1500,6 +1521,7 @@ export interface WorkOrder {
     completionDate?: string;
     notes?: string;
     salesOrderId?: number;
+    componentCommits?: { productId: number, stockItemIds: number[] }[];
 }
 
 // HR Self-Service Types
@@ -1590,10 +1612,7 @@ export interface SalesAnalyticsData {
 
 
 export interface AppContextType {
-    // FIX: Changed ApiService to any as it is deprecated.
-    api: any;
     customers: (Customer & { assignedToName: string })[];
-    // FIX: Update return types to reflect enriched customer objects.
     addCustomer: (customerData: Omit<Customer, 'id' | 'avatar'>) => (Customer & { assignedToName: string });
     updateCustomer: (customer: Customer) => (Customer & { assignedToName: string });
     updateCustomerStatus: (customerId: number, newStatus: string) => (Customer & { assignedToName: string }) | undefined;
@@ -1605,14 +1624,14 @@ export interface AppContextType {
     importCustomers: (customersData: Omit<Customer, 'id' | 'avatar'>[]) => (Customer & { assignedToName: string })[];
     contacts: Contact[];
     addContact: (contactData: Omit<Contact, 'id'>) => Contact;
-    updateContact: (contact: Contact) => void;
+    updateContact: (contact: Contact) => Contact | undefined;
     deleteContact: (contactId: number) => void;
     communicationLogs: CommunicationLog[];
-    addCommunicationLog: (customerId: number, type: CommunicationLogType, content: string) => void;
-    updateCommunicationLog: (log: CommunicationLog) => void;
+    addCommunicationLog: (customerId: number, type: CommunicationLogType, content: string) => CommunicationLog;
+    updateCommunicationLog: (log: CommunicationLog) => CommunicationLog | undefined;
     deleteCommunicationLog: (logId: number) => void;
     savedViews: SavedView[];
-    addSavedView: (name: string, filters: SavedView['filters'], sortConfig: SortConfig) => void;
+    addSavedView: (name: string, filters: SavedView['filters'], sortConfig: SortConfig) => SavedView;
     deleteSavedView: (id: number) => void;
     loadSavedView: (id: number) => SavedView | undefined;
     summarizeActivityFeed: (customerId: number) => Promise<string>;
@@ -1681,12 +1700,12 @@ export interface AppContextType {
     assets: Asset[];
     hrParameters: HrParameters;
     salesReturns: SalesReturn[];
-    addSalesReturn: (returnData: Omit<SalesReturn, 'id' | 'returnNumber' | 'customerName'>) => SalesReturn | undefined;
-    updateSalesReturn: (salesReturn: SalesReturn) => void;
+    addSalesReturn: (returnData: Omit<SalesReturn, 'id' | 'returnNumber' | 'customerName'>) => SalesReturn;
+    updateSalesReturn: (salesReturn: SalesReturn) => SalesReturn | undefined;
     deleteSalesReturn: (id: number) => void;
     quotations: Quotation[];
     addQuotation: (quotationData: Omit<Quotation, 'id' | 'quotationNumber' | 'customerName'>) => Quotation;
-    updateQuotation: (quotation: Quotation) => void;
+    updateQuotation: (quotation: Quotation) => Quotation | undefined;
     deleteQuotation: (id: number) => void;
     convertQuotationToSalesOrder: (quotationId: number) => SalesOrder | undefined;
     leads: Lead[];
@@ -1700,91 +1719,92 @@ export interface AppContextType {
     removeFromCart: (productId: number) => void;
     updateCartQuantity: (productId: number, quantity: number) => void;
     clearCart: () => void;
-    createSalesOrderFromCart: (customerId: number) => void;
-    addScheduledTask: (schedule: Omit<ScheduledTask, "id">) => void;
-    updateScheduledTask: (schedule: ScheduledTask) => void;
+    createSalesOrderFromCart: (customerId: number) => SalesOrder | undefined;
+    addScheduledTask: (schedule: Omit<ScheduledTask, "id">) => ScheduledTask;
+    updateScheduledTask: (schedule: ScheduledTask) => ScheduledTask | undefined;
     deleteScheduledTask: (scheduleId: number) => void;
     runScheduledTasksCheck: () => void;
-    addTaskTemplate: (templateData: Omit<TaskTemplate, "id">) => void;
-    updateTaskTemplate: (template: TaskTemplate) => void;
+    addTaskTemplate: (templateData: Omit<TaskTemplate, "id">) => TaskTemplate;
+    updateTaskTemplate: (template: TaskTemplate) => TaskTemplate | undefined;
     deleteTaskTemplate: (templateId: number) => void;
-    addBom: (bomData: Omit<BillOfMaterials, "id" | "productName">) => void;
-    updateBom: (bom: BillOfMaterials) => void;
+    addBom: (bomData: Omit<BillOfMaterials, "id" | "productName">) => BillOfMaterials | undefined;
+    updateBom: (bom: BillOfMaterials) => BillOfMaterials | undefined;
     addWorkOrder: (woData: Omit<WorkOrder, "id" | "workOrderNumber" | "productName">) => WorkOrder | undefined;
+    updateWorkOrder: (wo: WorkOrder) => WorkOrder | undefined;
     updateWorkOrderStatus: (workOrderId: number, newStatus: WorkOrderStatus) => void;
     getProductStockInfo: (productId: number) => { physical: number, committed: number, available: number };
     getProductStockByWarehouse: (productId: number, warehouseId: number) => { physical: number, committed: number, available: number };
     addSalesOrder: (orderData: Omit<SalesOrder, "id" | "orderNumber" | "customerName">) => SalesOrder;
-    updateSalesOrder: (order: SalesOrder) => void;
+    updateSalesOrder: (order: SalesOrder) => SalesOrder | undefined;
     deleteSalesOrder: (orderId: number) => void;
     updateSalesOrderStatus: (orderId: number, newStatus: SalesOrderStatus) => void;
-    convertOrderToInvoice: (orderId: number) => void;
+    convertOrderToInvoice: (orderId: number) => Invoice | undefined;
     confirmPickList: (pickListId: number) => void;
-    addProduct: (productData: Omit<Product, "id">, initialStock?: { warehouseId: number, quantity: number }) => void;
-    updateProduct: (product: Product) => void;
+    addProduct: (productData: Omit<Product, "id">, initialStock?: { warehouseId: number, quantity: number }) => Product;
+    updateProduct: (product: Product) => Product | undefined;
     deleteProduct: (id: number) => void;
-    addWarehouse: (warehouseData: Omit<Warehouse, "id">) => void;
-    updateWarehouse: (warehouse: Warehouse) => void;
+    addWarehouse: (warehouseData: Omit<Warehouse, "id">) => Warehouse;
+    updateWarehouse: (warehouse: Warehouse) => Warehouse | undefined;
     deleteWarehouse: (id: number) => void;
-    addInventoryTransfer: (transferData: Omit<InventoryTransfer, "id" | "transferNumber" | "status">) => void;
-    addInventoryAdjustment: (adjustmentData: Omit<InventoryAdjustment, "id" | "adjustmentNumber" | "status">) => void;
+    addInventoryTransfer: (transferData: Omit<InventoryTransfer, "id" | "transferNumber" | "status">) => InventoryTransfer | undefined;
+    addInventoryAdjustment: (adjustmentData: Omit<InventoryAdjustment, "id" | "adjustmentNumber" | "status">) => InventoryAdjustment | undefined;
     receivePurchaseOrderItems: (poId: number, itemsToReceive: { productId: number, quantity: number, details: (string | { batch: string, expiry: string })[] }[], warehouseId: number) => void;
-    addPurchaseOrder: (poData: Omit<PurchaseOrder, "id" | "poNumber" | "supplierName">) => void;
-    updatePurchaseOrder: (po: PurchaseOrder) => void;
+    addPurchaseOrder: (poData: Omit<PurchaseOrder, "id" | "poNumber" | "supplierName">) => PurchaseOrder;
+    updatePurchaseOrder: (po: PurchaseOrder) => PurchaseOrder | undefined;
     updatePurchaseOrderStatus: (poId: number, status: PurchaseOrderStatus) => void;
-    createBillFromPO: (poId: number) => void;
+    createBillFromPO: (poId: number) => Bill | undefined;
     allocateStockToSalesOrder: (soId: number, allocations: { [productId: string]: number[] }) => void;
-    createShipmentFromSalesOrder: (soId: number, itemsToShip: ShipmentItem[]) => void;
-    createPickList: (shipmentIds: number[]) => void;
-    addAutomation: (auto: Omit<Automation, "id" | "lastRun">) => void;
-    updateAutomation: (auto: Automation) => void;
+    createShipmentFromSalesOrder: (soId: number, itemsToShip: ShipmentItem[]) => Shipment | undefined;
+    createPickList: (shipmentIds: number[]) => PickList | undefined;
+    addAutomation: (auto: Omit<Automation, "id" | "lastRun">) => Automation;
+    updateAutomation: (auto: Automation) => Automation | undefined;
     deleteAutomation: (autoId: number) => void;
     updateSystemList: (key: SystemListKey, items: SystemListItem[]) => void;
     updateEmailTemplate: (template: EmailTemplate) => void;
-    addPriceList: (list: Omit<PriceList, "id">) => void;
-    updatePriceList: (list: PriceList) => void;
+    addPriceList: (list: Omit<PriceList, "id">) => PriceList;
+    updatePriceList: (list: PriceList) => PriceList | undefined;
     deletePriceList: (listId: number) => void;
     updatePriceListItems: (listId: number, items: PriceListItem[]) => void;
-    addTaxRate: (rate: Omit<TaxRate, "id">) => void;
-    updateTaxRate: (rate: TaxRate) => void;
+    addTaxRate: (rate: Omit<TaxRate, "id">) => TaxRate;
+    updateTaxRate: (rate: TaxRate) => TaxRate | undefined;
     deleteTaxRate: (rateId: number) => void;
-    addAccount: (account: Omit<Account, "id">) => void;
-    updateAccount: (account: Account) => void;
+    addAccount: (account: Omit<Account, "id">) => Account;
+    updateAccount: (account: Account) => Account | undefined;
     addJournalEntry: (entryData: Omit<JournalEntry, 'id' | 'entryNumber'>) => JournalEntry;
-    updateJournalEntry: (entry: JournalEntry) => void;
+    updateJournalEntry: (entry: JournalEntry) => JournalEntry | undefined;
     deleteJournalEntry: (entryId: number) => void;
-    reverseJournalEntry: (entryId: number) => number | undefined;
-    addRecurringJournalEntry: (template: Omit<RecurringJournalEntry, 'id'>) => void;
-    updateRecurringJournalEntry: (template: RecurringJournalEntry) => void;
+    reverseJournalEntry: (entryId: number) => JournalEntry | undefined;
+    addRecurringJournalEntry: (template: Omit<RecurringJournalEntry, 'id'>) => RecurringJournalEntry;
+    updateRecurringJournalEntry: (template: RecurringJournalEntry) => RecurringJournalEntry | undefined;
     deleteRecurringJournalEntry: (templateId: number) => void;
-    generateEntryFromRecurringTemplate: (templateId: number) => Promise<number | undefined>;
-    addBudget: (budget: Omit<Budget, 'id'>) => void;
-    updateBudget: (budget: Budget) => void;
+    generateEntryFromRecurringTemplate: (templateId: number) => Promise<JournalEntry | undefined>;
+    addBudget: (budget: Omit<Budget, 'id'>) => Budget;
+    updateBudget: (budget: Budget) => Budget | undefined;
     deleteBudget: (budgetId: number) => void;
-    addCostCenter: (costCenter: Omit<CostCenter, 'id'>) => void;
-    updateCostCenter: (costCenter: CostCenter) => void;
+    addCostCenter: (costCenter: Omit<CostCenter, 'id'>) => CostCenter;
+    updateCostCenter: (costCenter: CostCenter) => CostCenter | undefined;
     deleteCostCenter: (costCenterId: number) => void;
     setDashboardLayout: (layout: DashboardWidget[]) => void;
     addWidgetToDashboard: (widgetId: string) => void;
     removeWidgetFromDashboard: (id: string) => void;
     hasPermission: (permission: Permission) => boolean;
     addDeal: (dealData: Omit<Deal, 'id' | 'customerName' | 'assignedToName' | 'value' | 'lastActivityDate' | 'createdDate'>) => Deal;
-    updateDeal: (deal: Deal) => void;
+    updateDeal: (deal: Deal) => Deal | undefined;
     updateDealStage: (dealId: number, newStage: DealStage) => void;
     bulkUpdateDealStage: (dealIds: number[], newStage: DealStage, reason?: string) => void;
     updateDealWinLossReason: (dealId: number, stage: DealStage.Won | DealStage.Lost, reason: string) => void;
     winDeal: (deal: Deal, winReason: string, createProject: boolean, useTaskTemplate?: boolean, taskTemplateId?: number) => Promise<void>;
     deleteDeal: (id: number) => void;
     deleteMultipleDeals: (dealIds: number[]) => void;
-    addProject: (projectData: Omit<Project, 'id' | 'client'>, taskTemplateId?: number) => void;
-    updateProject: (project: Project) => void;
+    addProject: (projectData: Omit<Project, 'id' | 'client'>, taskTemplateId?: number) => Project;
+    updateProject: (project: Project) => Project | undefined;
     deleteProject: (id: number) => void;
-    addTask: (taskData: Omit<Task, 'id' | 'assignedToName' | 'relatedEntityName'>, subtaskTitles?: string[]) => Task | undefined;
-    updateTask: (task: Task, options?: { silent?: boolean }) => void;
+    addTask: (taskData: Omit<Task, 'id' | 'assignedToName' | 'relatedEntityName'>, subtaskTitles?: string[]) => Task;
+    updateTask: (task: Task, options?: { silent?: boolean }) => Task | undefined;
     updateRecurringTask: (task: Task, updateData: Partial<Task>, scope: 'this' | 'all', options?: { silent?: boolean }) => void;
     deleteTask: (id: number) => void;
     updateTaskStatus: (taskId: number, newStatus: TaskStatus) => void;
-    addSubtask: (parentId: number, title: string) => void;
+    addSubtask: (parentId: number, title: string) => Task | undefined;
     addTaskDependency: (taskId: number, dependsOnId: number) => void;
     removeTaskDependency: (taskId: number, dependsOnId: number) => void;
     deleteMultipleTasks: (taskIds: number[]) => void;
@@ -1794,52 +1814,52 @@ export interface AppContextType {
     addAttachmentToTask: (taskId: number, attachment: Attachment) => void;
     deleteAttachmentFromTask: (taskId: number, attachmentId: number) => void;
     addInvoice: (invoiceData: Omit<Invoice, 'id' | 'invoiceNumber' | 'customerName'>) => Invoice;
-    updateInvoice: (invoice: Invoice) => void;
+    updateInvoice: (invoice: Invoice) => Invoice | undefined;
     bulkUpdateInvoiceStatus: (invoiceIds: number[], newStatus: InvoiceStatus) => void;
     deleteInvoice: (id: number) => void;
-    addBill: (bill: Omit<Bill, 'id'>) => Bill | undefined;
-    updateBill: (bill: Bill) => void;
+    addBill: (bill: Omit<Bill, 'id' | 'billNumber' | 'supplierName'>) => Bill;
+    updateBill: (bill: Bill) => Bill | undefined;
     bulkUpdateBillStatus: (billIds: number[], newStatus: BillStatus) => void;
-    addSupplier: (supplierData: Omit<Supplier, "id" | "avatar">) => void;
-    updateSupplier: (supplier: Supplier) => void;
+    addSupplier: (supplierData: Omit<Supplier, "id" | "avatar">) => Supplier;
+    updateSupplier: (supplier: Supplier) => Supplier | undefined;
     deleteSupplier: (id: number) => void;
     deletePurchaseOrder: (id: number) => void;
-    addEmployee: (employeeData: Omit<Employee, "id" | "avatar" | "employeeId">) => void;
-    updateEmployee: (employee: Employee) => void;
+    addEmployee: (employeeData: Omit<Employee, "id" | "avatar" | "employeeId">) => Employee;
+    updateEmployee: (employee: Employee) => Employee | undefined;
     deleteEmployee: (id: number) => void;
-    addLeaveRequest: (requestData: Omit<LeaveRequest, "id" | "employeeName" | "status">) => void;
+    addLeaveRequest: (requestData: Omit<LeaveRequest, "id" | "employeeName" | "status">) => LeaveRequest;
     updateLeaveRequestStatus: (requestId: number, newStatus: LeaveStatus) => void;
-    addBankAccount: (accountData: Omit<BankAccount, "id">) => void;
-    updateBankAccount: (account: BankAccount) => void;
+    addBankAccount: (accountData: Omit<BankAccount, "id">) => BankAccount;
+    updateBankAccount: (account: BankAccount) => BankAccount | undefined;
     deleteBankAccount: (id: number) => void;
-    addTransaction: (transactionData: Omit<Transaction, "id">) => void;
-    updateTransaction: (transaction: Transaction) => void;
+    addTransaction: (transactionData: Omit<Transaction, "id">) => Transaction;
+    updateTransaction: (transaction: Transaction) => Transaction | undefined;
     deleteTransaction: (id: number) => void;
-    addTicket: (ticketData: Omit<SupportTicket, "id" | "ticketNumber" | "customerName" | "assignedToName" | "createdDate">) => void;
-    updateTicket: (ticket: SupportTicket) => void;
+    addTicket: (ticketData: Omit<SupportTicket, "id" | "ticketNumber" | "customerName" | "assignedToName" | "createdDate">) => SupportTicket;
+    updateTicket: (ticket: SupportTicket) => SupportTicket | undefined;
     deleteTicket: (id: number) => void;
-    addDocument: (docData: Omit<Document, "id" | "uploadedByName">) => void;
+    addDocument: (docData: Omit<Document, "id" | "uploadedByName">) => Document;
     renameDocument: (docId: number, newName: string) => void;
     deleteDocument: (id: number) => void;
     deleteMultipleDocuments: (ids: number[]) => void;
-    addFolder: (folderName: string, parentId: number | null) => void;
+    addFolder: (folderName: string, parentId: number | null) => Document;
     moveDocuments: (docIds: number[], targetFolderId: number | null) => void;
     toggleDocumentStar: (docId: number) => void;
     shareDocument: (docId: number, shares: DocumentShare[]) => void;
-    addComment: (text: string, entityType: 'customer' | 'project' | 'deal' | 'task' | 'ticket' | 'sales_order', entityId: number) => void;
-    updateComment: (comment: Comment) => void;
+    addComment: (text: string, entityType: 'customer' | 'project' | 'deal' | 'task' | 'ticket' | 'sales_order', entityId: number) => Comment;
+    updateComment: (comment: Comment) => Comment | undefined;
     deleteComment: (commentId: number) => void;
-    addSalesActivity: (activityData: Omit<SalesActivity, "id" | "userName" | "userAvatar" | "timestamp">) => void;
-    addPerformanceReview: (reviewData: Omit<PerformanceReview, "id" | "employeeName" | "reviewerName">) => void;
-    updatePerformanceReview: (review: PerformanceReview) => void;
-    addJobOpening: (jobData: Omit<JobOpening, "id">) => void;
-    updateJobOpening: (job: JobOpening) => void;
-    addCandidate: (candidateData: Omit<Candidate, "id">) => void;
-    updateCandidate: (candidate: Candidate) => void;
+    addSalesActivity: (activityData: Omit<SalesActivity, "id" | "userName" | "userAvatar" | "timestamp">) => SalesActivity;
+    addPerformanceReview: (reviewData: Omit<PerformanceReview, "id" | "employeeName" | "reviewerName">) => PerformanceReview;
+    updatePerformanceReview: (review: PerformanceReview) => PerformanceReview | undefined;
+    addJobOpening: (jobData: Omit<JobOpening, "id">) => JobOpening;
+    updateJobOpening: (job: JobOpening) => JobOpening | undefined;
+    addCandidate: (candidateData: Omit<Candidate, "id">) => Candidate;
+    updateCandidate: (candidate: Candidate) => Candidate | undefined;
     updateCandidateStage: (candidateId: number, newStage: CandidateStage) => void;
-    addOnboardingTemplate: (templateData: Omit<OnboardingTemplate, "id">) => void;
-    updateOnboardingTemplate: (template: OnboardingTemplate) => void;
-    startOnboardingWorkflow: (data: { employeeId: number, templateId: number }) => void;
+    addOnboardingTemplate: (templateData: Omit<OnboardingTemplate, "id">) => OnboardingTemplate;
+    updateOnboardingTemplate: (template: OnboardingTemplate) => OnboardingTemplate | undefined;
+    startOnboardingWorkflow: (data: { employeeId: number, templateId: number }) => OnboardingWorkflow | undefined;
     updateOnboardingWorkflowStatus: (workflowId: number, itemIndex: number, isCompleted: boolean) => void;
     addPayrollRun: (payPeriod: string) => PayrollRun | undefined;
     updatePayrollRunStatus: (runId: number, status: PayrollRun['status'], journalEntryId?: number) => void;
@@ -1853,22 +1873,58 @@ export interface AppContextType {
     updateBrandingSettings: (settings: BrandingSettings) => void;
     updateSecuritySettings: (settings: SecuritySettings) => void;
     updateCounters: (settings: CountersSettings) => void;
-    addRole: (roleData: Omit<Role, 'id' | 'isSystemRole'>, cloneFromRoleId?: string) => void;
+    addRole: (roleData: Omit<Role, 'id' | 'isSystemRole'>, cloneFromRoleId?: string) => Role;
     updateRolePermissions: (roleId: string, permissions: Permission[]) => void;
     deleteRole: (roleId: string) => void;
-    addCustomField: (fieldData: Omit<CustomFieldDefinition, 'id'>) => void;
-    updateCustomField: (field: CustomFieldDefinition) => void;
+    addCustomField: (fieldData: Omit<CustomFieldDefinition, 'id'>) => CustomFieldDefinition;
+    updateCustomField: (field: CustomFieldDefinition) => CustomFieldDefinition | undefined;
     deleteCustomField: (id: number) => void;
     markNotificationAsRead: (id: number) => void;
     clearAllNotifications: () => void;
+    deleteNotification: (id: number) => void;
+    deleteAllNotifications: () => void;
     logActivity: (actionType: ActionType, details: string, entityType?: EntityType, entityId?: number) => void;
     updateAccountingLockDate: (date: string | null) => void;
     addStockMovement: (productId: number, warehouseId: number, type: StockMovementType, quantityChange: number, notes?: string, relatedDocumentId?: number) => void;
-    addExpense: (expenseData: Omit<Expense, 'id' | 'employeeName' | 'status' | 'employeeId'>) => void;
+    addExpense: (expenseData: Omit<Expense, 'id' | 'employeeName' | 'status' | 'employeeId'>) => Expense;
     updateExpenseStatus: (expenseId: number, status: ExpenseStatus) => void;
-    addAsset: (assetData: Omit<Asset, 'id'>) => void;
-    updateAsset: (asset: Asset) => void;
+    addAsset: (assetData: Omit<Asset, 'id'>) => Asset;
+    updateAsset: (asset: Asset) => Asset | undefined;
     updateHrParameters: (params: HrParameters) => void;
     isCommandPaletteOpen: boolean;
     setIsCommandPaletteOpen: (value: boolean | ((prevState: boolean) => boolean)) => void;
+
+    // Centralized Modal Management
+    isCustomerFormOpen: boolean;
+    setIsCustomerFormOpen: (isOpen: boolean, customer?: Customer | null) => void;
+    editingCustomer: Customer | null;
+    
+    isDealFormOpen: boolean;
+    setIsDealFormOpen: (isOpen: boolean, deal?: Deal | null, prefilled?: Partial<Deal>) => void;
+    editingDeal: Deal | null;
+    prefilledDealData: Partial<Deal> | null;
+    
+    isTaskFormOpen: boolean;
+    setIsTaskFormOpen: (isOpen: boolean, task?: Task | null, prefilled?: Partial<Task>) => void;
+    editingTask: Task | null;
+    prefilledTaskData: Partial<Task> | null;
+    
+    isProjectFormOpen: boolean;
+    setIsProjectFormOpen: (isOpen: boolean, project?: Project | null, prefilled?: Partial<Project>) => void;
+    editingProject: Project | null;
+    prefilledProjectData: Partial<Project> | null;
+
+    isTicketFormOpen: boolean;
+    setIsTicketFormOpen: (isOpen: boolean, ticket?: SupportTicket | null, prefilled?: Partial<SupportTicket>) => void;
+    editingTicket: SupportTicket | null;
+    prefilledTicketData: Partial<SupportTicket> | null;
+
+    isSalesOrderFormOpen: boolean;
+    setIsSalesOrderFormOpen: (isOpen: boolean, order?: SalesOrder | null, prefilled?: Partial<SalesOrder>) => void;
+    editingSalesOrder: SalesOrder | null;
+    prefilledSalesOrderData: Partial<SalesOrder> | null;
+
+    isLogModalOpen: boolean;
+    setIsLogModalOpen: (isOpen: boolean, customerId?: number | null) => void;
+    logModalCustomerId: number | null;
 }

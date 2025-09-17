@@ -29,7 +29,14 @@ const ReceiveStockModal: React.FC<ReceiveStockModalProps> = ({ isOpen, onClose, 
             purchaseOrder.items.forEach(item => {
                 const remaining = item.quantity - (item.receivedQuantity || 0);
                 if (remaining > 0) {
-                     initialItems[item.productId] = { quantity: String(remaining), details: [] };
+                     const product = products.find(p => p.id === item.productId);
+                     let details: (string | { batch: string; expiry: string })[] = [];
+                     if (product?.trackBy === 'serial') {
+                         details = Array(remaining).fill('');
+                     } else if (product?.trackBy === 'batch') {
+                         details = [{ batch: '', expiry: '' }];
+                     }
+                     initialItems[item.productId] = { quantity: String(remaining), details: details };
                 }
             });
             setItemsToReceive(initialItems);
@@ -46,7 +53,14 @@ const ReceiveStockModal: React.FC<ReceiveStockModalProps> = ({ isOpen, onClose, 
                 newDetails[index] = value;
             } else if (typeof detailItem === 'object') {
                 (detailItem as any)[field] = value;
+            } else if (!detailItem && field === 'serial') {
+                newDetails[index] = value;
+            } else if (!detailItem && (field === 'batch' || field === 'expiry')) {
+                const newDetailObj = { batch: '', expiry: '' };
+                (newDetailObj as any)[field] = value;
+                newDetails[index] = newDetailObj;
             }
+
 
             return { ...prev, [productId]: { ...prev[productId], details: newDetails } };
         });
@@ -55,15 +69,18 @@ const ReceiveStockModal: React.FC<ReceiveStockModalProps> = ({ isOpen, onClose, 
     const handleQuantityChange = (productId: number, value: string) => {
          const quantity = parseInt(value) || 0;
          const product = products.find(p => p.id === productId);
+         const poItem = purchaseOrder.items.find(i => i.productId === productId);
+         const remaining = poItem ? poItem.quantity - (poItem.receivedQuantity || 0) : 0;
+         const finalQuantity = Math.min(quantity, remaining);
 
          setItemsToReceive(prev => {
             let details: (string | { batch: string; expiry: string })[] = [];
             if (product?.trackBy === 'serial') {
-                details = Array(quantity).fill('');
+                details = Array(finalQuantity).fill('');
             } else if (product?.trackBy === 'batch') {
                 details = [{ batch: '', expiry: '' }];
             }
-            return { ...prev, [productId]: { quantity: String(quantity), details } };
+            return { ...prev, [productId]: { quantity: String(finalQuantity), details } };
          });
     };
 
@@ -79,8 +96,8 @@ const ReceiveStockModal: React.FC<ReceiveStockModalProps> = ({ isOpen, onClose, 
 
                 let details = data.details;
                 if (product.trackBy === 'serial') {
-                    if (details.some(d => typeof d !== 'string' || !d.trim())) {
-                         addToast(`'${product.name}' için tüm seri numaralarını girmelisiniz.`, 'error');
+                    if (details.length !== quantity || details.some(d => typeof d !== 'string' || !d.trim())) {
+                         addToast(`'${product.name}' için ${quantity} adet seri numarası girmelisiniz.`, 'error');
                          return 'ERROR';
                     }
                 } else if (product.trackBy === 'batch') {
@@ -107,7 +124,7 @@ const ReceiveStockModal: React.FC<ReceiveStockModalProps> = ({ isOpen, onClose, 
 
 
     return (
-        <Modal isOpen={isOpen} onClose={onClose} title={`Mal Kabul: ${purchaseOrder.poNumber}`}>
+        <Modal isOpen={isOpen} onClose={onClose} title={`Mal Kabul: ${purchaseOrder.poNumber}`} size="3xl">
             <div className="space-y-4">
                 <div>
                     <label className="block text-sm font-medium">Teslim Alınacak Depo</label>
@@ -261,9 +278,8 @@ const PurchaseOrders: React.FC = () => {
                                                  {isReceivable && <Button onClick={() => setPoToReceive(po)} size="sm"><span className="flex items-center gap-1">{ICONS.receive} Mal Kabul</span></Button>}
                                                  {isBillable && <Button onClick={() => createBillFromPO(po.id)} size="sm">Gider Faturası Oluştur</Button>}
                                                  <Link to={`/inventory/purchase-orders/${po.id}/edit`} className="p-2 rounded-lg hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-500 hover:text-primary-600 dark:hover:text-primary-400" title={isDraft ? "Düzenle" : "Görüntüle"}>
-                                                    {isDraft ? ICONS.edit : <svg className="h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M2.036 12.322a1.012 1.012 0 010-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178z" /><path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /></svg>}
-                                                </Link>
-                                                {isDraft && <button onClick={() => setPoToDelete(po)} className="p-2 rounded-lg hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-500 hover:text-red-600 dark:hover:text-red-500" title="Sil">{ICONS.trash}</button>}
+                                                    {isDraft ? ICONS.edit : ICONS.view}
+                                                 </Link>
                                             </div>
                                         </td>}
                                     </tr>
@@ -274,30 +290,14 @@ const PurchaseOrders: React.FC = () => {
                         <EmptyState
                             icon={ICONS.purchaseOrder}
                             title="Henüz Satın Alma Siparişi Yok"
-                            description="İlk siparişinizi oluşturarak tedarik sürecinizi başlatın."
+                            description="Yeni bir sipariş oluşturarak tedarik sürecinizi başlatın."
                             action={canManageInventory ? <Link to="/inventory/purchase-orders/new"><Button>Sipariş Oluştur</Button></Link> : undefined}
                         />
                     )}
                 </div>
             </Card>
-
-            {poToReceive && (
-                <ReceiveStockModal
-                    isOpen={!!poToReceive}
-                    onClose={() => setPoToReceive(null)}
-                    purchaseOrder={poToReceive}
-                />
-            )}
-            
-            {poToDelete && (
-                <ConfirmationModal
-                    isOpen={!!poToDelete}
-                    onClose={() => setPoToDelete(null)}
-                    onConfirm={handleDeleteConfirm}
-                    title="Satın Alma Siparişini Sil"
-                    message={`'${poToDelete?.poNumber}' numaralı siparişi kalıcı olarak silmek istediğinizden emin misiniz? Bu işlem geri alınamaz.`}
-                />
-            )}
+            {poToReceive && <ReceiveStockModal isOpen={!!poToReceive} onClose={() => setPoToReceive(null)} purchaseOrder={poToReceive} />}
+            {poToDelete && <ConfirmationModal isOpen={!!poToDelete} onClose={() => setPoToDelete(null)} onConfirm={handleDeleteConfirm} title="Satın Alma Siparişini Sil" message={`'${poToDelete.poNumber}' numaralı siparişi silmek istediğinizden emin misiniz?`} />}
         </>
     );
 };

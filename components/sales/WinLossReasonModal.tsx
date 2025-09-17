@@ -1,5 +1,4 @@
 
-
 import React, { useState } from 'react';
 import { DealStage } from '../../types';
 import Modal from '../ui/Modal';

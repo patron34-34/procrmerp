@@ -1,4 +1,3 @@
-
 import React, { useState, useMemo, useCallback } from 'react';
 import { useApp } from '../../context/AppContext';
 import { CalendarEvent, EventType, Task, Deal } from '../../types';
@@ -8,7 +7,7 @@ import AgendaView from './calendar/AgendaView';
 import DayView from './calendar/DayView'; 
 import CalendarUserFilter from '../calendar/CalendarUserFilter';
 import Card from '../ui/Card';
-import EventPopover from './calendar/EventPopover';
+import EventPopover from '../pages/calendar/EventPopover';
 import Button from '../ui/Button';
 import { ICONS } from '../../constants';
 import TaskFormModal from '../tasks/TaskFormModal';

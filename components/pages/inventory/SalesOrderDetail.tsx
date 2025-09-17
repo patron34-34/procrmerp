@@ -22,9 +22,9 @@ const StatusStep: React.FC<{ title: string; isActive: boolean; isCompleted: bool
 );
 
 const SalesOrderDetail: React.FC = () => {
+    const { salesOrders, updateSalesOrderStatus, hasPermission, convertOrderToInvoice, workOrders, products } = useApp();
     const { id } = useParams<{ id: string }>();
     const navigate = useNavigate();
-    const { salesOrders, updateSalesOrderStatus, hasPermission, convertOrderToInvoice, workOrders, products } = useApp();
     
     const [activeTab, setActiveTab] = useState<ActiveTab>('overview');
     const [isAllocateModalOpen, setIsAllocateModalOpen] = useState(false);
@@ -82,10 +82,13 @@ const SalesOrderDetail: React.FC = () => {
                 actionButton = <Button onClick={() => updateSalesOrderStatus(order.id, SalesOrderStatus.Onaylandı)}>Siparişi Onayla</Button>;
                 statusDescription = "Siparişiniz alındı ve onayınızı bekliyor. Onayladıktan sonra stok durumu kontrol edilecek.";
                 break;
-            case SalesOrderStatus.StokBekleniyor:
+            case SalesOrderStatus.Onaylandı:
                  if (needsAllocation) {
                     actionButton = <Button onClick={() => setIsAllocateModalOpen(true)}>Stok Ayır</Button>;
                  }
+                statusDescription = "Sipariş onaylandı. Ürünler için stok ayırma işlemini başlatabilirsiniz.";
+                break;
+            case SalesOrderStatus.StokBekleniyor:
                 statusDescription = "Siparişinizdeki bazı ürünler için yeterli stok bulunmuyor. Stok girişi yapıldığında veya manuel olarak stok ayırdığınızda devam edebilirsiniz.";
                 break;
             case SalesOrderStatus.UretimBekleniyor:

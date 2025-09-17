@@ -1,38 +1,37 @@
-
-
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { Customer, InvoiceStatus, DealStage } from '../../types';
 import Button from '../ui/Button';
 import { useApp } from '../../context/AppContext';
 import CustomerForm from './CustomerForm';
 import Dropdown, { DropdownItem } from '../ui/Dropdown';
 import { ICONS } from '../../constants';
-import DealFormModal from '../sales/DealFormModal';
-import ProjectFormModal from '../projects/ProjectFormModal';
-import InvoiceFormModal from '../invoicing/InvoiceFormModal';
-import TicketFormModal from '../support/TicketFormModal';
-import SalesOrderFormModal from '../inventory/SalesOrderFormModal';
 import HealthScoreIndicator from './HealthScoreIndicator';
 import CommunicationLogForm from './CommunicationLogForm';
-import { useMemo } from 'react';
 
 interface CustomerDetailHeaderV2Props {
-    customer: Customer & { healthScore: number };
+    customer: Customer & { healthScore: number; healthScoreBreakdown?: string[] };
+    onEdit: () => void;
+    onDelete: () => void;
+    onLogActivity: () => void;
     onAddNewTask: () => void;
+    onAddNewDeal: () => void;
+    onAddNewProject: () => void;
+    onAddNewInvoice: () => void;
+    onAddNewTicket: () => void;
 }
 
 const Stat: React.FC<{ label: string; value: string; }> = ({ label, value }) => (
     <div className="text-center md:text-left">
-        <p className="text-sm text-text-secondary dark:text-dark-text-secondary">{label}</p>
-        <p className="text-2xl font-bold text-text-main dark:text-dark-text-main">{value}</p>
+        <p className="text-sm text-text-secondary">{label}</p>
+        <p className="text-2xl font-bold text-text-main">{value}</p>
     </div>
 );
 
 
-const CustomerDetailHeaderV2: React.FC<CustomerDetailHeaderV2Props> = ({ customer, onAddNewTask }) => {
+const CustomerDetailHeaderV2: React.FC<CustomerDetailHeaderV2Props> = ({ 
+    customer, onEdit, onDelete, onLogActivity, onAddNewTask, onAddNewDeal, onAddNewProject, onAddNewInvoice, onAddNewTicket 
+}) => {
     const { deals, invoices, hasPermission } = useApp();
-    const [isFormModalOpen, setIsFormModalOpen] = useState(false);
-    const [isLogModalOpen, setIsLogModalOpen] = useState(false);
     
     const canManageCustomers = hasPermission('musteri:yonet');
     
@@ -49,70 +48,50 @@ const CustomerDetailHeaderV2: React.FC<CustomerDetailHeaderV2Props> = ({ custome
     }, [customer.id, invoices, deals]);
 
     return (
-        <>
-            <div className="bg-card dark:bg-dark-card rounded-xl border border-border dark:border-dark-border shadow-sm p-6">
-                <div className="flex flex-col md:flex-row justify-between items-start gap-6">
-                    {/* Left Side: Info */}
-                    <div className="flex items-center gap-4">
-                        <img src={customer.avatar} alt={customer.name} className="w-20 h-20 rounded-full" />
-                        <div>
-                            <h2 className="text-3xl font-bold">{customer.name}</h2>
-                            <p className="text-lg text-text-secondary">{customer.company}</p>
-                        </div>
-                    </div>
-                    {/* Right Side: Actions */}
-                    {canManageCustomers && (
-                        <div className="flex gap-2 flex-shrink-0">
-                             <Dropdown
-                                trigger={
-                                    <Button>
-                                        Eylemler...
-                                        <svg className="w-4 h-4 ml-2" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" /></svg>
-                                    </Button>
-                                }
-                                menuPosition="right-0"
-                            >
-                                <DropdownItem onClick={() => setIsFormModalOpen(true)}>
-                                    <span className="w-5">{ICONS.edit}</span> Düzenle
-                                </DropdownItem>
-                                <DropdownItem onClick={() => setIsLogModalOpen(true)}>
-                                    <span className="w-5">{ICONS.add}</span> Aktivite Ekle
-                                </DropdownItem>
-                                <DropdownItem onClick={onAddNewTask}>
-                                    <span className="w-5">{ICONS.tasks}</span> Yeni Görev Ekle
-                                </DropdownItem>
-                            </Dropdown>
-                        </div>
-                    )}
-                </div>
-                {/* Bottom Stats */}
-                <div className="mt-6 pt-6 border-t dark:border-dark-border grid grid-cols-2 md:grid-cols-4 gap-6">
+        <div className="bg-card rounded-xl border border-border shadow-sm p-6">
+            <div className="flex flex-col md:flex-row justify-between items-start gap-6">
+                {/* Left Side: Info */}
+                <div className="flex items-center gap-4">
+                    <img src={customer.avatar} alt={customer.name} className="w-20 h-20 rounded-full" />
                     <div>
-                        <p className="text-sm text-text-secondary dark:text-dark-text-secondary mb-1">Sağlık Skoru</p>
-                        <HealthScoreIndicator score={customer.healthScore} breakdown={customer.healthScoreBreakdown} />
+                        <h2 className="text-3xl font-bold">{customer.name}</h2>
+                        <p className="text-lg text-text-secondary">{customer.company}</p>
                     </div>
-                    <Stat label="Yaşam Boyu Değeri" value={`$${stats.lifetimeValue.toLocaleString()}`} />
-                    <Stat label="Açık Fırsat Değeri" value={`$${stats.openDealsValue.toLocaleString()}`} />
                 </div>
+                {/* Right Side: Actions */}
+                {canManageCustomers && (
+                    <div className="flex gap-2 flex-shrink-0">
+                         <Dropdown
+                            trigger={
+                                <Button>
+                                    Eylemler
+                                    <svg className="w-4 h-4 ml-2" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" /></svg>
+                                </Button>
+                            }
+                            menuPosition="right-0"
+                        >
+                            <DropdownItem onClick={onEdit}><span className="w-5">{ICONS.edit}</span> Düzenle</DropdownItem>
+                            <DropdownItem onClick={onLogActivity}><span className="w-5">{ICONS.add}</span> Aktivite Ekle</DropdownItem>
+                            <DropdownItem onClick={onAddNewTask}><span className="w-5">{ICONS.tasks}</span> Yeni Görev Ekle</DropdownItem>
+                            <DropdownItem onClick={onAddNewDeal}><span className="w-5">{ICONS.sales}</span> Yeni Anlaşma</DropdownItem>
+                            <DropdownItem onClick={onAddNewProject}><span className="w-5">{ICONS.projects}</span> Yeni Proje</DropdownItem>
+                            <DropdownItem onClick={onAddNewInvoice}><span className="w-5">{ICONS.invoices}</span> Yeni Fatura</DropdownItem>
+                            <DropdownItem onClick={onAddNewTicket}><span className="w-5">{ICONS.support}</span> Yeni Destek Talebi</DropdownItem>
+                            <DropdownItem onClick={onDelete}><span className="w-5">{ICONS.trash}</span> Sil</DropdownItem>
+                        </Dropdown>
+                    </div>
+                )}
             </div>
-
-            {isFormModalOpen && canManageCustomers && (
-                <CustomerForm 
-                    isOpen={isFormModalOpen}
-                    onClose={() => setIsFormModalOpen(false)}
-                    customer={customer}
-                    // FIX: Added required onSubmitSuccess prop
-                    onSubmitSuccess={() => setIsFormModalOpen(false)}
-                />
-            )}
-            {isLogModalOpen && canManageCustomers && (
-                <CommunicationLogForm 
-                    isOpen={isLogModalOpen}
-                    onClose={() => setIsLogModalOpen(false)}
-                    customerId={customer.id}
-                />
-            )}
-        </>
+            {/* Bottom Stats */}
+            <div className="mt-6 pt-6 border-t border-border grid grid-cols-2 md:grid-cols-4 gap-6 items-center">
+                <div>
+                    <p className="text-sm text-text-secondary mb-1">Sağlık Skoru</p>
+                    <HealthScoreIndicator score={customer.healthScore} breakdown={customer.healthScoreBreakdown} />
+                </div>
+                <Stat label="Yaşam Boyu Değeri" value={`$${stats.lifetimeValue.toLocaleString()}`} />
+                <Stat label="Açık Fırsat Değeri" value={`$${stats.openDealsValue.toLocaleString()}`} />
+            </div>
+        </div>
     );
 };
 

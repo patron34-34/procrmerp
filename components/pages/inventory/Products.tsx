@@ -1,7 +1,7 @@
 
-import React, { useState, useMemo, useRef, useEffect } from 'react';
+import React, { useState, useMemo } from 'react';
 import { useApp } from '../../../context/AppContext';
-import { Product, StockItem, StockItemStatus } from '../../../types';
+import { Product } from '../../../types';
 import Card from '../../ui/Card';
 import Button from '../../ui/Button';
 import EmptyState from '../../ui/EmptyState';
@@ -15,7 +15,7 @@ import { useNotification } from '../../../context/NotificationContext';
 
 
 const Products: React.FC = () => {
-    const { products, deleteProduct, hasPermission, warehouses, getProductStockInfo, addToCart } = useApp();
+    const { products, deleteProduct, hasPermission, getProductStockInfo, addToCart } = useApp();
     const { addToast } = useNotification();
     const [isProductFormOpen, setIsProductFormOpen] = useState(false);
     const [isTransferFormOpen, setIsTransferFormOpen] = useState(false);
@@ -63,21 +63,22 @@ const Products: React.FC = () => {
     const handleAddToCart = (product: Product) => {
         const stockInfo = getProductStockInfo(product.id);
         if (stockInfo.available < 1) {
-            addToast(`${product.name} için yeterli stok bulunmuyor.`, 'warning');
+            addToast("Stokta ürün bulunmuyor.", "warning");
             return;
         }
         addToCart(product, 1);
+        addToast(`${product.name} sepete eklendi.`, "success");
     };
 
-    const filteredProducts = products.filter(p => 
-        p.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        p.sku.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        p.category.toLowerCase().includes(searchTerm.toLowerCase())
-    );
-
-    const getWarehouseName = (id: number) => warehouses.find(w => w.id === id)?.name || 'Bilinmeyen Depo';
-
-    const actionButtonClasses = "p-2 rounded-lg text-slate-500 hover:bg-slate-100 hover:text-primary-600 dark:hover:bg-slate-700 transition-colors";
+    const filteredProducts = useMemo(() => {
+        return products.filter(p =>
+            p.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            p.sku.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            p.category.toLowerCase().includes(searchTerm.toLowerCase())
+        );
+    }, [products, searchTerm]);
+    
+    const actionButtonClasses = "p-2 rounded-lg text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors";
 
     return (
         <>
@@ -86,10 +87,10 @@ const Products: React.FC = () => {
                 action={canManageInventory ? <Button onClick={openModalForNew}><span className="flex items-center gap-2">{ICONS.add} Yeni Ürün</span></Button> : undefined}
             >
                 <div className="mb-4">
-                    <input 
+                    <input
                         type="text"
                         placeholder="Ürün, SKU veya kategori ara..."
-                        className="w-full md:w-1/3 p-2 border-border"
+                        className="w-full md:w-1/3 p-2 border border-border rounded-md dark:bg-slate-700 dark:border-dark-border"
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
                     />
@@ -103,8 +104,8 @@ const Products: React.FC = () => {
                                     <th className="p-4 font-semibold">Ürün Adı</th>
                                     <th className="p-4 font-semibold">Kategori</th>
                                     <th className="p-4 font-semibold text-right">Fiyat</th>
-                                    <th className="p-4 font-semibold text-right">Kullanılabilir Stok</th>
-                                    {canManageInventory && <th className="p-4 font-semibold w-32 text-center">Eylemler</th>}
+                                    <th className="p-4 font-semibold text-right">Mevcut Stok</th>
+                                    <th className="p-4 font-semibold w-32 text-center">Eylemler</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -112,39 +113,28 @@ const Products: React.FC = () => {
                                     const stockInfo = getProductStockInfo(product.id);
                                     return (
                                     <tr key={product.id} className="border-b border-border dark:border-dark-border hover:bg-slate-50 dark:hover:bg-slate-800/50 group">
-                                        <td className="p-4 font-mono text-sm">{product.sku}</td>
+                                        <td className="p-4 font-mono">{product.sku}</td>
                                         <td className="p-4 font-medium">
-                                            <Link to={`/inventory/products/${product.id}`} className="hover:text-primary-600 dark:hover:text-primary-400 hover:underline">
+                                            <Link to={`/inventory/products/${product.id}`} className="hover:underline text-primary-600">
                                                 {product.name}
                                             </Link>
                                         </td>
                                         <td className="p-4 text-text-secondary dark:text-dark-text-secondary">{product.category}</td>
-                                        <td className="p-4 font-semibold text-text-main dark:text-dark-text-main text-right">${product.price.toLocaleString()}</td>
-                                        <td className={`p-4 font-semibold text-right ${stockInfo.available <= product.lowStockThreshold ? 'text-red-500' : ''}`}>
-                                            <div className="group/tooltip relative text-right">
-                                                <span>{stockInfo.available}</span>
-                                                <div className="absolute bottom-full mb-2 right-0 w-48 bg-slate-800 text-white text-xs rounded-lg p-2 opacity-0 group-hover/tooltip:opacity-100 transition-opacity pointer-events-none z-10">
-                                                    <h5 className="font-bold mb-1 border-b border-slate-600 pb-1">Stok Detayı</h5>
-                                                    <div className="flex justify-between"><span>Fiziksel Stok:</span> <span>{stockInfo.physical}</span></div>
-                                                    <div className="flex justify-between"><span>Ayrılmış Miktar:</span> <span>{stockInfo.committed}</span></div>
-                                                    <div className="flex justify-between font-bold"><span>Kullanılabilir:</span> <span>{stockInfo.available}</span></div>
-                                                </div>
+                                        <td className="p-4 text-right font-mono">${product.price.toLocaleString()}</td>
+                                        <td className={`p-4 text-right font-mono font-semibold ${stockInfo.available <= product.lowStockThreshold ? 'text-red-500' : ''}`}>{stockInfo.available}</td>
+                                        <td className="p-4 text-center">
+                                            <div className="flex items-center justify-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                                <button onClick={() => handleAddToCart(product)} className={`${actionButtonClasses} hover:text-green-600`} title="Sepete Ekle">{ICONS.salesOrder}</button>
+                                                {canManageInventory && (
+                                                    <>
+                                                        <button onClick={() => openModalForEdit(product)} className={`${actionButtonClasses} hover:text-primary-600`} title="Düzenle">{ICONS.edit}</button>
+                                                        <button onClick={() => handleDeleteRequest(product)} className={`${actionButtonClasses} hover:text-red-600`} title="Sil">{ICONS.trash}</button>
+                                                    </>
+                                                )}
                                             </div>
                                         </td>
-                                        {canManageInventory && <td className="p-4 text-center">
-                                            <div className="flex items-center justify-center gap-1">
-                                                <button onClick={() => handleAddToCart(product)} className={`${actionButtonClasses}`} title="Sepete Ekle">
-                                                    <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" /></svg>
-                                                </button>
-                                                <button onClick={() => openModalForEdit(product)} className={`${actionButtonClasses}`} title="Düzenle">{ICONS.edit}</button>
-                                                <button onClick={() => openTransferForProduct(product)} className={`${actionButtonClasses}`} title="Stok Transferi">{ICONS.transfer}</button>
-                                                <button onClick={() => openAdjustmentForProduct(product)} className={`${actionButtonClasses}`} title="Stok Düzeltmesi">{ICONS.adjustment}</button>
-                                                <button onClick={() => handleDeleteRequest(product)} className={`${actionButtonClasses} hover:text-red-600`} title="Sil">{ICONS.trash}</button>
-                                            </div>
-                                        </td>}
                                     </tr>
-                                    )
-                                })}
+                                )})}
                             </tbody>
                         </table>
                     ) : (
@@ -160,19 +150,30 @@ const Products: React.FC = () => {
 
             {canManageInventory && (
                 <>
-                <ProductForm isOpen={isProductFormOpen} onClose={() => setIsProductFormOpen(false)} product={activeProduct} />
-                <InventoryTransferForm isOpen={isTransferFormOpen} onClose={() => setIsTransferFormOpen(false)} productToTransfer={activeProduct} />
-                <InventoryAdjustmentForm isOpen={isAdjustmentFormOpen} onClose={() => setIsAdjustmentFormOpen(false)} productToAdjust={activeProduct} />
+                <ProductForm 
+                   isOpen={isProductFormOpen}
+                   onClose={() => setIsProductFormOpen(false)}
+                   product={activeProduct}
+                />
+                <InventoryTransferForm
+                    isOpen={isTransferFormOpen}
+                    onClose={() => setIsTransferFormOpen(false)}
+                    productToTransfer={activeProduct}
+                />
+                <InventoryAdjustmentForm
+                    isOpen={isAdjustmentFormOpen}
+                    onClose={() => setIsAdjustmentFormOpen(false)}
+                    productToAdjust={activeProduct}
+                />
+                <ConfirmationModal
+                    isOpen={!!productToDelete}
+                    onClose={() => setProductToDelete(null)}
+                    onConfirm={handleDeleteConfirm}
+                    title="Ürünü Sil"
+                    message={`'${productToDelete?.name}' adlı ürünü kalıcı olarak silmek istediğinizden emin misiniz? Bu işlem geri alınamaz ve tüm stok hareketlerini etkiler.`}
+                />
                 </>
             )}
-
-            {canManageInventory && <ConfirmationModal 
-                isOpen={!!productToDelete}
-                onClose={() => setProductToDelete(null)}
-                onConfirm={handleDeleteConfirm}
-                title="Ürünü Sil"
-                message={`'${productToDelete?.name}' adlı ürünü kalıcı olarak silmek istediğinizden emin misiniz?`}
-            />}
         </>
     );
 };

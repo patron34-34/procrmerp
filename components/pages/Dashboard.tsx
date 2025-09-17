@@ -29,10 +29,8 @@ const Dashboard: React.FC = () => {
   const handleEditToggle = useCallback(() => {
     setIsEditMode(prevIsEditMode => {
         if (prevIsEditMode) {
-            // "Save" the current layout when exiting edit mode
             setOriginalLayout(dashboardLayout);
         } else {
-            // Store original layout on entering edit mode
             setOriginalLayout(dashboardLayout);
         }
         return !prevIsEditMode;
@@ -49,13 +47,14 @@ const Dashboard: React.FC = () => {
 
   return (
     <div className="space-y-6">
-      <div className="flex justify-end items-center">
+      <div className="flex justify-between items-center">
+        <h1 className="text-3xl font-bold">Kontrol Paneli</h1>
         {canManageDashboard && (
           <div className="flex gap-2">
             {isEditMode ? (
               <>
-                <Button onClick={() => setIsAddWidgetModalOpen(true)}>Bileşen Ekle</Button>
-                <Button onClick={handleEditToggle} variant="primary">Düzenlemeyi Bitir</Button>
+                <Button onClick={() => setIsAddWidgetModalOpen(true)} variant="secondary">Bileşen Ekle</Button>
+                <Button onClick={handleEditToggle} variant="primary">Kaydet</Button>
                 <Button onClick={handleCancelEdit} variant="secondary">İptal</Button>
               </>
             ) : (

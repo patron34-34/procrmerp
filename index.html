@@ -29,38 +29,38 @@
         --radius: 0.75rem; /* 12px */
         
         /* Light Theme */
-        --background: #f4f4f5;      /* zinc-100 */
+        --background: #f8fafc;      /* slate-50 */
         --sidebar: #ffffff;          /* white */
         --card: #ffffff;             /* white */
-        --text-main: #18181b;       /* zinc-900 */
-        --text-secondary: #71717a;   /* zinc-500 */
-        --border: #e4e4e7;           /* zinc-200 */
-        --border-hover: #d4d4d8;     /* zinc-300 */
+        --text-main: #0f172a;       /* slate-900 */
+        --text-secondary: #64748b;   /* slate-500 */
+        --border: #e2e8f0;           /* slate-200 */
+        --border-hover: #cbd5e1;     /* slate-300 */
         
         /* These are now set by DynamicStyles.tsx */
         /* --primary-color: #4f46e5;    */
         /* --primary-color-rgb: 79, 70, 229; */
         
         --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
-        --shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+        --shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1);
         --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
       }
 
       .dark {
         /* Dark Theme */
-        --background: #09090b;      /* zinc-950 */
-        --sidebar: #18181b;         /* zinc-900 */
-        --card: #18181b;            /* zinc-900 */
-        --text-main: #fafafa;        /* zinc-50 */
-        --text-secondary: #a1a1aa;    /* zinc-400 */
-        --border: #27272a;           /* zinc-800 */
-        --border-hover: #3f3f46;       /* zinc-700 */
+        --background: #020617;      /* slate-950 */
+        --sidebar: #0f172a;          /* slate-900 */
+        --card: #0f172a;             /* slate-900 */
+        --text-main: #f8fafc;        /* slate-50 */
+        --text-secondary: #94a3b8;   /* slate-400 */
+        --border: #1e293b;           /* slate-800 */
+        --border-hover: #334155;     /* slate-700 */
 
         /* --primary-color: #6366f1; */
         /* --primary-color-rgb: 99, 102, 241; */
-
-        --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.1);
-        --shadow: 0 4px 6px -1px rgb(0 0 0 / 0.2), 0 2px 4px -2px rgb(0 0 0 / 0.2);
+        
+        --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.15);
+        --shadow: 0 1px 3px 0 rgb(0 0 0 / 0.2), 0 1px 2px -1px rgb(0 0 0 / 0.2);
         --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.2), 0 4px 6px -4px rgb(0 0 0 / 0.2);
       }
 
@@ -95,11 +95,11 @@
           box-shadow: 0 0 0 3px rgba(var(--primary-color-rgb, 79, 70, 229), 0.2);
       }
       input:disabled, select:disabled, textarea:disabled {
-        background-color: #f3f4f6; /* gray-100 */
+        background-color: #f1f5f9; /* slate-100 */
         cursor: not-allowed;
       }
       .dark input:disabled, .dark select:disabled, .dark textarea:disabled {
-        background-color: #374151; /* gray-700 */
+        background-color: #1e293b; /* slate-800 */
       }
 
       /* Custom Scrollbar */
@@ -189,6 +189,17 @@
       .animate-fade-in {
           animation: fadeIn 150ms ease-out;
       }
+
+      /* Notification Ping Animation */
+      @keyframes ping {
+        75%, 100% {
+          transform: scale(1.8);
+          opacity: 0;
+        }
+      }
+      .animate-ping-slow {
+        animation: ping 2s cubic-bezier(0, 0, 0.2, 1) infinite;
+      }
     </style>
     <script>
       tailwind.config = {
@@ -240,7 +251,8 @@
     "recharts": "https://esm.sh/recharts@2.12.3?deps=react@18.2.0",
     "leaflet": "https://esm.sh/leaflet@1.9.4",
     "react-dom/": "https://esm.sh/react-dom@18.2.0/",
-    "react/": "https://esm.sh/react@18.2.0/"
+    "react/": "https://esm.sh/react@18.2.0/",
+    "react-router-dom/": "https://aistudiocdn.com/react-router-dom@^7.8.2/"
   }
 }
 </script>

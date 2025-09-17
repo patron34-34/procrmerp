@@ -12,11 +12,9 @@ function hexToRgb(hex: string) {
 
 const DynamicStyles: React.FC = () => {
     const { brandingSettings } = useApp();
-    const primaryColor = brandingSettings?.primaryColor;
+    const { primaryColor, fontSize } = brandingSettings || {};
 
     useEffect(() => {
-        if (!primaryColor) return;
-        
         const styleId = 'dynamic-branding-styles';
         let styleTag = document.getElementById(styleId) as HTMLStyleElement | null;
         if (!styleTag) {
@@ -25,14 +23,27 @@ const DynamicStyles: React.FC = () => {
             document.head.appendChild(styleTag);
         }
         
-        const rgb = hexToRgb(primaryColor);
-        const primaryColorRgb = rgb ? `${rgb.r} ${rgb.g} ${rgb.b}` : '59 130 246'; // fallback to default blue
+        const rgb = hexToRgb(primaryColor || '#4f46e5');
+        const primaryColorRgb = rgb ? `${rgb.r} ${rgb.g} ${rgb.b}` : '79 70 229';
 
+        // Font Size Styles
+        let baseFontSize = '16px'; // md
+        if (fontSize === 'sm') {
+            baseFontSize = '14px';
+        } else if (fontSize === 'lg') {
+            baseFontSize = '18px';
+        }
+        
         styleTag.innerHTML = `
           :root {
             --primary-color: ${primaryColor};
             --primary-color-rgb: ${primaryColorRgb};
           }
+
+          html {
+            font-size: ${baseFontSize};
+          }
+          
           .bg-primary-600 { background-color: var(--primary-color) !important; }
           .hover\\:bg-primary-700:hover { filter: brightness(0.9); background-color: var(--primary-color) !important; }
           .text-primary-600 { color: var(--primary-color) !important; }
@@ -52,7 +63,7 @@ const DynamicStyles: React.FC = () => {
             border-color: var(--primary-color);
           }
         `;
-    }, [primaryColor]);
+    }, [primaryColor, fontSize]);
 
     return null;
 };

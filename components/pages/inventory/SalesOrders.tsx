@@ -1,7 +1,6 @@
-
 import React, { useState, useMemo, useRef, useEffect } from 'react';
 import { useApp } from '../../../context/AppContext';
-import { SalesOrder, SalesOrderStatus } from '../../../types';
+import { SalesOrder, SalesOrderStatus, ProductType } from '../../../types';
 import Card from '../../ui/Card';
 import EmptyState from '../../ui/EmptyState';
 import { ICONS } from '../../../constants';
@@ -9,14 +8,18 @@ import { Link } from 'react-router-dom';
 import Button from '../../ui/Button';
 import SalesOrderFormModal from '../../inventory/SalesOrderFormModal';
 import ConfirmationModal from '../../ui/ConfirmationModal';
+import AllocateStockModal from '../../inventory/AllocateStockModal';
+import CreateShipmentModal from '../../inventory/CreateShipmentModal';
 
 const SalesOrders: React.FC = () => {
-    const { salesOrders, deleteSalesOrder, updateSalesOrderStatus, hasPermission } = useApp();
+    const { salesOrders, deleteSalesOrder, updateSalesOrderStatus, hasPermission, products, convertOrderToInvoice } = useApp();
     const [isFormOpen, setIsFormOpen] = useState(false);
     const [editingOrder, setEditingOrder] = useState<SalesOrder | null>(null);
     const [orderToDelete, setOrderToDelete] = useState<SalesOrder | null>(null);
     const [statusFilter, setStatusFilter] = useState<SalesOrderStatus | 'all'>('all');
     const [editingCell, setEditingCell] = useState<{ id: number; key: 'status' } | null>(null);
+    const [orderToAllocate, setOrderToAllocate] = useState<SalesOrder | null>(null);
+    const [orderToShip, setOrderToShip] = useState<SalesOrder | null>(null);
     
     const canManage = hasPermission('satis-siparis:yonet');
 
@@ -89,9 +92,36 @@ const SalesOrders: React.FC = () => {
                             </tr></thead>
                             <tbody>
                                 {filteredOrders.map(order => {
-                                    const canBeEdited = [SalesOrderStatus.OnayBekliyor, SalesOrderStatus.Onaylandı].includes(order.status);
-                                    const canBeDeleted = ![SalesOrderStatus.KısmenSevkEdildi, SalesOrderStatus.TamamenSevkEdildi, SalesOrderStatus.Faturalandı].includes(order.status);
-                                    const canBeInvoiced = order.status === SalesOrderStatus.TamamenSevkEdildi;
+                                    const physicalItems = order.items.filter(item => products.find(p => p.id === item.productId)?.productType !== ProductType.Hizmet);
+                                    const totalOrdered = physicalItems.reduce((sum, item) => sum + item.quantity, 0);
+                                    const totalCommitted = physicalItems.reduce((sum, item) => sum + (item.committedStockItemIds?.length || 0), 0);
+                                    const totalShipped = physicalItems.reduce((sum, item) => sum + (item.shippedQuantity || 0), 0);
+                                    const needsAllocation = totalOrdered > totalCommitted;
+                                    const needsShipping = totalCommitted > totalShipped;
+
+                                    let actionButton = <Link to={`/inventory/sales-orders/${order.id}`} className="text-primary-600 hover:underline text-sm">Görüntüle</Link>;
+
+                                    if (canManage) {
+                                        switch (order.status) {
+                                            case SalesOrderStatus.OnayBekliyor:
+                                                actionButton = <Button size="sm" onClick={() => updateSalesOrderStatus(order.id, SalesOrderStatus.Onaylandı)}>Onayla</Button>;
+                                                break;
+                                            case SalesOrderStatus.Onaylandı:
+                                                if (needsAllocation) {
+                                                    actionButton = <Button size="sm" onClick={() => setOrderToAllocate(order)}>Stok Ayır</Button>;
+                                                }
+                                                break;
+                                            case SalesOrderStatus.SevkeHazır:
+                                            case SalesOrderStatus.KısmenSevkEdildi:
+                                                if (needsShipping) {
+                                                    actionButton = <Button size="sm" onClick={() => setOrderToShip(order)}>Sevkiyat Oluştur</Button>;
+                                                }
+                                                break;
+                                            case SalesOrderStatus.TamamenSevkEdildi:
+                                                actionButton = <Button size="sm" onClick={() => convertOrderToInvoice(order.id)}>Faturalandır</Button>;
+                                                break;
+                                        }
+                                    }
 
                                     return (
                                         <tr key={order.id} className="border-b dark:border-dark-border hover:bg-slate-50 dark:hover:bg-slate-800/50 group">
@@ -124,10 +154,7 @@ const SalesOrders: React.FC = () => {
                                                 )}
                                             </td>
                                             {canManage && <td className="p-3 text-center">
-                                                <div className="flex items-center justify-center gap-3">
-                                                    <button onClick={() => handleOpenEdit(order)} className="text-slate-500 hover:text-primary-600" disabled={!canBeEdited} title={!canBeEdited ? "Bu aşamadaki sipariş düzenlenemez" : "Düzenle"}>{ICONS.edit}</button>
-                                                    <button onClick={() => setOrderToDelete(order)} className="text-slate-500 hover:text-red-600" disabled={!canBeDeleted} title={!canBeDeleted ? "Bu aşamadaki sipariş silinemez" : "Sil"}>{ICONS.trash}</button>
-                                                </div>
+                                                {actionButton}
                                             </td>}
                                         </tr>
                                     )
@@ -158,6 +185,20 @@ const SalesOrders: React.FC = () => {
                 title="Siparişi Sil"
                 message={`'${orderToDelete?.orderNumber}' numaralı siparişi kalıcı olarak silmek istediğinizden emin misiniz? Bu işlem geri alınamaz ve ayrılmış stoklar serbest bırakılacaktır.`}
             />}
+            {canManage && orderToAllocate && (
+                <AllocateStockModal
+                    isOpen={!!orderToAllocate}
+                    onClose={() => setOrderToAllocate(null)}
+                    salesOrder={orderToAllocate}
+                />
+            )}
+            {canManage && orderToShip && (
+                <CreateShipmentModal
+                    isOpen={!!orderToShip}
+                    onClose={() => setOrderToShip(null)}
+                    salesOrder={orderToShip}
+                />
+            )}
         </>
     );
 };

@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { Deal, DealStage } from '../../types';
 import PipelineColumn from './PipelineColumn';

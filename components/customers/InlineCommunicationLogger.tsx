@@ -23,7 +23,7 @@ const InlineCommunicationLogger: React.FC<InlineCommunicationLoggerProps> = ({ c
     };
     
     return (
-        <div className="p-4 border rounded-lg dark:border-dark-border bg-card dark:bg-dark-card">
+        <div className="p-4 border rounded-lg border-border bg-card">
             <div className="flex items-start gap-3">
                 <img src={currentUser.avatar} alt={currentUser.name} className="h-9 w-9 rounded-full"/>
                 <div className="flex-1">
@@ -33,7 +33,7 @@ const InlineCommunicationLogger: React.FC<InlineCommunicationLoggerProps> = ({ c
                             onChange={(e) => setContent(e.target.value)}
                             onFocus={() => setIsFocused(true)}
                             placeholder="Bir not ekleyin veya bir aktivite kaydedin..."
-                            className="w-full p-2 border rounded-md dark:bg-slate-700 dark:border-dark-border focus:ring-primary-500 focus:border-primary-500 text-sm"
+                            className="w-full p-2 border rounded-md focus:ring-primary-500 focus:border-primary-500 text-sm"
                             rows={isFocused ? 3 : 1}
                         />
                         {isFocused && (

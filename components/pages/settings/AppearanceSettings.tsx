@@ -1,11 +1,10 @@
-
-
 import React, { useState } from 'react';
 import Card from '../../ui/Card';
 import ToggleSwitch from '../../ui/ToggleSwitch';
 import { useTheme } from '../../../context/ThemeContext';
 import { useApp } from '../../../context/AppContext';
 import Button from '../../ui/Button';
+import { BrandingSettings } from '../../../types';
 
 const AppearanceSettings: React.FC = () => {
     const { theme, toggleTheme } = useTheme();
@@ -13,17 +12,34 @@ const AppearanceSettings: React.FC = () => {
 
     const [logoUrl, setLogoUrl] = useState(brandingSettings.logoUrl);
     const [primaryColor, setPrimaryColor] = useState(brandingSettings.primaryColor);
+    const [fontSize, setFontSize] = useState<BrandingSettings['fontSize']>(brandingSettings.fontSize || 'md');
     const canManage = hasPermission('ayarlar:genel-yonet');
 
     const handleSave = () => {
-        updateBrandingSettings({ logoUrl, primaryColor });
+        updateBrandingSettings({ logoUrl, primaryColor, fontSize });
     };
     
     const handleReset = () => {
         setLogoUrl('');
-        setPrimaryColor('#3b82f6');
-        updateBrandingSettings({ logoUrl: '', primaryColor: '#3b82f6' });
+        setPrimaryColor('#4f46e5');
+        setFontSize('md');
+        updateBrandingSettings({ logoUrl: '', primaryColor: '#4f46e5', fontSize: 'md' });
     };
+
+    const FontSizeButton: React.FC<{ size: BrandingSettings['fontSize'], label: string }> = ({ size, label }) => (
+        <button
+            type="button"
+            onClick={() => canManage && setFontSize(size)}
+            disabled={!canManage}
+            className={`px-4 py-2 text-sm font-medium rounded-md border transition-colors ${
+                fontSize === size
+                    ? 'bg-primary-600 text-white border-primary-600'
+                    : 'bg-card text-text-main border-border hover:bg-slate-100 dark:hover:bg-slate-800'
+            } disabled:opacity-50 disabled:cursor-not-allowed`}
+        >
+            {label}
+        </button>
+    );
 
     return (
         <Card title="Marka & Görünüm Ayarları">
@@ -73,6 +89,18 @@ const AppearanceSettings: React.FC = () => {
                             />
                         </div>
                     </div>
+
+                    <div className="border-t pt-4 dark:border-dark-border">
+                         <label className="block text-sm font-semibold text-text-secondary dark:text-dark-text-secondary">Yazı Tipi Boyutu</label>
+                         <p className="text-xs text-slate-500 mt-1 mb-2">Uygulama genelindeki metin boyutunu ayarlayın.</p>
+                         <div className="flex items-center gap-2">
+                            <FontSizeButton size="sm" label="Küçük" />
+                            <FontSizeButton size="md" label="Normal" />
+                            <FontSizeButton size="lg" label="Büyük" />
+                         </div>
+                    </div>
+
+
                      {canManage && (
                         <div className="flex justify-end pt-4 gap-2">
                             <Button type="button" variant="secondary" onClick={handleReset}>Sıfırla</Button>

@@ -38,7 +38,7 @@ const EventPopover: React.FC<EventPopoverProps> = memo(({ event, target, onClose
             case 'project': return `/projects/${event.data.id}`;
             case 'deal': return `/deals/${event.data.id}`;
             case 'invoice': return `/invoicing/outgoing`;
-            case 'task': 
+            case 'task':
             case 'appointment':
                 return `/planner`;
             default: return '/';
@@ -106,5 +106,4 @@ const EventPopover: React.FC<EventPopoverProps> = memo(({ event, target, onClose
     );
 });
 
-// FIX: Add default export to make the component a module.
 export default EventPopover;

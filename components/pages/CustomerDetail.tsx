@@ -2,28 +2,23 @@ import React, { useState } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { useApp } from '../../context/AppContext';
 import { calculateHealthScore } from '../../utils/healthScoreCalculator';
-import CustomerDetailHeader from '../customers/CustomerDetailHeader';
-import CustomerStatsBar from '../customers/CustomerStatsBar';
 import CustomerRelatedLists from '../customers/CustomerRelatedLists';
-import { Task } from '../../types';
-import TaskFormModal from '../tasks/TaskFormModal';
 import CustomerSidebarTabs from '../customers/CustomerSidebarTabs';
-import DealFormModal from '../sales/DealFormModal';
-import ProjectFormModal from '../projects/ProjectFormModal';
-import TicketFormModal from '../support/TicketFormModal';
-import SalesOrderFormModal from '../inventory/SalesOrderFormModal';
+import CustomerDetailHeaderV2 from '../customers/CustomerDetailHeaderV2';
+import ConfirmationModal from '../ui/ConfirmationModal';
 
 const CustomerDetail: React.FC = () => {
     const { id } = useParams<{ id: string }>();
-    const { deals, invoices, tickets, addTask, customers, addProject } = useApp();
+    const {
+        deals, invoices, tickets, customers, deleteCustomer,
+        setIsTaskFormOpen, setIsDealFormOpen, setIsProjectFormOpen,
+        setIsTicketFormOpen, setIsSalesOrderFormOpen, setIsCustomerFormOpen,
+        setIsLogModalOpen
+    } = useApp();
     const customerId = parseInt(id || '', 10);
     const navigate = useNavigate();
 
-    const [isTaskFormOpen, setIsTaskFormOpen] = useState(false);
-    const [isDealFormOpen, setIsDealFormOpen] = useState(false);
-    const [isProjectFormOpen, setIsProjectFormOpen] = useState(false);
-    const [isTicketFormOpen, setIsTicketFormOpen] = useState(false);
-    const [isSalesOrderFormOpen, setIsSalesOrderFormOpen] = useState(false);
+    const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
 
     const customer = React.useMemo(() => {
         const cust = customers.find(c => c.id === customerId);
@@ -35,59 +30,52 @@ const CustomerDetail: React.FC = () => {
     if (!customer) {
         return <div className="p-4"><p>Müşteri bulunamadı. Lütfen <Link to="/customers">Müşteriler sayfasına</Link> geri dönün.</p></div>;
     }
-
-    const prefilledTaskData = {
-        relatedEntityType: 'customer' as const,
-        relatedEntityId: customer.id,
-    };
-
-    const prefilledGenericData = {
-        customerId: customer.id,
-    };
     
-    const handleTaskSubmit = (formData: Omit<Task, 'id' | 'assignedToName' | 'relatedEntityName'>, subtaskTitles: string[]) => {
-        addTask(formData, subtaskTitles);
-        setIsTaskFormOpen(false);
+    const handleDeleteConfirm = () => {
+        deleteCustomer(customer.id);
+        setIsDeleteModalOpen(false);
+        navigate('/customers');
     };
 
     return (
         <div className="space-y-6">
-            <CustomerDetailHeader 
+            <CustomerDetailHeaderV2 
                 customer={customer}
-                onAddNewTask={() => setIsTaskFormOpen(true)}
-                onAddNewDeal={() => setIsDealFormOpen(true)}
-                onAddNewProject={() => setIsProjectFormOpen(true)}
+                onEdit={() => setIsCustomerFormOpen(true, customer)}
+                onDelete={() => setIsDeleteModalOpen(true)}
+                onLogActivity={() => setIsLogModalOpen(true, customer.id)}
+                onAddNewTask={() => setIsTaskFormOpen(true, null, { relatedEntityType: 'customer', relatedEntityId: customer.id })}
+                onAddNewDeal={() => setIsDealFormOpen(true, null, { customerId: customer.id })}
+                onAddNewProject={() => setIsProjectFormOpen(true, null, { customerId: customer.id })}
                 onAddNewInvoice={() => navigate('/invoicing/new', { state: { customerId: customer.id } })}
-                onAddNewTicket={() => setIsTicketFormOpen(true)}
-                onAddNewSalesOrder={() => setIsSalesOrderFormOpen(true)}
+                onAddNewTicket={() => setIsTicketFormOpen(true, null, { customerId: customer.id })}
             />
-            <CustomerStatsBar customerId={customer.id} />
             
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
-                {/* Main Content Area (Left) */}
                 <div className="lg:col-span-2">
                     <CustomerRelatedLists 
                         customerId={customer.id}
-                        onAddNewTask={() => setIsTaskFormOpen(true)}
-                        onAddNewDeal={() => setIsDealFormOpen(true)}
-                        onAddNewProject={() => setIsProjectFormOpen(true)}
+                        onAddNewTask={() => setIsTaskFormOpen(true, null, { relatedEntityType: 'customer', relatedEntityId: customer.id })}
+                        onAddNewDeal={() => setIsDealFormOpen(true, null, { customerId: customer.id })}
+                        onAddNewProject={() => setIsProjectFormOpen(true, null, { customerId: customer.id })}
                         onAddNewInvoice={() => navigate('/invoicing/new', { state: { customerId: customer.id } })}
-                        onAddNewTicket={() => setIsTicketFormOpen(true)}
-                        onAddNewSalesOrder={() => setIsSalesOrderFormOpen(true)}
+                        onAddNewTicket={() => setIsTicketFormOpen(true, null, { customerId: customer.id })}
+                        onAddNewSalesOrder={() => setIsSalesOrderFormOpen(true, null, { customerId: customer.id })}
                     />
                 </div>
 
-                {/* Persistent Sidebar (Right) */}
                 <div className="lg:col-span-1 space-y-6 sticky top-24">
                     <CustomerSidebarTabs customer={customer} />
                 </div>
             </div>
             
-            {isTaskFormOpen && <TaskFormModal isOpen={isTaskFormOpen} onClose={() => setIsTaskFormOpen(false)} task={null} prefilledData={prefilledTaskData} onSubmit={handleTaskSubmit} />}
-            {isDealFormOpen && <DealFormModal isOpen={isDealFormOpen} onClose={() => setIsDealFormOpen(false)} deal={null} prefilledData={prefilledGenericData} />}
-            {isProjectFormOpen && <ProjectFormModal isOpen={isProjectFormOpen} onClose={() => setIsProjectFormOpen(false)} project={null} prefilledData={prefilledGenericData} />}
-            {isTicketFormOpen && <TicketFormModal isOpen={isTicketFormOpen} onClose={() => setIsTicketFormOpen(false)} ticket={null} prefilledData={prefilledGenericData} />}
-            {isSalesOrderFormOpen && <SalesOrderFormModal isOpen={isSalesOrderFormOpen} onClose={() => setIsSalesOrderFormOpen(false)} order={null} prefilledData={prefilledGenericData} />}
+            <ConfirmationModal 
+                isOpen={isDeleteModalOpen} 
+                onClose={() => setIsDeleteModalOpen(false)} 
+                onConfirm={handleDeleteConfirm}
+                title="Müşteriyi Sil"
+                message={`'${customer.name}' adlı müşteriyi kalıcı olarak silmek istediğinizden emin misiniz? Bu işlem geri alınamaz.`}
+            />
         </div>
     );
 };
