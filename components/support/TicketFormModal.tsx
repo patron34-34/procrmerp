@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useApp } from '../../context/AppContext';
 import { SupportTicket, TicketStatus, TicketPriority, Attachment } from '../../types';
 import Modal from '../ui/Modal';
@@ -15,16 +15,17 @@ interface TicketFormModalProps {
 const TicketFormModal: React.FC<TicketFormModalProps> = ({ isOpen, onClose, ticket, prefilledData }) => {
     const { customers, employees, addTicket, updateTicket, currentUser } = useApp();
 
-    const initialFormState: Omit<SupportTicket, 'id' | 'ticketNumber' | 'customerName' | 'assignedToName' | 'createdDate'> = {
+    const initialFormState = useMemo(() => ({
         subject: '',
         description: '',
         customerId: 0,
-        assignedToId: 0,
+        assignedToId: employees.find(e => e.department === 'Destek')?.id || employees[0]?.id || 0,
         status: TicketStatus.Open,
         priority: TicketPriority.Normal,
         attachments: [],
-    };
-    const [formData, setFormData] = useState(initialFormState);
+    }), [employees]);
+
+    const [formData, setFormData] = useState<Omit<SupportTicket, 'id' | 'ticketNumber' | 'customerName' | 'assignedToName' | 'createdDate'>>(initialFormState);
     const [newFileName, setNewFileName] = useState('');
 
     useEffect(() => {
@@ -45,11 +46,11 @@ const TicketFormModal: React.FC<TicketFormModalProps> = ({ isOpen, onClose, tick
                 setFormData({
                     ...initialFormState,
                     customerId: prefilledData?.customerId || 0,
-                    assignedToId: prefilledData?.assignedToId || 0,
+                    assignedToId: prefilledData?.assignedToId || initialFormState.assignedToId,
                 });
             }
         }
-    }, [ticket, prefilledData, isOpen]);
+    }, [ticket, prefilledData, isOpen, initialFormState]);
 
     const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
         const { name, value } = e.target;

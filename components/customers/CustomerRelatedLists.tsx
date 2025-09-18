@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, ReactNode } from 'react';
 import { useApp } from '../../context/AppContext';
 import { Link } from 'react-router-dom';
 import Card from '../ui/Card';
@@ -59,29 +59,31 @@ const CustomerRelatedLists: React.FC<CustomerRelatedListsProps> = ({
             {label} <span className="bg-slate-200 dark:bg-slate-700 text-xs font-bold px-2 py-0.5 rounded-full">{count}</span>
         </button>
     );
+
+    const ListWrapper: React.FC<{title: string, onAdd: () => void, children: React.ReactNode, icon: JSX.Element}> = ({title, onAdd, children, icon}) => (
+        <div>
+            <div className="flex justify-between items-center mb-4">
+                <h3 className="text-lg font-semibold">{title}</h3>
+                {canManageCustomers && <Button size="sm" onClick={onAdd}><span className="flex items-center gap-2">{icon} Yeni Ekle</span></Button>}
+            </div>
+            {children}
+        </div>
+    );
     
     const renderContent = () => {
-        const createEmptyState = (title: string, description: string, action: () => void, icon: JSX.Element) => (
-            <EmptyState
-                title={title}
-                description={description}
-                icon={icon}
-                action={canManageCustomers ? <Button onClick={action}>Yeni Ekle</Button> : undefined}
-            />
-        );
         switch (activeTab) {
             case 'activity':
                 return <ActivityFeed customerId={customerId} />;
             case 'deals':
-                return relatedDeals.length > 0 ? (<table className="w-full text-sm"><thead><tr className="border-b border-border"><th className="p-2">Anlaşma</th><th className="p-2">Aşama</th><th className="p-2 text-right">Değer</th></tr></thead><tbody>{relatedDeals.map(d => <tr key={d.id} className="border-b border-border last:border-0"><td className="p-2 font-medium"><Link to={`/deals/${d.id}`} className="hover:underline">{d.title}</Link></td><td className="p-2">{d.stage}</td><td className="p-2 text-right font-mono">${d.value.toLocaleString()}</td></tr>)}</tbody></table>) : createEmptyState("Henüz Anlaşma Yok", "Bu müşteri için yeni bir anlaşma oluşturun.", onAddNewDeal, ICONS.sales);
+                return <ListWrapper title="Anlaşmalar" onAdd={onAddNewDeal} icon={ICONS.add}>{relatedDeals.length > 0 ? (<table className="w-full text-sm"><thead><tr className="border-b border-border"><th className="p-2">Anlaşma</th><th className="p-2">Aşama</th><th className="p-2 text-right">Değer</th></tr></thead><tbody>{relatedDeals.map(d => <tr key={d.id} className="border-b border-border last:border-0"><td className="p-2 font-medium"><Link to={`/deals/${d.id}`} className="hover:underline">{d.title}</Link></td><td className="p-2">{d.stage}</td><td className="p-2 text-right font-mono">${d.value.toLocaleString()}</td></tr>)}</tbody></table>) : <p className="text-sm text-center text-text-secondary py-8">Bu müşteri için anlaşma bulunmuyor.</p>}</ListWrapper>;
             case 'sales_orders':
-                return relatedSalesOrders.length > 0 ? (<table className="w-full text-sm"><thead><tr className="border-b border-border"><th className="p-2">Sipariş No</th><th className="p-2">Durum</th><th className="p-2 text-right">Tutar</th></tr></thead><tbody>{relatedSalesOrders.map(so => <tr key={so.id} className="border-b border-border last:border-0"><td className="p-2 font-mono"><Link to={`/inventory/sales-orders/${so.id}`} className="hover:underline">{so.orderNumber}</Link></td><td className="p-2">{so.status}</td><td className="p-2 text-right font-mono">${so.grandTotal.toLocaleString()}</td></tr>)}</tbody></table>) : createEmptyState("Henüz Satış Siparişi Yok", "Bu müşteri için yeni bir satış siparişi oluşturun.", onAddNewSalesOrder, ICONS.salesOrder);
+                return <ListWrapper title="Satış Siparişleri" onAdd={onAddNewSalesOrder} icon={ICONS.add}>{relatedSalesOrders.length > 0 ? (<table className="w-full text-sm"><thead><tr className="border-b border-border"><th className="p-2">Sipariş No</th><th className="p-2">Durum</th><th className="p-2 text-right">Tutar</th></tr></thead><tbody>{relatedSalesOrders.map(so => <tr key={so.id} className="border-b border-border last:border-0"><td className="p-2 font-mono"><Link to={`/inventory/sales-orders/${so.id}`} className="hover:underline">{so.orderNumber}</Link></td><td className="p-2">{so.status}</td><td className="p-2 text-right font-mono">${so.grandTotal.toLocaleString()}</td></tr>)}</tbody></table>) : <p className="text-sm text-center text-text-secondary py-8">Bu müşteri için satış siparişi bulunmuyor.</p>}</ListWrapper>;
             case 'projects':
-                 return relatedProjects.length > 0 ? (<table className="w-full text-sm"><thead><tr className="border-b border-border"><th className="p-2">Proje</th><th className="p-2">Durum</th><th className="p-2 text-right">İlerleme</th></tr></thead><tbody>{relatedProjects.map(p => <tr key={p.id} className="border-b border-border last:border-0"><td className="p-2 font-medium"><Link to={`/projects/${p.id}`} className="hover:underline">{p.name}</Link></td><td className="p-2">{p.status}</td><td className="p-2 text-right font-mono">{p.progress}%</td></tr>)}</tbody></table>) : createEmptyState("Henüz Proje Yok", "Bu müşteri için yeni bir proje oluşturun.", onAddNewProject, ICONS.projects);
+                 return <ListWrapper title="Projeler" onAdd={onAddNewProject} icon={ICONS.add}>{relatedProjects.length > 0 ? (<table className="w-full text-sm"><thead><tr className="border-b border-border"><th className="p-2">Proje</th><th className="p-2">Durum</th><th className="p-2 text-right">İlerleme</th></tr></thead><tbody>{relatedProjects.map(p => <tr key={p.id} className="border-b border-border last:border-0"><td className="p-2 font-medium"><Link to={`/projects/${p.id}`} className="hover:underline">{p.name}</Link></td><td className="p-2">{p.status}</td><td className="p-2 text-right font-mono">{p.progress}%</td></tr>)}</tbody></table>) : <p className="text-sm text-center text-text-secondary py-8">Bu müşteri için proje bulunmuyor.</p>}</ListWrapper>;
             case 'invoices':
-                 return relatedInvoices.length > 0 ? (<table className="w-full text-sm"><thead><tr className="border-b border-border"><th className="p-2">Fatura No</th><th className="p-2">Durum</th><th className="p-2 text-right">Tutar</th></tr></thead><tbody>{relatedInvoices.map(i => <tr key={i.id} className="border-b border-border last:border-0"><td className="p-2 font-mono">{i.invoiceNumber}</td><td className="p-2">{i.status}</td><td className="p-2 text-right font-mono">${i.grandTotal.toLocaleString()}</td></tr>)}</tbody></table>) : createEmptyState("Henüz Fatura Yok", "Bu müşteri için yeni bir fatura oluşturun.", onAddNewInvoice, ICONS.invoices);
+                 return <ListWrapper title="Faturalar" onAdd={onAddNewInvoice} icon={ICONS.add}>{relatedInvoices.length > 0 ? (<table className="w-full text-sm"><thead><tr className="border-b border-border"><th className="p-2">Fatura No</th><th className="p-2">Durum</th><th className="p-2 text-right">Tutar</th></tr></thead><tbody>{relatedInvoices.map(i => <tr key={i.id} className="border-b border-border last:border-0"><td className="p-2 font-mono">{i.invoiceNumber}</td><td className="p-2">{i.status}</td><td className="p-2 text-right font-mono">${i.grandTotal.toLocaleString()}</td></tr>)}</tbody></table>) : <p className="text-sm text-center text-text-secondary py-8">Bu müşteri için fatura bulunmuyor.</p>}</ListWrapper>;
             case 'tickets':
-                 return relatedTickets.length > 0 ? (<table className="w-full text-sm"><thead><tr className="border-b border-border"><th className="p-2">Talep No</th><th className="p-2">Konu</th><th className="p-2">Durum</th></tr></thead><tbody>{relatedTickets.map(t => <tr key={t.id} className="border-b border-border last:border-0"><td className="p-2 font-mono"><Link to={`/support/tickets/${t.id}`} className="hover:underline">{t.ticketNumber}</Link></td><td className="p-2 font-medium">{t.subject}</td><td className="p-2">{t.status}</td></tr>)}</tbody></table>) : createEmptyState("Henüz Destek Talebi Yok", "Bu müşteri için yeni bir destek talebi oluşturun.", onAddNewTicket, ICONS.support);
+                 return <ListWrapper title="Destek Talepleri" onAdd={onAddNewTicket} icon={ICONS.add}>{relatedTickets.length > 0 ? (<table className="w-full text-sm"><thead><tr className="border-b border-border"><th className="p-2">Talep No</th><th className="p-2">Konu</th><th className="p-2">Durum</th></tr></thead><tbody>{relatedTickets.map(t => <tr key={t.id} className="border-b border-border last:border-0"><td className="p-2 font-mono"><Link to={`/support/tickets/${t.id}`} className="hover:underline">{t.ticketNumber}</Link></td><td className="p-2 font-medium">{t.subject}</td><td className="p-2">{t.status}</td></tr>)}</tbody></table>) : <p className="text-sm text-center text-text-secondary py-8">Bu müşteri için destek talebi bulunmuyor.</p>}</ListWrapper>;
         }
     };
 

@@ -1542,6 +1542,7 @@ export interface Expense {
     amount: number;
     status: ExpenseStatus;
     attachments: Attachment[];
+    projectId?: number;
 }
 
 export enum AssetStatus {
@@ -1573,6 +1574,7 @@ export interface HrParameters {
     INCOME_TAX_EXEMPTION_BASE: number;
     INCOME_TAX_BRACKETS: { limit: number; rate: number }[];
     SEVERANCE_CEILING: number;
+    DEFAULT_HOURLY_RATE: number;
 }
 
 export enum LeadStatus {
@@ -1887,6 +1889,8 @@ export interface AppContextType {
     updateAccountingLockDate: (date: string | null) => void;
     addStockMovement: (productId: number, warehouseId: number, type: StockMovementType, quantityChange: number, notes?: string, relatedDocumentId?: number) => void;
     addExpense: (expenseData: Omit<Expense, 'id' | 'employeeName' | 'status' | 'employeeId'>) => Expense;
+    addProjectExpense: (expenseData: Omit<Expense, 'id' | 'employeeName' | 'status'>) => Expense;
+    deleteExpense: (expenseId: number) => void;
     updateExpenseStatus: (expenseId: number, status: ExpenseStatus) => void;
     addAsset: (assetData: Omit<Asset, 'id'>) => Asset;
     updateAsset: (asset: Asset) => Asset | undefined;

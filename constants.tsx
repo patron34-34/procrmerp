@@ -25,7 +25,9 @@ import {
     Quotation, QuotationStatus,
     SalesReturn, SalesReturnStatus,
     Lead, LeadStatus,
-    CommissionRecord
+    CommissionRecord,
+    // FIX: Add missing ActionType import
+    ActionType
 } from './types';
 import { numberToWords } from './utils/numberToWords';
 
@@ -129,7 +131,7 @@ export const ICONS = {
     phoneCall: <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M2.25 6.75c0 8.284 6.716 15 15 15h2.25a2.25 2.25 0 002.25-2.25v-1.372c0-.516-.351-.966-.852-1.091l-4.423-1.106c-.44-.11-.902.055-1.173.417l-.97 1.293c-.282.376-.769.542-1.21.38a12.035 12.035 0 01-7.143-7.143c-.162-.441.004-.928.38-1.21l1.293-.97c.363-.271.527-.734.417-1.173L6.963 3.102a1.125 1.125 0 00-1.091-.852H4.5A2.25 2.25 0 002.25 4.5v2.25z" /></svg>,
     meeting: <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M18 18.72a9.094 9.094 0 003.741-.479 3 3 0 00-4.682-2.72m-7.5-2.962a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z" /></svg>,
     email: <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M21.75 6.75v10.5a2.25 2.25 0 01-2.25 2.25h-15a2.25 2.25 0 01-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25m19.5 0v.243a2.25 2.25 0 01-1.07 1.916l-7.5 4.615a2.25 2.25 0 01-2.36 0L3.32 8.91a2.25 2.25 0 01-1.07-1.916V6.75" /></svg>,
-    system: <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M10.343 3.94c.09-.542.56-1.007 1.11-1.007h1.093c.55 0 1.02.465 1.11 1.007l.073.437c.094.562.59.994 1.17.994h.257c.58 0 1.057.468 1.11.994l.073.437c.09.542.56 1.007 1.11 1.007h1.093c.55 0 1.02.465 1.11 1.007l.073.437c.094.562.59.994 1.17.994h.257c.58 0 1.057.468 1.11.994l.073.437c.09.542.56 1.007 1.11 1.007h1.093c.55 0 1.02.465 1.11 1.007l.073.437c.094.562.59.994 1.17.994h.257c.58 0 1.057.468 1.11.994l.073.437c.09.542.56 1.007 1.11 1.007h-1.093c-.55 0-1.02-.465-1.11-1.007l-.073-.437c-.094-.562-.59-.994-1.17-.994h-.257c-.58 0-1.057-.468-1.11-.994l-.073-.437c-.09-.542-.56-1.007-1.11-1.007h-1.093c-.55 0-1.02-.465-1.11-1.007l-.073-.437c-.094-.562-.59-.994-1.17-.994h-.257c-.58 0-1.057-.468-1.11-.994l-.073-.437c-.09-.542-.56-1.007-1.11-1.007H8.344c-.55 0-1.02-.465-1.11-1.007l-.073-.437c-.094-.562-.59-.994-1.17-.994H5.73c-.58 0-1.057-.468-1.11-.994l-.073-.437c-.09-.542-.56-1.007-1.11-1.007H2.25c-.55 0-1.02.465-1.11 1.007l-.073.437c-.094-.562-.59-.994-1.17-.994h-.257c-.58 0-1.057-.468-1.11-.994l-.073-.437c-.09-.542-.56-1.007-1.11-1.007H-1.093c-.55 0-1.02.465-1.11 1.007l-.073.437c-.094-.562-.59-.994-1.17-.994h-.257c-.58 0-1.057-.468-1.11-.994l-.073.437c-.09-.542-.56-1.007-1.11-1.007z" /></svg>,
+    system: <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M10.343 3.94c.09-.542.56-1.007 1.11-1.007h1.093c.55 0 1.02.465 1.11 1.007l.073.437c.094.562.59.994 1.17.994h.257c.58 0 1.057.468 1.11.994l.073.437c.09.542.56 1.007 1.11 1.007h1.093c.55 0 1.02.465 1.11 1.007l.073.437c.094.562.59.994 1.17.994h.257c.58 0 1.057.468 1.11.994l.073.437c.09.542.56 1.007 1.11 1.007h1.093c.55 0 1.02.465 1.11 1.007l.073.437c.094.562.59.994 1.17.994h.257c.58 0 1.057.468 1.11.994l.073.437c.09.542.56 1.007 1.11 1.007h-1.093c-.55 0-1.02-.465-1.11-1.007l-.073-.437c-.094-.562-.59-.994-1.17-.994h-.257c-.58 0-1.057-.468-1.11-.994l-.073-.437c-.09-.542-.56-1.007-1.11-1.007h-1.093c-.55 0-1.02-.465-1.11-1.007l-.073-.437c-.094-.562-.59-.994-1.17-.994h-.257c-.58 0-1.057-.468-1.11-.994l-.073-.437c-.09-.542-.56-1.007-1.11-1.007H8.344c-.55 0-1.02-.465-1.11-1.007l-.073-.437c-.094-.562-.59-.994-1.17-.994H5.73c-.58 0-1.057-.468-1.11-.994l-.073-.437c-.09-.542-.56-1.007-1.11-1.007H2.25c-.55 0-1.02.465-1.11 1.007l-.073.437c-.094-.562-.59-.994-1.17-.994h-.257c-.58 0-1.057-.468-1.11-.994l-.073-.437c-.09-.542-.56-1.007-1.11-1.007H-1.093c-.55 0-1.02.465-1.11 1.007l-.073.437c-.094-.562-.59-.994-1.17-.994h-.257c-.58 0-1.057-.468-1.11-.994l-.073-.437c-.09-.542-.56-1.007-1.11-1.007z" /></svg>,
     note: <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931z" /></svg>,
     budget: <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M21.75 9.75v5.136c0 .865-.473 1.65-1.22 2.053l-8.25 4.512c-.747.402-1.68.402-2.427 0l-8.25-4.512A2.25 2.25 0 011.5 14.886V9.75M21.75 9.75L12 4.864 2.25 9.75M21.75 9.75v0a2.25 2.25 0 00-2.25-2.25h-15a2.25 2.25 0 00-2.25 2.25v0" /></svg>,
     warehouse: <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M2.25 21h19.5m-18-18h16.5a1.5 1.5 0 011.5 1.5v15a1.5 1.5 0 01-1.5 1.5H3.75A1.5 1.5 0 012.25 18V4.5a1.5 1.5 0 011.5-1.5z" /></svg>,
@@ -228,114 +230,182 @@ export const CALISMA_STATUSU_OPTIONS: CalismaStatusu[] = ['Tam Zamanlı', 'Yarı
 export const SIGORTA_KOLU_OPTIONS: SigortaKolu[] = ['4A', '4B', '4C'];
 export const MEDENI_DURUM_OPTIONS: MedeniDurum[] = ['Bekar', 'Evli'];
 export const EGITIM_SEVIYELERI: EgitimSeviyesi[] = ['İlköğretim', 'Lise', 'Ön Lisans', 'Lisans', 'Yüksek Lisans', 'Doktora'];
+export const INVOICE_TYPE_OPTIONS: InvoiceType[] = ['Satış', 'İade', 'Tevkifat', 'İstisna', 'Özel Matrah'];
 
-export const INVOICE_TYPE_OPTIONS = ['Satış', 'İade', 'Tevkifat', 'İstisna', 'Özel Matrah'];
+export const PERMISSION_DESCRIPTIONS: { [key in Permission]: { description: string } } = {
+    'dashboard:goruntule': { description: 'Kontrol panelini görüntüleyebilir.' },
+    'dashboard:duzenle': { description: 'Kontrol panelini düzenleyebilir.' },
+    'musteri:goruntule': { description: 'Müşterileri görüntüleyebilir.' },
+    'musteri:yonet': { description: 'Müşteri ekleyebilir, düzenleyebilir, silebilir.' },
+    'anlasma:goruntule': { description: 'Anlaşmaları görüntüleyebilir.' },
+    'anlasma:yonet': { description: 'Anlaşma ekleyebilir, düzenleyebilir, silebilir.' },
+    'proje:goruntule': { description: 'Projeleri görüntüleyebilir.' },
+    'proje:yonet': { description: 'Proje ekleyebilir, düzenleyebilir, silebilir.' },
+    'gorev:goruntule': { description: 'Görevleri görüntüleyebilir.' },
+    'gorev:yonet': { description: 'Görev ekleyebilir, düzenleyebilir, silebilir.' },
+    'fatura:goruntule': { description: 'Faturaları görüntüleyebilir.' },
+    'fatura:yonet': { description: 'Fatura ekleyebilir, düzenleyebilir, silebilir.' },
+    'takvim:goruntule': { description: 'Takvimi görüntüleyebilir.' },
+    'rapor:goruntule': { description: 'Raporları görüntüleyebilir.' },
+    'envanter:goruntule': { description: 'Envanteri görüntüleyebilir.' },
+    'envanter:yonet': { description: 'Envanter yönetebilir (ürün, reçete vb.).' },
+    'depo:yonet': { description: 'Depoları yönetebilir.' },
+    'stok-hareketi:goruntule': { description: 'Stok hareketlerini görüntüleyebilir.' },
+    'stok-sayimi:yap': { description: 'Stok sayımı yapabilir.' },
+    'satis-siparis:goruntule': { description: 'Satış siparişlerini görüntüleyebilir.' },
+    'satis-siparis:yonet': { description: 'Satış siparişlerini yönetebilir.' },
+    'sevkiyat:goruntule': { description: 'Sevkiyatları görüntüleyebilir.' },
+    'sevkiyat:yonet': { description: 'Sevkiyatları yönetebilir.' },
+    'toplama-listesi:goruntule': { description: 'Toplama listelerini görüntüleyebilir.' },
+    'toplama-listesi:yonet': { description: 'Toplama listelerini yönetebilir.' },
+    'ik:goruntule': { description: 'İK modülünü görüntüleyebilir.' },
+    'ik:maas-goruntule': { description: 'Maaş bilgilerini görüntüleyebilir.' },
+    'ik:izin-yonet': { description: 'İzin taleplerini yönetebilir.' },
+    'ik:performans-yonet': { description: 'Performans değerlendirmelerini yönetebilir.' },
+    'ik:ise-alim-goruntule': { description: 'İşe alım sürecini görüntüleyebilir.' },
+    'ik:ise-alim-yonet': { description: 'İşe alım sürecini yönetebilir.' },
+    'ik:oryantasyon-goruntule': { description: 'Oryantasyon süreçlerini görüntüleyebilir.' },
+    'ik:oryantasyon-yonet': { description: 'Oryantasyon süreçlerini yönetebilir.' },
+    'ik:bordro-yonet': { description: 'Bordro süreçlerini yönetebilir.' },
+    'ik:rapor-goruntule': { description: 'İK raporlarını görüntüleyebilir.' },
+    'ik:masraf-yonet': { description: 'Masraf taleplerini yönetebilir.' },
+    'ik:varlik-yonet': { description: 'Zimmetli varlıkları yönetebilir.' },
+    'finans:goruntule': { description: 'Finans modülünü görüntüleyebilir.' },
+    'finans:yonet': { description: 'Finansal işlemleri yönetebilir.' },
+    'destek:goruntule': { description: 'Destek taleplerini görüntüleyebilir.' },
+    'destek:yonet': { description: 'Destek taleplerini yönetebilir.' },
+    'aktivite:goruntule': { description: 'Aktivite kayıtlarını görüntüleyebilir.' },
+    'dokuman:goruntule': { description: 'Dokümanları görüntüleyebilir.' },
+    'dokuman:yonet': { description: 'Dokümanları yönetebilir.' },
+    'yorum:yonet': { description: 'Yorum ekleyebilir/silebilir.' },
+    'kullanici:yonet': { description: 'Kullanıcıları yönetebilir.' },
+    'ayarlar:goruntule': { description: 'Ayarları görüntüleyebilir.' },
+    'ayarlar:genel-yonet': { description: 'Genel ayarları yönetebilir.' },
+    'ayarlar:roller-yonet': { description: 'Rolleri ve izinleri yönetebilir.' },
+    'ayarlar:guvenlik-yonet': { description: 'Güvenlik ayarlarını yönetebilir.' },
+    'ayarlar:muhasebe-yonet': { description: 'Muhasebe ayarlarını yönetebilir.' },
+    'ayarlar:maliyet-merkezi-yonet': { description: 'Maliyet merkezlerini yönetebilir.' },
+    'ayarlar:vergi-yonet': { description: 'Vergi ayarlarını yönetebilir.' },
+    'ayarlar:ik-bordro-yonet': { description: 'İK ve bordro ayarlarını yönetebilir.' },
+    'muhasebe:goruntule': { description: 'Muhasebe modülünü görüntüleyebilir.' },
+    'muhasebe:yonet': { description: 'Muhasebe kayıtlarını yönetebilir.' },
+    'muhasebe:mutabakat-yap': { description: 'Banka mutabakatı yapabilir.' },
+    'muhasebe:defteri-kebir-goruntule': { description: 'Defter-i Kebir\'i görüntüleyebilir.' },
+    'muhasebe:bilanco-goruntule': { description: 'Bilanço\'yu görüntüleyebilir.' },
+    'muhasebe:gelir-tablosu-goruntule': { description: 'Gelir Tablosu\'nu görüntüleyebilir.' },
+    'muhasebe:nakit-akis-goruntule': { description: 'Nakit Akış Tablosu\'nu görüntüleyebilir.' },
+    'muhasebe:alacak-yaslandirma-goruntule': { description: 'Alacak Yaşlandırma Raporu\'nu görüntüleyebilir.' },
+    'muhasebe:kar-zarar-goruntule': { description: 'Kar/Zarar Raporu\'nu görüntüleyebilir.' },
+    'muhasebe:tekrarlanan-yonet': { description: 'Tekrarlanan yevmiye fişlerini yönetebilir.' },
+    'muhasebe:butce-yonet': { description: 'Bütçeleri yönetebilir.' },
+    'otomasyon:goruntule': { description: 'Otomasyonları görüntüleyebilir.' },
+    'otomasyon:yonet': { description: 'Otomasyonları yönetebilir.' },
+};
 
+export const AVAILABLE_WIDGETS: WidgetConfig[] = [
+    { id: 'stat-total-revenue', name: 'Toplam Gelir', type: 'StatCard', defaultW: 2, defaultH: 1 },
+    { id: 'stat-unpaid-invoices', name: 'Ödenmemiş Faturalar', type: 'StatCard', defaultW: 2, defaultH: 1 },
+    { id: 'stat-active-customers', name: 'Aktif Müşteriler', type: 'StatCard', defaultW: 2, defaultH: 1 },
+    { id: 'stat-open-tickets', name: 'Açık Destek Talepleri', type: 'StatCard', defaultW: 2, defaultH: 1 },
+    { id: 'chart-financial-summary', name: 'Finansal Özet', type: 'Chart', defaultW: 4, defaultH: 2 },
+    { id: 'chart-invoice-status', name: 'Fatura Durum Dağılımı', type: 'Chart', defaultW: 2, defaultH: 2 },
+    { id: 'list-my-tasks', name: 'Yapılacaklar Listem', type: 'List', defaultW: 2, defaultH: 2 },
+    { id: 'list-recent-activities', name: 'Son Aktiviteler', type: 'List', defaultW: 2, defaultH: 2 },
+];
+
+// Re-adding all mock data that was missing
 export const MOCK_EMPLOYEES: Employee[] = [
-    { id: 1, employeeId: 'EMP001', name: 'Ayşe Yılmaz', department: 'Yönetim', position: 'CEO', email: 'ayse.yilmaz@profusion.com', phone: '555-0101', hireDate: '2020-01-15', salary: 150000, avatar: 'https://i.pravatar.cc/150?u=1', role: 'admin' },
-    { id: 2, employeeId: 'EMP002', name: 'Mehmet Öztürk', department: 'Satış', position: 'Satış Müdürü', email: 'mehmet.ozturk@profusion.com', phone: '555-0102', hireDate: '2021-03-20', salary: 95000, avatar: 'https://i.pravatar.cc/150?u=2', role: 'yonetici', managerId: 1 },
-    { id: 3, employeeId: 'EMP003', name: 'Fatma Kaya', department: 'İnsan Kaynakları', position: 'İK Uzmanı', email: 'fatma.kaya@profusion.com', phone: '555-0103', hireDate: '2022-06-01', salary: 72000, avatar: 'https://i.pravatar.cc/150?u=3', role: 'calisan', managerId: 1 },
-    { id: 4, employeeId: 'EMP004', name: 'Ali Demir', department: 'Satış', position: 'Satış Temsilcisi', email: 'ali.demir@profusion.com', phone: '555-0104', hireDate: '2022-09-10', salary: 68000, avatar: 'https://i.pravatar.cc/150?u=4', role: 'satis', managerId: 2 },
-    { id: 5, employeeId: 'EMP005', name: 'Zeynep Şahin', department: 'Operasyon', position: 'Operasyon Uzmanı', email: 'zeynep.sahin@profusion.com', phone: '555-0105', hireDate: '2023-02-22', salary: 65000, avatar: 'https://i.pravatar.cc/150?u=5', role: 'calisan', managerId: 1 },
-    { id: 6, employeeId: 'EMP006', name: 'Hakan Arslan', department: 'Teknoloji', position: 'Yazılım Geliştirici', email: 'hakan.arslan@profusion.com', phone: '555-0106', hireDate: '2022-08-15', salary: 85000, avatar: 'https://i.pravatar.cc/150?u=6', role: 'calisan', managerId: 1 },
-    { id: 7, employeeId: 'EMP007', name: 'Elif Doğan', department: 'Satış', position: 'Satış Temsilcisi', email: 'elif.dogan@profusion.com', phone: '555-0107', hireDate: '2023-05-01', salary: 67000, avatar: 'https://i.pravatar.cc/150?u=7', role: 'satis', managerId: 2 },
-    { id: 8, employeeId: 'EMP008', name: 'Emre Can', department: 'Destek', position: 'Destek Uzmanı', email: 'emre.can@profusion.com', phone: '555-0108', hireDate: '2023-01-10', salary: 62000, avatar: 'https://i.pravatar.cc/150?u=8', role: 'calisan', managerId: 5 },
-    { id: 9, employeeId: 'CUST001', name: 'Elif Can', department: 'Müşteri Portalı', position: 'IT Müdürü', email: 'elif.can@teknosoft.com', phone: '05321112233', hireDate: '2020-01-15', salary: 0, avatar: 'https://i.pravatar.cc/150?u=c1', role: 'musteri', contactId: 1 },
+    { id: 1, employeeId: 'EMP001', name: 'Ayşe Yılmaz', department: 'Satış', position: 'Satış Temsilcisi', email: 'ayse.yilmaz@profusion.com', phone: '555-1234', hireDate: '2022-01-15', salary: 25000, avatar: 'https://i.pravatar.cc/150?u=1', role: 'calisan', managerId: 2, contactId: 101 },
+    { id: 2, employeeId: 'EMP002', name: 'Ahmet Kaya', department: 'Satış', position: 'Satış Müdürü', email: 'ahmet.kaya@profusion.com', phone: '555-5678', hireDate: '2020-03-10', salary: 40000, avatar: 'https://i.pravatar.cc/150?u=2', role: 'yonetici', contactId: 102 },
+    { id: 3, employeeId: 'EMP003', name: 'Fatma Demir', department: 'Yazılım', position: 'Kıdemli Yazılım Geliştirici', email: 'fatma.demir@profusion.com', phone: '555-9012', hireDate: '2019-07-20', salary: 50000, avatar: 'https://i.pravatar.cc/150?u=3', role: 'calisan', managerId: 4, contactId: 103 },
+    { id: 4, employeeId: 'EMP004', name: 'Mehmet Çelik', department: 'Yönetim', position: 'CEO', email: 'mehmet.celik@profusion.com', phone: '555-3456', hireDate: '2018-01-01', salary: 80000, avatar: 'https://i.pravatar.cc/150?u=4', role: 'admin', contactId: 104 },
 ];
 
-export const MOCK_CUSTOMERS: Customer[] = [
-    {
-        id: 1, name: 'TeknoSoft Yazılım', company: 'TeknoSoft Yazılım A.Ş.', email: 'iletisim@teknosoft.com', phone: '02121234567', lastContact: '2024-07-25', status: 'aktif', avatar: 'https://i.pravatar.cc/150?u=c1', industry: 'Teknoloji', tags: ['yazılım', 'kurumsal'], assignedToId: 4, leadSource: 'Referans',
-        accountType: 'Tüzel Kişi', accountCode: 'CUST-001', taxId: '8350331234', taxOffice: 'Maslak',
-        billingAddress: { country: 'Türkiye', city: 'İstanbul', district: 'Sarıyer', streetAddress: 'Büyükdere Cad. No:10', postalCode: '34467', email: 'muhasebe@teknosoft.com', phone: '02121234567', coordinates: { lat: 41.1118, lng: 29.0232 }},
-        shippingAddress: { country: 'Türkiye', city: 'İstanbul', district: 'Sarıyer', streetAddress: 'Büyükdere Cad. No:10', postalCode: '34467', email: 'iletisim@teknosoft.com', phone: '02121234567'},
-        iban: 'TR110006200000100000000001', openingBalance: 0, currency: 'TRY', openingDate: '2024-05-20', eInvoiceMailbox: 'pk@teknosoft.com.tr'
-    },
-    {
-        id: 2, name: 'E-Ticaret Hızlı', company: 'Hızlı Kargo Lojistik ve E-Ticaret A.Ş.', email: 'info@hizli.com', phone: '02169876543', lastContact: '2024-07-22', status: 'aktif', avatar: 'https://i.pravatar.cc/150?u=c2', industry: 'E-Ticaret', tags: ['lojistik', 'B2C'], assignedToId: 7, leadSource: 'Fuar',
-        accountType: 'Tüzel Kişi', accountCode: 'CUST-002', taxId: '4321098765', taxOffice: 'Ümraniye',
-        billingAddress: { country: 'Türkiye', city: 'İstanbul', district: 'Ümraniye', streetAddress: 'Alemdağ Cad. No:500', postalCode: '34768', email: 'finance@hizli.com', phone: '02169876543', coordinates: { lat: 41.026, lng: 29.124 }},
-        shippingAddress: { country: 'Türkiye', city: 'Kocaeli', district: 'Gebze', streetAddress: 'GOSB, İhsan Dede Cad. No:101', postalCode: '41400', email: 'logistics@hizli.com', phone: '02621234567'},
-        iban: 'TR120006200000200000000002', openingBalance: 15000, currency: 'USD', openingDate: '2023-11-01', eInvoiceMailbox: 'pk@hizli.com',
-    },
-     {
-        id: 3, name: 'Sanayi Makina Üretim', company: 'Sanayi Makina Üretim San. Tic. Ltd. Şti.', email: 'info@sanayimakina.com.tr', phone: '02324567890', lastContact: '2024-07-18', status: 'potansiyel', avatar: 'https://i.pravatar.cc/150?u=c3', industry: 'Üretim', tags: ['makina', 'sanayi'], assignedToId: 4, leadSource: 'Web Sitesi',
-        accountType: 'Tüzel Kişi', accountCode: 'CUST-003', taxId: '7560229876', taxOffice: 'Çiğli',
-        billingAddress: { country: 'Türkiye', city: 'İzmir', district: 'Çiğli', streetAddress: 'AOSB, 10001 Sk. No:5', postalCode: '35620', email: 'muhasebe@sanayimakina.com.tr', phone: '02324567890', coordinates: { lat: 38.5135, lng: 27.0175 }},
-        shippingAddress: { country: 'Türkiye', city: 'İzmir', district: 'Çiğli', streetAddress: 'AOSB, 10001 Sk. No:5', postalCode: '35620', email: 'info@sanayimakina.com.tr', phone: '02324567890'},
-        iban: 'TR130001000000300000000003', openingBalance: 0, currency: 'EUR', openingDate: '2024-06-01',
-    },
-    {
-        id: 4, name: 'Sağlık Çözümleri A.Ş.', company: 'Sağlık Çözümleri A.Ş.', email: 'contact@saglik.co', phone: '03125556677', lastContact: '2024-05-10', status: 'kaybedilmiş', avatar: 'https://i.pravatar.cc/150?u=c4', industry: 'Sağlık', tags: ['hastane', 'yazılım'], assignedToId: 7, leadSource: 'Soğuk Arama',
-        accountType: 'Tüzel Kişi', accountCode: 'CUST-004', taxId: '7654321098', taxOffice: 'Çankaya',
-        billingAddress: { country: 'Türkiye', city: 'Ankara', district: 'Çankaya', streetAddress: 'Atatürk Blv. No:200', postalCode: '06680', email: 'finance@saglik.co', phone: '03125556677', coordinates: { lat: 39.9084, lng: 32.8533 }},
-        shippingAddress: { country: 'Türkiye', city: 'Ankara', district: 'Çankaya', streetAddress: 'Atatürk Blv. No:200', postalCode: '06680', email: 'contact@saglik.co', phone: '03125556677'},
-        iban: 'TR140001200000400000000004', openingBalance: 0, currency: 'TRY', openingDate: '2024-02-15',
-    }
-];
+const emptyAddress: Address = { country: 'Türkiye', city: '', district: '', streetAddress: '', postalCode: '', email: '', phone: '' };
 
-export const MOCK_DEALS: Deal[] = [
-    { id: 1, title: 'TeknoSoft - 50 Adet Laptop Alımı', customerId: 1, customerName: 'TeknoSoft Yazılım', value: 75000, stage: DealStage.Won, closeDate: '2024-07-15', assignedToId: 4, assignedToName: 'Ali Demir', lineItems: [], winReason: 'Fiyat', lastActivityDate: '2024-07-15', createdDate: '2024-06-15' },
-    { id: 2, title: 'E-Ticaret Hızlı - Analitik Yazılımı', customerId: 2, customerName: 'E-Ticaret Hızlı', value: 250000, stage: DealStage.Proposal, closeDate: '2024-08-30', assignedToId: 7, assignedToName: 'Elif Doğan', lineItems: [], lastActivityDate: '2024-07-22', createdDate: '2024-05-10' },
-    { id: 3, title: 'Sanayi Makina - Özel Sunucu Konfigürasyonu', customerId: 3, customerName: 'Sanayi Makina Üretim', value: 45000, stage: DealStage.Contacted, closeDate: '2024-09-15', assignedToId: 4, assignedToName: 'Ali Demir', lineItems: [], lastActivityDate: '2024-07-18', createdDate: '2024-07-01' },
-    { id: 4, title: 'Sağlık Çözümleri - Kurumsal Yazılım Paketi', customerId: 4, customerName: 'Sağlık Çözümleri A.Ş.', value: 120000, stage: DealStage.Lost, closeDate: '2024-05-10', assignedToId: 7, assignedToName: 'Elif Doğan', lineItems: [], lossReason: 'Fiyat', lastActivityDate: '2024-05-10', createdDate: '2024-04-01' },
-];
-
-export const MOCK_PROJECTS: Project[] = [
-    { id: 1, name: 'TeknoSoft Laptop Kurulum ve Entegrasyon', customerId: 1, client: 'TeknoSoft Yazılım', deadline: '2024-09-30', status: 'zamanında', progress: 25, description: 'Kazanılan anlaşma sonrası 50 adet laptopun kurulumu, yazılım entegrasyonu ve kullanıcı eğitimleri.', startDate: '2024-07-20', teamMemberIds: [5, 6], budget: 15000, spent: 4500, tags: ['kurulum', 'donanım'] },
-];
-
-export const MOCK_TASKS: Task[] = [
-    { id: 1, title: 'E-Ticaret Hızlı için teklif taslağı hazırla', description: 'Analitik yazılımı için detaylı bir teklif oluşturulacak.', status: TaskStatus.InProgress, priority: TaskPriority.High, dueDate: '2024-07-28', assignedToId: 7, assignedToName: 'Elif Doğan', relatedEntityType: 'deal', relatedEntityId: 2, relatedEntityName: 'E-Ticaret Hızlı - Analitik Yazılımı' },
-    { id: 2, title: 'TeknoSoft proje başlangıç toplantısı', description: 'Proje ekibi ve müşteri ile kickoff toplantısı düzenlenecek.', status: TaskStatus.Todo, priority: TaskPriority.Normal, dueDate: '2024-07-30', assignedToId: 5, assignedToName: 'Zeynep Şahin', relatedEntityType: 'project', relatedEntityId: 1, relatedEntityName: 'TeknoSoft Laptop Kurulum ve Entegrasyon', isStarred: true },
-    { id: 3, title: 'Laptop imajlarını hazırla', description: 'TeknoSoft için standart Windows ve ofis programları imajı hazırlanacak.', status: TaskStatus.Todo, priority: TaskPriority.Normal, dueDate: '2024-08-05', assignedToId: 6, assignedToName: 'Hakan Arslan', relatedEntityType: 'project', relatedEntityId: 1, relatedEntityName: 'TeknoSoft Laptop Kurulum ve Entegrasyon', parentId: 2 },
+export const MOCK_CUSTOMERS: Omit<Customer, 'assignedToName'>[] = [
+    { id: 1, name: 'Lojistik A.Ş.', company: 'Lojistik A.Ş.', email: 'info@lojistikas.com', phone: '212-111-2233', lastContact: '2024-07-15', status: 'aktif', avatar: `https://i.pravatar.cc/150?u=c1`, industry: 'Lojistik', tags: ['öncelikli', 'büyük müşteri'], assignedToId: 1, leadSource: 'referans', accountType: 'Tüzel Kişi', accountCode: 'C001', taxId: '1234567890', taxOffice: 'Maslak', billingAddress: { country: 'Türkiye', city: 'İstanbul', district: 'Sarıyer', streetAddress: 'Büyükdere Cad. No:1', postalCode: '34467', email: 'muhasebe@lojistikas.com', phone: '212-111-2233' }, shippingAddress: { country: 'Türkiye', city: 'İstanbul', district: 'Sarıyer', streetAddress: 'Büyükdere Cad. No:1', postalCode: '34467', email: '', phone: '' }, iban: 'TR110006200000100000000001', openingBalance: 0, currency: 'TRY', openingDate: '2023-01-01', eInvoiceMailbox: 'urn:mail:defaultpk@lojistikas.com' },
+    { id: 2, name: 'Tekno Market', company: 'Tekno Market', email: 'iletisim@teknomarket.com', phone: '312-444-5566', lastContact: '2024-07-10', status: 'potansiyel', avatar: `https://i.pravatar.cc/150?u=c2`, industry: 'Perakende', tags: ['yeni'], assignedToId: 1, leadSource: 'website', accountType: 'Tüzel Kişi', accountCode: 'C002', taxId: '0987654321', taxOffice: 'Çankaya', billingAddress: { country: 'Türkiye', city: 'Ankara', district: 'Çankaya', streetAddress: 'Atatürk Bulvarı No:50', postalCode: '06420', email: 'info@teknomarket.com', phone: '312-444-5566' }, shippingAddress: { country: 'Türkiye', city: 'Ankara', district: 'Çankaya', streetAddress: 'Atatürk Bulvarı No:50', postalCode: '06420', email: '', phone: '' }, iban: 'TR220006200000200000000002', openingBalance: 0, currency: 'TRY', openingDate: '2023-02-15' },
+    { id: 3, name: 'Üretim Sanayi Ltd.', company: 'Üretim Sanayi Ltd.', email: 'uretim@sanayi.com.tr', phone: '262-555-0011', lastContact: '2024-06-20', status: 'aktif', avatar: 'https://i.pravatar.cc/150?u=c3', industry: 'Üretim', tags: [], assignedToId: 2, leadSource: 'fuar', accountType: 'Tüzel Kişi', accountCode: 'C003', taxId: '1122334455', taxOffice: 'Gebze', billingAddress: emptyAddress, shippingAddress: emptyAddress, iban: 'TR330006200000300000000003', openingBalance: 0, currency: 'EUR', openingDate: '2022-11-20'},
 ];
 
 export const MOCK_CONTACTS: Contact[] = [
-    { id: 1, customerId: 1, name: 'Elif Can', title: 'IT Müdürü', email: 'elif.can@teknosoft.com', phone: '05321112233' },
-    { id: 2, customerId: 2, name: 'Hasan Yücel', title: 'Operasyon Direktörü', email: 'hasan.yucel@hizli.com', phone: '05423334455' },
-    { id: 3, customerId: 3, name: 'Mustafa Çelik', title: 'Satın Alma Sorumlusu', email: 'mustafa.celik@sanayimakina.com.tr', phone: '05558887766' },
+    { id: 1, customerId: 1, name: 'Ali Veli', title: 'Lojistik Müdürü', email: 'ali.veli@lojistikas.com', phone: '555-111-2233'},
+    { id: 2, customerId: 2, name: 'Zeynep Satış', title: 'Satın Alma Uzmanı', email: 'zeynep.satis@teknomarket.com', phone: '555-444-5566'},
+    { id: 101, customerId: 1, name: 'Ayşe Yılmaz', title: 'Satış Temsilcisi', email: 'ayse.yilmaz@profusion.com', phone: '555-1234'},
+    { id: 102, customerId: 2, name: 'Ahmet Kaya', title: 'Satış Müdürü', email: 'ahmet.kaya@profusion.com', phone: '555-5678'},
+    { id: 103, customerId: 3, name: 'Fatma Demir', title: 'Yazılım Geliştirici', email: 'fatma.demir@profusion.com', phone: '555-9012'},
+    { id: 104, customerId: 1, name: 'Mehmet Çelik', title: 'CEO', email: 'mehmet.celik@profusion.com', phone: '555-3456'},
 ];
 
-export const MOCK_COMMUNICATION_LOGS: CommunicationLog[] = [
-    { id: 1, customerId: 2, type: CommunicationLogType.Call, content: 'Teklif detayları üzerine görüşüldü. Revize teklif bekliyorlar.', timestamp: '2024-07-22T14:30:00Z', userId: 7, userName: 'Elif Doğan' },
-    { id: 2, customerId: 1, type: CommunicationLogType.Meeting, content: 'Proje başlangıç toplantısı yapıldı. Yol haritası belirlendi.', timestamp: '2024-07-25T10:00:00Z', userId: 5, userName: 'Zeynep Şahin' },
+export const MOCK_SUPPLIERS: Supplier[] = [
+    { id: 1, name: 'Ofis Malzemeleri A.Ş.', email: 'info@ofismalzemeleri.com', phone: '212-333-4455', avatar: 'https://i.pravatar.cc/150?u=s1', tags: ['kırtasiye', 'güvenilir'], accountType: 'Tüzel Kişi', accountCode: 'S001', taxId: '5544332211', taxOffice: 'Kağıthane', address: emptyAddress, iban: 'TR440006200000400000000004', openingBalance: 0, currency: 'TRY', openingDate: '2023-01-01' },
 ];
 
-export const MOCK_NOTIFICATIONS: Notification[] = [
-    { id: 1, message: 'Ali Demir, TeknoSoft anlaşmasını "Kazanıldı" olarak işaretledi.', type: 'success', read: false, timestamp: new Date(Date.now() - 1000 * 60 * 5).toISOString(), link: '/deals/1', title: 'TeknoSoft - 50 Adet Laptop Alımı' },
-    { id: 2, message: 'TeknoSoft Laptop Kurulum projesinde yeni bir görev size atandı.', type: 'info', read: false, timestamp: new Date(Date.now() - 1000 * 60 * 60 * 2).toISOString(), link: '/planner', title: 'TeknoSoft Laptop Kurulum ve Entegrasyon' },
-    { id: 3, message: 'Fatura #FAT-00123 vadesi geçti.', type: 'warning', read: true, timestamp: new Date(Date.now() - 1000 * 60 * 60 * 24 * 3).toISOString(), link: '/invoicing/outgoing', title: 'Fatura #FAT-00123' },
+export const MOCK_PRODUCTS: Product[] = [
+    { id: 1, productType: ProductType.TicariMal, eInvoiceType: EInvoiceType.Urun, name: 'Profesyonel CRM Lisansı', sku: 'CRM-PRO-YILLIK', unit: Unit.Adet, category: 'Yazılım', lowStockThreshold: 0, trackBy: 'none', financials: { purchasePrice: 0, purchaseCurrency: 'TRY', salePrice: 1500, saleCurrency: 'TRY', vatRate: 20 }, price: 1500 },
+    { id: 2, productType: ProductType.Hizmet, eInvoiceType: EInvoiceType.Hizmet, name: 'Danışmanlık Saati', sku: 'DAN-SAAT', unit: Unit.Saat, category: 'Hizmet', lowStockThreshold: 0, trackBy: 'none', financials: { purchasePrice: 0, purchaseCurrency: 'TRY', salePrice: 250, saleCurrency: 'TRY', vatRate: 20 }, price: 250 },
+    { id: 3, productType: ProductType.TicariMal, eInvoiceType: EInvoiceType.Urun, name: 'Ofis Sandalyesi', sku: 'OF-SND-01', unit: Unit.Adet, category: 'Mobilya', lowStockThreshold: 5, trackBy: 'none', financials: { purchasePrice: 300, purchaseCurrency: 'TRY', salePrice: 500, saleCurrency: 'TRY', vatRate: 20 }, price: 500 },
 ];
-export const MOCK_INVOICES: Invoice[] = [];
-export const MOCK_PRODUCTS: Product[] = [];
-export const MOCK_SUPPLIERS: Supplier[] = [];
+
+export const MOCK_DEALS: Deal[] = [
+    { id: 1, title: 'Lojistik A.Ş. Yıllık CRM Yenileme', customerId: 1, customerName: 'Lojistik A.Ş.', value: 15000, stage: DealStage.Proposal, closeDate: '2024-08-15', assignedToId: 1, assignedToName: 'Ayşe Yılmaz', lineItems: [{productId: 1, productName: 'Profesyonel CRM Lisansı', quantity: 10, price: 1500}], lastActivityDate: '2024-07-20', createdDate: '2024-07-01' },
+    { id: 2, title: 'Tekno Market Danışmanlık', customerId: 2, customerName: 'Tekno Market', value: 5000, stage: DealStage.Won, closeDate: '2024-07-10', assignedToId: 2, assignedToName: 'Ahmet Kaya', lineItems: [{productId: 2, productName: 'Danışmanlık Saati', quantity: 20, price: 250}], winReason: 'Fiyat', lastActivityDate: '2024-07-10', createdDate: '2024-06-15' },
+];
+
+export const MOCK_PROJECTS: Project[] = [
+    { id: 1, name: 'CRM Entegrasyonu', customerId: 1, client: 'Lojistik A.Ş.', deadline: '2024-09-30', status: 'zamanında', progress: 40, description: 'Mevcut ERP sistemi ile CRM entegrasyonu.', startDate: '2024-07-01', teamMemberIds: [3], budget: 20000, spent: 8000, tags: ['entegrasyon', 'crm'] },
+    { id: 2, name: 'E-ticaret Optimizasyonu', customerId: 2, client: 'Tekno Market', deadline: '2024-08-20', status: 'riskli', progress: 75, description: 'Web sitesi performans iyileştirmeleri.', startDate: '2024-06-15', teamMemberIds: [1, 3], budget: 12000, spent: 10000, tags: ['web', 'optimizasyon'] },
+];
+
+export const MOCK_TASKS: Task[] = [
+    { id: 1, title: 'Müşteri ile toplantı ayarla', description: '', status: TaskStatus.Completed, priority: TaskPriority.High, dueDate: '2024-07-25', assignedToId: 1, assignedToName: 'Ayşe Yılmaz', relatedEntityType: 'deal', relatedEntityId: 1, relatedEntityName: 'Lojistik A.Ş. Yıllık CRM Yenileme' },
+    { id: 2, title: 'API dokümantasyonunu incele', description: '', status: TaskStatus.InProgress, priority: TaskPriority.Normal, dueDate: '2024-08-05', assignedToId: 3, assignedToName: 'Fatma Demir', relatedEntityType: 'project', relatedEntityId: 1, relatedEntityName: 'CRM Entegrasyonu' },
+];
+
+export const MOCK_INVOICES: Invoice[] = [
+    { id: 1, invoiceNumber: 'FAT-2024-001', customerId: 1, customerName: 'Lojistik A.Ş.', issueDate: '2024-07-01', dueDate: '2024-07-31', status: InvoiceStatus.Sent, items: [], subTotal: 1000, totalDiscount: 0, totalTax: 200, grandTotal: 1200, totalWithholding: 0, amountInWords: '', customizationId: 'TR1.2', scenario: EInvoiceScenario.EFatura, invoiceType: 'Satış', issueTime: '10:30' , documentCurrency: 'TRY' },
+];
+
+export const MOCK_EXPENSES: Expense[] = [
+    { id: 1, employeeId: 1, employeeName: 'Ayşe Yılmaz', submissionDate: '2024-07-20', description: 'Müşteri yemeği', category: 'Yemek', amount: 350, status: ExpenseStatus.Pending, attachments: [], projectId: 2},
+];
+
+export const MOCK_BILLS: Bill[] = [
+    { id: 1, supplierId: 1, supplierName: 'Ofis Malzemeleri A.Ş.', billNumber: 'OM-1001', issueDate: '2024-07-18', dueDate: '2024-08-18', totalAmount: 850, status: BillStatus.Approved },
+];
+
+export const MOCK_COMMENTS: Comment[] = [
+    { id: 1, text: 'Müşteri teklifi onayladı, sözleşme bekleniyor.', timestamp: '2024-07-22T14:30:00Z', userId: 1, userName: 'Ayşe Yılmaz', userAvatar: MOCK_EMPLOYEES[0].avatar, relatedEntityType: 'deal', relatedEntityId: 1},
+    { id: 2, text: 'Geliştirme ortamı hazırlandı.', timestamp: '2024-07-23T10:00:00Z', userId: 3, userName: 'Fatma Demir', userAvatar: MOCK_EMPLOYEES[2].avatar, relatedEntityType: 'project', relatedEntityId: 1},
+];
+
+export const MOCK_ACTIVITY_LOGS: ActivityLog[] = [
+    { id: 1, timestamp: '2024-07-23T10:00:00Z', userId: 3, userName: 'Fatma Demir', userAvatar: MOCK_EMPLOYEES[2].avatar, actionType: ActionType.STATUS_CHANGED, details: "Görev durumu 'Devam Ediyor' olarak değiştirildi.", entityType: 'task', entityId: 2},
+];
+
 export const MOCK_PURCHASE_ORDERS: PurchaseOrder[] = [];
 export const MOCK_LEAVE_REQUESTS: LeaveRequest[] = [];
 export const MOCK_BANK_ACCOUNTS: BankAccount[] = [];
 export const MOCK_TRANSACTIONS: Transaction[] = [];
 export const MOCK_TICKETS: SupportTicket[] = [];
 export const MOCK_DOCUMENTS: Document[] = [];
-export const MOCK_COMMENTS: Comment[] = [];
 export const MOCK_SALES_ACTIVITIES: SalesActivity[] = [];
-export const MOCK_ACTIVITY_LOGS: ActivityLog[] = [];
 export const MOCK_CUSTOM_FIELD_DEFINITIONS: CustomFieldDefinition[] = [];
 export const INITIAL_DASHBOARD_LAYOUT: DashboardWidget[] = [];
-export const MOCK_COMPANY_INFO: CompanyInfo = { name: "ProFusion Inc.", address: "123 Main St, Anytown, USA", phone: "555-1234", email: "contact@profusion.com", website: "https://profusion.com" };
-export const MOCK_BRANDING_SETTINGS: BrandingSettings = { logoUrl: "", primaryColor: "#4f46e5", fontSize: 'md' };
-export const MOCK_SECURITY_SETTINGS: SecuritySettings = { passwordMinLength: 8, passwordRequireUppercase: true, passwordRequireNumber: true, sessionTimeout: 30 };
-export const INITIAL_ROLES: Role[] = [{ id: "admin", name: "Admin", isSystemRole: true }, { id: "yonetici", name: "Yönetici", isSystemRole: false }, { id: "satis", name: "Satış", isSystemRole: false }, { id: "calisan", name: "Çalışan", isSystemRole: true }, { id: "musteri", name: "Müşteri", isSystemRole: true }];
+export const MOCK_COMPANY_INFO: CompanyInfo = { name: 'ProFusion Inc.', address: 'Teknoloji Cad. No:1, İstanbul', phone: '0212 123 4567', email: 'info@profusion.com', website: 'www.profusion.com'};
+export const MOCK_BRANDING_SETTINGS: BrandingSettings = { logoUrl: '', primaryColor: '#4f46e5', fontSize: 'md' };
+export const MOCK_SECURITY_SETTINGS: SecuritySettings = { passwordMinLength: 8, passwordRequireNumber: true, passwordRequireUppercase: true, sessionTimeout: 30 };
+export const INITIAL_ROLES: Role[] = [{id: 'admin', name: 'Admin', isSystemRole: true}, {id: 'yonetici', name: 'Yönetici', isSystemRole: false}, {id: 'calisan', name: 'Çalışan', isSystemRole: false}];
 export const INITIAL_ROLES_PERMISSIONS: Record<string, Permission[]> = {
-    admin: [],
-    yonetici: ["dashboard:goruntule", "musteri:goruntule", "anlasma:goruntule", "proje:goruntule", "gorev:goruntule", "ik:goruntule"],
-    satis: ["dashboard:goruntule", "musteri:goruntule", "anlasma:goruntule", "proje:goruntule", "gorev:goruntule"],
-    calisan: [],
-    musteri: [],
+    'admin': Object.keys(PERMISSION_DESCRIPTIONS) as Permission[],
+    'yonetici': ['dashboard:goruntule', 'musteri:goruntule', 'musteri:yonet', 'anlasma:goruntule', 'anlasma:yonet'],
+    'calisan': ['dashboard:goruntule', 'musteri:goruntule', 'anlasma:goruntule'],
 };
-export const MOCK_TAX_RATES: TaxRate[] = [{ id: 1, name: 'KDV %20', rate: 0.20 }, { id: 2, name: 'KDV %10', rate: 0.10 }, { id: 3, name: 'KDV %1', rate: 0.01 }];
+export const MOCK_TAX_RATES: TaxRate[] = [];
 export const INITIAL_SYSTEM_LISTS: SystemLists = {
-    customerStatus: [{ id: 'aktif', label: 'Aktif', color: '#22c55e' }, { id: 'potansiyel', label: 'Potansiyel', color: '#3b82f6' }, { id: 'kaybedilmis', label: 'Kaybedilmiş', color: '#64748b' }],
-    dealStage: [], taskStatus: [], taskPriority: [], leadSource: [{ id: 'Website', label: 'Website' }, { id: 'Referans', label: 'Referans' }]
+    customerStatus: [{id: 'aktif', label: 'Aktif', color: '#22c55e'}, {id: 'potansiyel', label: 'Potansiyel', color: '#3b82f6'}, {id: 'kaybedilmis', label: 'Kaybedilmiş', color: '#64748b'}],
+    dealStage: [], taskStatus: [], taskPriority: [], leadSource: []
 };
 export const INITIAL_EMAIL_TEMPLATES: EmailTemplate[] = [];
 export const MOCK_PRICE_LISTS: PriceList[] = [];
@@ -344,176 +414,48 @@ export const MOCK_AUTOMATIONS: Automation[] = [];
 export const MOCK_AUTOMATION_LOGS: AutomationLog[] = [];
 export const MOCK_TASK_TEMPLATES: TaskTemplate[] = [];
 export const MOCK_SCHEDULED_TASKS: ScheduledTask[] = [];
-export const MOCK_COUNTERS_SETTINGS: CountersSettings = { prefix: 'FAT-', nextNumber: 1, padding: 6 };
-export const MOCK_WAREHOUSES: Warehouse[] = [
-    { id: 1, name: 'Ana Depo', location: 'İstanbul, Türkiye', isDefault: true },
-    { id: 2, name: 'İzmir Depo', location: 'İzmir, Türkiye' },
-];
+export const MOCK_COUNTERS_SETTINGS: CountersSettings = { prefix: 'FAT', nextNumber: 1, padding: 5 };
+export const MOCK_WAREHOUSES: Warehouse[] = [];
 export const MOCK_STOCK_MOVEMENTS: StockMovement[] = [];
 export const MOCK_INVENTORY_TRANSFERS: InventoryTransfer[] = [];
 export const MOCK_INVENTORY_ADJUSTMENTS: InventoryAdjustment[] = [];
 export const MOCK_SALES_ORDERS: SalesOrder[] = [];
 export const MOCK_SHIPMENTS: Shipment[] = [];
-export const MOCK_STOCK_ITEMS: StockItem[] = [
-    { id: 1, productId: 1, warehouseId: 1, status: StockItemStatus.Available, serialNumber: "LAP-001" },
-    { id: 2, productId: 1, warehouseId: 1, status: StockItemStatus.Available, serialNumber: "LAP-002" },
-    { id: 3, productId: 2, warehouseId: 1, status: StockItemStatus.Available, quantity: 100, batchNumber: "SOFT-B01" },
-];
+export const MOCK_STOCK_ITEMS: StockItem[] = [];
 export const MOCK_PICK_LISTS: PickList[] = [];
-export const MOCK_BOMS: BillOfMaterials[] = [
-    { id: 1, productId: 3, productName: 'Özel Sunucu', items: [
-        { productId: 4, productName: 'Sunucu Kasası', quantity: 1 },
-        { productId: 5, productName: 'Anakart', quantity: 1 },
-        { productId: 6, productName: 'CPU', quantity: 2 },
-    ]}
-];
+export const MOCK_BOMS: BillOfMaterials[] = [];
 export const MOCK_WORK_ORDERS: WorkOrder[] = [];
 export const MOCK_ACCOUNTS: Account[] = [];
 export const MOCK_JOURNAL_ENTRIES: JournalEntry[] = [];
 export const MOCK_RECURRING_JOURNAL_ENTRIES: RecurringJournalEntry[] = [];
 export const MOCK_BUDGETS: Budget[] = [];
 export const MOCK_COST_CENTERS: CostCenter[] = [];
-export const MOCK_BILLS: Bill[] = [];
 export const DEFAULT_TURKISH_PAYROLL_PARAMS_2025: HrParameters = {
-    MINIMUM_WAGE_GROSS: 25000,
-    SGK_CEILING: 187500,
-    EMPLOYEE_SGK_RATE: 0.14,
-    EMPLOYEE_UNEMPLOYMENT_RATE: 0.01,
-    EMPLOYER_SGK_RATE: 0.205,
-    EMPLOYER_UNEMPLOYMENT_RATE: 0.02,
-    EMPLOYER_SGK_INCENTIVE_RATE: 0.05,
-    STAMP_DUTY_RATE: 0.00759,
-    INCOME_TAX_EXEMPTION_BASE: 25000,
+    MINIMUM_WAGE_GROSS: 25000.00, SGK_CEILING: 187500.00,
+    EMPLOYEE_SGK_RATE: 0.14, EMPLOYEE_UNEMPLOYMENT_RATE: 0.01,
+    EMPLOYER_SGK_RATE: 0.205, EMPLOYER_UNEMPLOYMENT_RATE: 0.02,
+    EMPLOYER_SGK_INCENTIVE_RATE: 0.05, STAMP_DUTY_RATE: 0.00759,
+    INCOME_TAX_EXEMPTION_BASE: 25000.00,
     INCOME_TAX_BRACKETS: [
-        { limit: 110000, rate: 0.15 },
-        { limit: 230000, rate: 0.20 },
-        { limit: 870000, rate: 0.27 },
-        { limit: 3000000, rate: 0.35 },
-        { limit: Infinity, rate: 0.40 },
+        { limit: 110000, rate: 0.15 }, { limit: 230000, rate: 0.20 },
+        { limit: 870000, rate: 0.27 }, { limit: 3000000, rate: 0.35 },
+        { limit: Infinity, rate: 0.40 }
     ],
-    SEVERANCE_CEILING: 35058.58,
+    SEVERANCE_CEILING: 35050.00,
+    DEFAULT_HOURLY_RATE: 150,
 };
 export const MOCK_SALES_RETURNS: SalesReturn[] = [];
 export const MOCK_QUOTATIONS: Quotation[] = [];
 export const MOCK_LEADS: Lead[] = [];
 export const MOCK_COMMISSION_RECORDS: CommissionRecord[] = [];
-export const MOCK_PERFORMANCE_REVIEWS: PerformanceReview[] = [
-    {
-        id: 1,
-        employeeId: 4,
-        employeeName: 'Ali Demir',
-        reviewerId: 2,
-        reviewerName: 'Mehmet Öztürk',
-        reviewDate: '2024-06-15',
-        periodStartDate: '2024-01-01',
-        periodEndDate: '2024-06-30',
-        overallRating: 4,
-        strengths: 'Müşteri ilişkileri çok güçlü. Yeni potansiyel müşteriler bulmada proaktif.',
-        areasForImprovement: 'Teklif hazırlama sürecinde daha detaylı olabilir. CRM\'i daha aktif kullanmalı.',
-        goalsForNextPeriod: 'Yeni çeyrekte %15 satış artışı hedefliyor. CRM kullanım oranını %90\'a çıkarmalı.',
-        status: 'Tamamlandı',
-        goals: [
-            { id: 'goal1', description: 'Yeni müşteri kazanımını %20 artırmak', target: '30 yeni nitelikli müşteri', status: 'Yolda' },
-            { id: 'goal2', description: 'CRM veri girişini eksiksiz tamamlamak', target: 'Tüm görüşmelerin aynı gün girilmesi', status: 'İlgi Gerekiyor' }
-        ],
-        peerFeedback: [
-            { id: 'peer1', reviewerId: 7, reviewerName: 'Elif Doğan', strengths: 'Takım çalışmasına çok yatkın ve her zaman yardımcı oluyor.', areasForImprovement: 'Bazen büyük resmi kaçırabiliyor.' },
-            { id: 'peer2', reviewerId: 5, reviewerName: 'Zeynep Şahin', strengths: 'Operasyonel süreçlerdeki bilgisi satış ekibine çok yardımcı oluyor.', areasForImprovement: 'Toplantı notlarını daha düzenli paylaşabilir.' }
-        ]
-    }
-];
+export const MOCK_PERFORMANCE_REVIEWS: PerformanceReview[] = [];
 export const MOCK_JOB_OPENINGS: JobOpening[] = [];
 export const MOCK_CANDIDATES: Candidate[] = [];
 export const MOCK_ONBOARDING_TEMPLATES: OnboardingTemplate[] = [];
 export const MOCK_ONBOARDING_WORKFLOWS: OnboardingWorkflow[] = [];
 export const MOCK_PAYROLL_RUNS: PayrollRun[] = [];
 export const MOCK_PAYSLIPS: Payslip[] = [];
-export const MOCK_EXPENSES: Expense[] = [];
 export const MOCK_ASSETS: Asset[] = [];
+export const MOCK_COMMUNICATION_LOGS: CommunicationLog[] = [];
 export const MOCK_SAVED_VIEWS: SavedView[] = [];
-export const PERMISSION_DESCRIPTIONS: { [key in Permission]: { description: string } } = {
-    'dashboard:goruntule': { description: 'Kontrol Panelini Görüntüle' },
-    'dashboard:duzenle': { description: 'Kontrol Panelini Düzenle' },
-    'musteri:goruntule': { description: 'Müşterileri Görüntüle' },
-    'musteri:yonet': { description: 'Müşteri Ekle/Düzenle/Sil' },
-    'anlasma:goruntule': { description: 'Anlaşmaları Görüntüle' },
-    'anlasma:yonet': { description: 'Anlaşma Ekle/Düzenle/Sil' },
-    'proje:goruntule': { description: 'Projeleri Görüntüle' },
-    'proje:yonet': { description: 'Proje Ekle/Düzenle/Sil' },
-    'gorev:goruntule': { description: 'Görevleri Görüntüle' },
-    'gorev:yonet': { description: 'Görev Ekle/Düzenle/Sil' },
-    'fatura:goruntule': { description: 'Faturaları Görüntüle' },
-    'fatura:yonet': { description: 'Fatura Ekle/Düzenle/Sil' },
-    'takvim:goruntule': { description: 'Takvimi Görüntüle' },
-    'rapor:goruntule': { description: 'Raporları Görüntüle' },
-    'envanter:goruntule': { description: 'Envanteri Görüntüle' },
-    'envanter:yonet': { description: 'Envanteri Yönet (Ürün, Tedarikçi, Satın Alma)' },
-    'depo:yonet': { description: 'Depoları Yönet' },
-    'stok-hareketi:goruntule': { description: 'Stok Hareketlerini Görüntüle' },
-    'stok-sayimi:yap': { description: 'Stok Sayımı Yap' },
-    'satis-siparis:goruntule': { description: 'Satış Siparişlerini Görüntüle' },
-    'satis-siparis:yonet': { description: 'Satış Siparişlerini Yönet' },
-    'sevkiyat:goruntule': { description: 'Sevkiyatları Görüntüle' },
-    'sevkiyat:yonet': { description: 'Sevkiyatları Yönet' },
-    'toplama-listesi:goruntule': { description: 'Toplama Listelerini Görüntüle' },
-    'toplama-listesi:yonet': { description: 'Toplama Listelerini Yönet' },
-    'ik:goruntule': { description: 'İK Modülünü Görüntüle (Çalışanlar, vb.)' },
-    'ik:maas-goruntule': { description: 'Maaş Bilgilerini Görüntüle' },
-    'ik:izin-yonet': { description: 'İzin Taleplerini Yönet' },
-    'ik:performans-yonet': { description: 'Performans Değerlendirmelerini Yönet' },
-    'ik:ise-alim-goruntule': { description: 'İşe Alım Modülünü Görüntüle' },
-    'ik:ise-alim-yonet': { description: 'İşe Alım Modülünü Yönet' },
-    'ik:oryantasyon-goruntule': { description: 'Oryantasyon Modülünü Görüntüle' },
-    'ik:oryantasyon-yonet': { description: 'Oryantasyon Modülünü Yönet' },
-    'ik:bordro-yonet': { description: 'Bordroları Yönet' },
-    'ik:rapor-goruntule': { description: 'İK Raporlarını Görüntüle' },
-    'ik:masraf-yonet': { description: 'Masraf Taleplerini Yönet' },
-    'ik:varlik-yonet': { description: 'Varlıkları (Zimmet) Yönet' },
-    'finans:goruntule': { description: 'Finans Modülünü Görüntüle' },
-    'finans:yonet': { description: 'Finans Modülünü Yönet' },
-    'destek:goruntule': { description: 'Destek Taleplerini Görüntüle' },
-    'destek:yonet': { description: 'Destek Taleplerini Yönet' },
-    'aktivite:goruntule': { description: 'Aktivite Kayıtlarını Görüntüle' },
-    'dokuman:goruntule': { description: 'Dokümanları Görüntüle' },
-    'dokuman:yonet': { description: 'Doküman Yönet' },
-    'yorum:yonet': { description: 'Yorum Yönet' },
-    'kullanici:yonet': { description: 'Kullanıcıları Yönet' },
-    'ayarlar:goruntule': { description: 'Ayarları Görüntüle' },
-    'ayarlar:genel-yonet': { description: 'Genel Ayarları Yönet' },
-    'ayarlar:roller-yonet': { description: 'Rolleri ve İzinleri Yönet' },
-    'ayarlar:guvenlik-yonet': { description: 'Güvenlik Ayarlarını Yönet' },
-    'ayarlar:muhasebe-yonet': { description: 'Muhasebe Ayarlarını Yönet' },
-    'ayarlar:maliyet-merkezi-yonet': { description: 'Maliyet Merkezlerini Yönet' },
-    'ayarlar:vergi-yonet': { description: 'Vergi Ayarlarını Yönet' },
-    'ayarlar:ik-bordro-yonet': { description: 'İK Bordro Ayarlarını Yönet' },
-    'muhasebe:goruntule': { description: 'Muhasebe Modülünü Görüntüle' },
-    'muhasebe:yonet': { description: 'Muhasebe Kayıtlarını Yönet' },
-    'muhasebe:mutabakat-yap': { description: 'Banka Mutabakatı Yap' },
-    'muhasebe:defteri-kebir-goruntule': { description: 'Defter-i Kebir Görüntüle' },
-    'muhasebe:bilanco-goruntule': { description: 'Bilanço Görüntüle' },
-    'muhasebe:gelir-tablosu-goruntule': { description: 'Gelir Tablosu Görüntüle' },
-    'muhasebe:nakit-akis-goruntule': { description: 'Nakit Akış Tablosu Görüntüle' },
-    'muhasebe:alacak-yaslandirma-goruntule': { description: 'Alacak Yaşlandırma Raporu Görüntüle' },
-    'muhasebe:kar-zarar-goruntule': { description: 'Kar/Zarar Raporu Görüntüle' },
-    'muhasebe:tekrarlanan-yonet': { description: 'Tekrarlanan Kayıtları Yönet' },
-    'muhasebe:butce-yonet': { description: 'Bütçeyi Yönet' },
-    'otomasyon:goruntule': { description: 'Otomasyonları Görüntüle' },
-    'otomasyon:yonet': { description: 'Otomasyonları Yönet' },
-};
-
-export const AVAILABLE_WIDGETS: WidgetConfig[] = [
-    // Stat Cards
-    { id: 'stat-total-revenue', name: 'Toplam Kazanılan Gelir', type: 'StatCard', defaultW: 2, defaultH: 1 },
-    { id: 'stat-unpaid-invoices', name: 'Ödenmemiş Faturalar', type: 'StatCard', defaultW: 2, defaultH: 1 },
-    { id: 'stat-active-customers', name: 'Aktif Müşteriler', type: 'StatCard', defaultW: 2, defaultH: 1 },
-    { id: 'stat-open-tickets', name: 'Açık Destek Talepleri', type: 'StatCard', defaultW: 2, defaultH: 1 },
-    { id: 'stat-total-cash', name: 'Toplam Nakit', type: 'StatCard', defaultW: 2, defaultH: 1 },
-    { id: 'stat-net-cash-flow', name: 'Net Nakit Akışı (30g)', type: 'StatCard', defaultW: 2, defaultH: 1 },
-    // Charts
-    { id: 'chart-financial-summary', name: 'Aylık Gelir/Gider', type: 'Chart', defaultW: 4, defaultH: 2 },
-    { id: 'chart-invoice-status', name: 'Fatura Durum Dağılımı', type: 'Chart', defaultW: 2, defaultH: 2 },
-    // Lists
-    { id: 'list-my-tasks', name: 'Yapılacaklar Listem', type: 'List', defaultW: 2, defaultH: 2 },
-    { id: 'list-today-view', name: 'Günün Özeti', type: 'List', defaultW: 2, defaultH: 2 },
-    { id: 'list-recent-activities', name: 'Son Aktiviteler', type: 'List', defaultW: 2, defaultH: 2 },
-];
+export const MOCK_NOTIFICATIONS: Notification[] = [];

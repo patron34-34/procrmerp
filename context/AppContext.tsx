@@ -38,7 +38,7 @@ export const useApp = (): T.AppContextType => {
 export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
     const { addToast } = useNotification();
     const navigate = useNavigate();
-    const [currentUser, setCurrentUser] = useLocalStorageState<T.Employee>('currentUser', MOCK_EMPLOYEES[0]);
+    const [currentUser, setCurrentUser] = useLocalStorageState<T.Employee>('currentUser', MOCK_EMPLOYEES[3]);
     
     const { 
         customers, setCustomers,
@@ -189,6 +189,352 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         setActivityLogs(prev => [newLog, ...prev].slice(0, 200));
     }, [currentUser, setActivityLogs]);
 
+    // FIX: Moved hasPermission before its first usage in deleteComment
+    const hasPermission = useCallback((permission: T.Permission): boolean => {
+        if (!currentUser) return false;
+        if (currentUser.role === 'admin') return true;
+        const userPermissions = rolesPermissions[currentUser.role];
+        return userPermissions ? userPermissions.includes(permission) : false;
+    }, [currentUser, rolesPermissions]);
+
+    const addComment = useCallback((text: string, entityType: 'customer' | 'project' | 'deal' | 'task' | 'ticket' | 'sales_order', entityId: number): T.Comment => {
+        const newComment: T.Comment = {
+            id: Date.now(),
+            text,
+            timestamp: new Date().toISOString(),
+            userId: currentUser.id,
+            userName: currentUser.name,
+            userAvatar: currentUser.avatar,
+            relatedEntityType: entityType,
+            relatedEntityId: entityId,
+        };
+        setComments(prev => [newComment, ...prev]);
+        logActivity(T.ActionType.COMMENT_ADDED, `Yorum eklendi: "${text.substring(0, 30)}..."`, entityType, entityId);
+
+        const mentionMatches = text.matchAll(/@([a-zA-Z\sÇçĞğİıÖöŞşÜü]+)/g);
+        for (const match of mentionMatches) {
+            const userName = match[1].trim();
+            const user = employees.find(e => e.name === userName);
+            if (user && user.id !== currentUser.id) {
+                const newNotification: T.Notification = {
+                    id: Date.now() + Math.random(),
+                    title: `Yeni bir yorumda sizden bahsedildi`,
+                    message: `${currentUser.name} sizden bir yorumda bahsetti: "${text.substring(0, 50)}..."`,
+                    type: 'info',
+                    read: false,
+                    timestamp: new Date().toISOString(),
+                    link: `/${entityType}s/${entityId}`
+                };
+                setNotifications(prev => [newNotification, ...prev]);
+                logActivity(T.ActionType.MENTIONED_IN_COMMENT, `${currentUser.name}, ${user.name} kullanıcısından bahsetti.`, entityType, entityId);
+            }
+        }
+
+        return newComment;
+    }, [currentUser, employees, setComments, logActivity, setNotifications]);
+
+    const updateComment = useCallback((comment: T.Comment): T.Comment | undefined => {
+        let updated: T.Comment | undefined;
+        setComments(prev => prev.map(c => {
+            if (c.id === comment.id && c.userId === currentUser.id) {
+                updated = { ...c, text: comment.text, timestamp: new Date().toISOString() };
+                return updated;
+            }
+            return c;
+        }));
+        if(updated) logActivity(T.ActionType.UPDATED, `Yorum güncellendi.`, updated.relatedEntityType, updated.relatedEntityId);
+        return updated;
+    }, [setComments, logActivity, currentUser.id]);
+
+    const deleteComment = useCallback((commentId: number) => {
+        const toDelete = comments.find(c => c.id === commentId);
+        if (toDelete && (toDelete.userId === currentUser.id || hasPermission('yorum:yonet'))) { // Admin can delete any comment
+            setComments(prev => prev.filter(c => c.id !== commentId));
+            logActivity(T.ActionType.DELETED, `Yorum silindi.`, toDelete.relatedEntityType, toDelete.relatedEntityId);
+        }
+    }, [comments, setComments, logActivity, currentUser.id, hasPermission]);
+
+    const addTask = useCallback((taskData: Omit<T.Task, 'id' | 'assignedToName' | 'relatedEntityName'>, subtaskTitles: string[] = []): T.Task => {
+        const assignee = employees.find(e => e.id === taskData.assignedToId);
+        let relatedEntityName = '';
+        if (taskData.relatedEntityType && taskData.relatedEntityId) {
+            if (taskData.relatedEntityType === 'customer') relatedEntityName = customers.find(c => c.id === taskData.relatedEntityId)?.name || '';
+            if (taskData.relatedEntityType === 'project') relatedEntityName = projects.find(p => p.id === taskData.relatedEntityId)?.name || '';
+            if (taskData.relatedEntityType === 'deal') relatedEntityName = deals.find(d => d.id === taskData.relatedEntityId)?.title || '';
+        }
+
+        const newTask: T.Task = {
+            ...taskData,
+            id: Date.now(),
+            assignedToName: assignee?.name || '',
+            relatedEntityName,
+        };
+        
+        const subtasks: T.Task[] = subtaskTitles.map((title, i) => ({
+            ...newTask,
+            id: Date.now() + i + 1,
+            title,
+            parentId: newTask.id,
+            description: '',
+        }));
+
+        setTasks(prev => [...prev, newTask, ...subtasks]);
+        logActivity(T.ActionType.TASK_CREATED, `Görev oluşturuldu: ${newTask.title}`, 'task', newTask.id);
+        return newTask;
+    }, [employees, customers, projects, deals, setTasks, logActivity]);
+
+    const createTasksFromTemplate = useCallback((templateId: number, startDate: string, relatedEntityType?: 'customer' | 'project' | 'deal', relatedEntityId?: number) => {
+        const template = taskTemplates.find(t => t.id === templateId);
+        if (!template) return;
+        
+        const start = new Date(startDate);
+        const tasksToAdd: Omit<T.Task, 'id' | 'assignedToName' | 'relatedEntityName'>[] = [];
+        
+        template.items.forEach(item => {
+            const dueDate = new Date(start);
+            dueDate.setDate(start.getDate() + item.dueDaysAfterStart);
+            
+            const assignee = employees.find(e => e.role === item.defaultAssigneeRoleId);
+
+            tasksToAdd.push({
+                title: item.taskName,
+                description: '',
+                status: T.TaskStatus.Todo,
+                priority: item.priority,
+                dueDate: dueDate.toISOString().split('T')[0],
+                startDate: start.toISOString().split('T')[0],
+                assignedToId: assignee?.id || currentUser.id,
+                relatedEntityType,
+                relatedEntityId,
+                estimatedTime: item.estimatedTime,
+            });
+        });
+
+        tasksToAdd.forEach((taskData, i) => {
+            setTimeout(() => addTask(taskData), i * 10); // Add a small delay to ensure unique IDs
+        });
+        
+        logActivity(T.ActionType.TASK_CREATED_MULTIPLE, `${tasksToAdd.length} görev şablondan oluşturuldu: ${template.name}`, relatedEntityType, relatedEntityId);
+
+    }, [taskTemplates, employees, currentUser.id, addTask, logActivity]);
+
+    const addProject = useCallback((projectData: Omit<T.Project, 'id' | 'client'>, taskTemplateId?: number): T.Project => {
+        const customer = customers.find(c => c.id === projectData.customerId);
+        const newProject: T.Project = {
+            ...projectData,
+            id: Date.now(),
+            client: customer?.name || 'Bilinmeyen Müşteri',
+        };
+        setProjects(prev => [newProject, ...prev]);
+        logActivity(T.ActionType.PROJECT_CREATED, `Proje oluşturuldu: ${newProject.name}`, 'project', newProject.id);
+
+        if (taskTemplateId) {
+            createTasksFromTemplate(taskTemplateId, newProject.startDate, 'project', newProject.id);
+        }
+
+        return newProject;
+    }, [customers, setProjects, logActivity, createTasksFromTemplate]);
+
+    const updateProject = useCallback((project: T.Project): T.Project | undefined => {
+        const customer = customers.find(c => c.id === project.customerId);
+        let updated: T.Project | undefined;
+        setProjects(prev => prev.map(p => {
+            if (p.id === project.id) {
+                updated = { ...p, ...project, client: customer?.name || 'Unknown' };
+                return updated;
+            }
+            return p;
+        }));
+        if(updated) logActivity(T.ActionType.PROJECT_UPDATED, `Proje güncellendi: ${updated.name}`, 'project', updated.id);
+        return updated;
+    }, [customers, setProjects, logActivity]);
+
+    const deleteProject = useCallback((id: number) => {
+        const toDelete = projects.find(p => p.id === id);
+        if (toDelete) {
+            setProjects(prev => prev.filter(p => p.id !== id));
+            // Also delete related tasks
+            setTasks(prev => prev.filter(t => !(t.relatedEntityType === 'project' && t.relatedEntityId === id)));
+            logActivity(T.ActionType.PROJECT_DELETED, `Proje silindi: ${toDelete.name}`, 'project', id);
+        }
+    }, [projects, setProjects, setTasks, logActivity]);
+
+    const addDeal = useCallback((dealData: Omit<T.Deal, 'id' | 'customerName' | 'assignedToName' | 'value' | 'lastActivityDate' | 'createdDate'>): T.Deal => {
+        const customer = customers.find(c => c.id === dealData.customerId);
+        const employee = employees.find(e => e.id === dealData.assignedToId);
+        const dealValue = dealData.lineItems.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+        const now = new Date().toISOString().split('T')[0];
+
+        const newDeal: T.Deal = {
+           ...dealData,
+           id: Date.now(),
+           customerName: customer?.name || 'Unknown Customer',
+           assignedToName: employee?.name || 'Unknown Employee',
+           value: dealValue,
+           lastActivityDate: now,
+           createdDate: now,
+       };
+       setDeals(prev => [newDeal, ...prev]);
+       logActivity(T.ActionType.CREATED, `Anlaşma '${newDeal.title}' oluşturuldu.`, 'deal', newDeal.id);
+       return newDeal;
+    }, [customers, employees, setDeals, logActivity]);
+
+    const updateDeal = useCallback((deal: T.Deal): T.Deal | undefined => {
+        const customer = customers.find(c => c.id === deal.customerId);
+        const employee = employees.find(e => e.id === deal.assignedToId);
+        const dealValue = deal.lineItems.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+        const now = new Date().toISOString().split('T')[0];
+        
+        let updated: T.Deal | undefined;
+        setDeals(prev => prev.map(d => {
+            if (d.id === deal.id) {
+                updated = { 
+                    ...d, 
+                    ...deal,
+                    customerName: customer?.name || 'Unknown Customer',
+                    assignedToName: employee?.name || 'Unknown Employee',
+                    value: dealValue,
+                    lastActivityDate: now,
+                };
+                return updated;
+            }
+            return d;
+        }));
+        if (updated) {
+            logActivity(T.ActionType.UPDATED, `Anlaşma güncellendi: ${updated.title}`, 'deal', updated.id);
+        }
+        return updated;
+    }, [customers, employees, setDeals, logActivity]);
+
+    const updateDealStage = useCallback((dealId: number, newStage: T.DealStage) => {
+        setDeals(prev => prev.map(d => {
+            if (d.id === dealId) {
+                logActivity(T.ActionType.STATUS_CHANGED, `Anlaşma durumu '${d.stage}' -> '${newStage}' olarak değiştirildi: ${d.title}`, 'deal', d.id);
+                return { ...d, stage: newStage, lastActivityDate: new Date().toISOString().split('T')[0] };
+            }
+            return d;
+        }));
+    }, [setDeals, logActivity]);
+
+    const updateDealWinLossReason = useCallback((dealId: number, stage: T.DealStage.Won | T.DealStage.Lost, reason: string) => {
+        setDeals(prev => prev.map(d => {
+            if (d.id === dealId) {
+                const updatedDeal = { ...d, stage, lastActivityDate: new Date().toISOString().split('T')[0] };
+                if (stage === T.DealStage.Won) updatedDeal.winReason = reason;
+                if (stage === T.DealStage.Lost) updatedDeal.lossReason = reason;
+                logActivity(T.ActionType.STATUS_CHANGED, `Anlaşma durumu '${stage}' olarak değiştirildi (Neden: ${reason}): ${d.title}`, 'deal', d.id);
+                return updatedDeal;
+            }
+            return d;
+        }));
+    }, [setDeals, logActivity]);
+
+    const bulkUpdateDealStage = useCallback((dealIds: number[], newStage: T.DealStage, reason?: string) => {
+        setDeals(prev => prev.map(d => {
+            if (dealIds.includes(d.id)) {
+                const updatedDeal = { ...d, stage: newStage, lastActivityDate: new Date().toISOString().split('T')[0] };
+                if (reason) {
+                    if (newStage === T.DealStage.Won) updatedDeal.winReason = reason;
+                    if (newStage === T.DealStage.Lost) updatedDeal.lossReason = reason;
+                }
+                return updatedDeal;
+            }
+            return d;
+        }));
+        logActivity(T.ActionType.STATUS_CHANGED, `${dealIds.length} anlaşmanın durumu toplu olarak '${newStage}' olarak değiştirildi.`);
+    }, [setDeals, logActivity]);
+
+    const addSalesOrder = useCallback((orderData: Omit<T.SalesOrder, "id" | "orderNumber" | "customerName">): T.SalesOrder => {
+        const customer = customers.find(c => c.id === orderData.customerId);
+        const newOrder: T.SalesOrder = {
+            ...orderData,
+            id: Date.now(),
+            orderNumber: `SO-${Date.now()}`,
+            customerName: customer?.name || 'Bilinmeyen'
+        };
+        setSalesOrders(prev => [newOrder, ...prev]);
+        logActivity(T.ActionType.CREATED, `Satış Siparişi oluşturuldu: #${newOrder.orderNumber}`, 'sales_order', newOrder.id);
+        return newOrder;
+    }, [customers, setSalesOrders, logActivity]);
+
+    const winDeal = useCallback(async (deal: T.Deal, winReason: string, createProjectFlag: boolean, useTaskTemplate?: boolean, taskTemplateId?: number) => {
+        updateDealWinLossReason(deal.id, T.DealStage.Won, winReason);
+        
+        const hasPhysicalProducts = deal.lineItems.some(item => {
+            const product = products.find(p => p.id === item.productId);
+            return product && product.productType !== T.ProductType.Hizmet;
+        });
+
+        if (hasPhysicalProducts) {
+            const customer = customers.find(c => c.id === deal.customerId);
+            if(customer) {
+                // FIX: Calculate totals for the new sales order
+                const items = deal.lineItems.map(li => ({
+                    productId: li.productId,
+                    productName: li.productName,
+                    quantity: li.quantity,
+                    price: li.price,
+                    discountRate: 0,
+                    taxRate: products.find(p => p.id === li.productId)?.financials.vatRate || 20,
+                    committedStockItemIds: [],
+                    shippedQuantity: 0,
+                }));
+                const shippingCost = 0;
+                const subTotal = items.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+                const totalDiscount = 0;
+                const totalTax = items.reduce((sum, item) => {
+                    const priceAfterDiscount = (item.quantity * item.price) * (1 - (item.discountRate / 100));
+                    return sum + (priceAfterDiscount * (item.taxRate / 100));
+                }, 0);
+                const grandTotal = subTotal - totalDiscount + totalTax + shippingCost;
+                
+                addSalesOrder({
+                    customerId: deal.customerId,
+                    orderDate: new Date().toISOString().split('T')[0],
+                    items: items,
+                    status: T.SalesOrderStatus.OnayBekliyor,
+                    shippingAddress: customer.shippingAddress,
+                    billingAddress: customer.billingAddress,
+                    dealId: deal.id,
+                    shippingCost: 0, // Default
+                    subTotal,
+                    totalDiscount,
+                    totalTax,
+                    grandTotal,
+                });
+            }
+        }
+        
+        if (createProjectFlag) {
+            addProject({
+                name: `${deal.title} Projesi`,
+                customerId: deal.customerId,
+                deadline: new Date(new Date().setDate(new Date().getDate() + 30)).toISOString().split('T')[0],
+                status: 'beklemede',
+                progress: 0,
+                description: `Anlaşma #${deal.id} - ${deal.title} üzerinden oluşturuldu.`,
+                startDate: new Date().toISOString().split('T')[0],
+                teamMemberIds: [deal.assignedToId],
+                budget: deal.value,
+                spent: 0,
+                tags: ['anlaşma-dönüşümü'],
+            }, useTaskTemplate ? taskTemplateId : undefined);
+        }
+    }, [updateDealWinLossReason, products, customers, addSalesOrder, addProject]);
+
+    const deleteDeal = useCallback((id: number) => {
+        const toDelete = deals.find(d => d.id === id);
+        if (toDelete) {
+            setDeals(prev => prev.filter(d => d.id !== id));
+            logActivity(T.ActionType.DELETED, `Anlaşma silindi: ${toDelete.title}`, 'deal', id);
+        }
+    }, [deals, setDeals, logActivity]);
+
+    const deleteMultipleDeals = useCallback((dealIds: number[]) => {
+        setDeals(prev => prev.filter(d => !dealIds.includes(d.id)));
+        logActivity(T.ActionType.DELETED_MULTIPLE, `${dealIds.length} anlaşma silindi.`);
+    }, [setDeals, logActivity]);
+
     const addTaskTemplate = useCallback((templateData: Omit<T.TaskTemplate, "id">): T.TaskTemplate => {
         const newTemplate = { ...templateData, id: Date.now() };
         setTaskTemplates(prev => [...prev, newTemplate]);
@@ -236,13 +582,6 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         if (updated) logActivity(T.ActionType.UPDATED, `Varlık güncellendi: ${updated.name}`, 'asset', updated.id);
         return updated;
     }, [setAssets, logActivity]);
-    
-    const hasPermission = useCallback((permission: T.Permission): boolean => {
-        if (!currentUser) return false;
-        if (currentUser.role === 'admin') return true;
-        const userPermissions = rolesPermissions[currentUser.role];
-        return userPermissions ? userPermissions.includes(permission) : false;
-    }, [currentUser, rolesPermissions]);
     
     const getProductStockInfo = useCallback((productId: number) => {
         const product = products.find(p => p.id === productId);
@@ -883,567 +1222,171 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         const employerSgkContribution = grossSalary * EMPLOYER_SGK_RATE;
         const employerUnemploymentContribution = grossSalary * EMPLOYER_UNEMPLOYMENT_RATE;
         const totalEmployerCost = grossSalary + employerSgkContribution + employerUnemploymentContribution;
-
-        return { grossSalary, netSalary, employeeSgkContribution, employeeUnemploymentContribution, incomeTax, stampDuty, totalEmployeeDeductions, employerSgkContribution, employerUnemploymentContribution, totalEmployerCost, incomeTaxExemption: 0, stampDutyExemption: 0 };
+        
+        return {
+            grossSalary, netSalary, employeeSgkContribution, employeeUnemploymentContribution,
+            incomeTax, stampDuty, totalEmployeeDeductions, employerSgkContribution,
+            employerUnemploymentContribution, totalEmployerCost,
+            incomeTaxExemption: 0, stampDutyExemption: 0 // Simplified for this simulation
+        };
     }, [hrParameters]);
     
-    const addLeaveRequest = useCallback((requestData: Omit<T.LeaveRequest, "id" | "employeeName" | "status">): T.LeaveRequest => {
-        const employee = employees.find(e => e.id === requestData.employeeId);
-        if (!employee) throw new Error("Employee not found for leave request");
-        const newRequest: T.LeaveRequest = { ...requestData, id: Date.now(), employeeName: employee.name, status: T.LeaveStatus.Pending };
-        setLeaveRequests(prev => [...prev, newRequest]);
-        return newRequest;
-    }, [employees, setLeaveRequests]);
-
-    const updateLeaveRequestStatus = useCallback((requestId: number, newStatus: T.LeaveStatus) => {
-        setLeaveRequests(prev => prev.map(lr => lr.id === requestId ? { ...lr, status: newStatus } : lr));
-    }, [setLeaveRequests]);
-
     const addExpense = useCallback((expenseData: Omit<T.Expense, 'id' | 'employeeName' | 'status' | 'employeeId'>): T.Expense => {
-        const employee = employees.find(e => e.id === currentUser.id);
-        if (!employee) throw new Error("Current user not found in employees list");
-        const newExpense: T.Expense = { ...expenseData, id: Date.now(), employeeId: currentUser.id, employeeName: employee.name, status: T.ExpenseStatus.Pending };
+        const newExpense: T.Expense = {
+            ...expenseData,
+            id: Date.now(),
+            employeeId: currentUser.id,
+            employeeName: currentUser.name,
+            status: T.ExpenseStatus.Pending,
+        };
         setExpenses(prev => [newExpense, ...prev]);
-        logActivity(T.ActionType.CREATED, `Masraf talebi oluşturuldu: ${newExpense.description}`, 'expense', newExpense.id);
+        logActivity(T.ActionType.CREATED, `Masraf oluşturuldu: ${newExpense.description}`, 'expense', newExpense.id);
         return newExpense;
-    }, [currentUser, employees, setExpenses, logActivity]);
+    }, [currentUser, setExpenses, logActivity]);
+    
+    const addProjectExpense = useCallback((expenseData: Omit<T.Expense, 'id' | 'employeeName' | 'status'>): T.Expense => {
+        const newExpense: T.Expense = {
+            ...expenseData,
+            id: Date.now(),
+            employeeName: employees.find(e => e.id === expenseData.employeeId)?.name || 'Bilinmeyen',
+            status: T.ExpenseStatus.Paid, // Project expenses are considered paid directly
+        };
+        setExpenses(prev => [newExpense, ...prev]);
+        
+        if (newExpense.projectId) {
+            setProjects(prevProjects => prevProjects.map(p => 
+                p.id === newExpense.projectId ? { ...p, spent: p.spent + newExpense.amount } : p
+            ));
+            logActivity(T.ActionType.CREATED, `Proje gideri eklendi: ${newExpense.description}`, 'expense', newExpense.id);
+        }
+        
+        return newExpense;
+    }, [employees, setExpenses, setProjects, logActivity]);
+
+    const deleteExpense = useCallback((expenseId: number) => {
+        const expenseToDelete = expenses.find(e => e.id === expenseId);
+        if (expenseToDelete) {
+            if (expenseToDelete.projectId) {
+                setProjects(prevProjects => prevProjects.map(p => 
+                    p.id === expenseToDelete.projectId ? { ...p, spent: p.spent - expenseToDelete.amount } : p
+                ));
+            }
+            setExpenses(prev => prev.filter(e => e.id !== expenseId));
+            logActivity(T.ActionType.DELETED, `Gider silindi: ${expenseToDelete.description}`, 'expense', expenseId);
+        }
+    }, [expenses, setExpenses, setProjects, logActivity]);
 
     const updateExpenseStatus = useCallback((expenseId: number, status: T.ExpenseStatus) => {
-        setExpenses(prev => prev.map(expense => {
-            if (expense.id === expenseId) {
-                logActivity(T.ActionType.STATUS_CHANGED, `Masraf durumu '${expense.status}' -> '${status}' olarak değiştirildi: ${expense.description}`, 'expense', expense.id);
-                return { ...expense, status };
-            }
-            return expense;
-        }));
-    }, [setExpenses, logActivity]);
+        setExpenses(prev => prev.map(e => e.id === expenseId ? { ...e, status } : e));
+    }, [setExpenses]);
     
-    const createTasksFromTemplate = useCallback((templateId: number, startDate: string, relatedEntityType?: 'customer' | 'project' | 'deal', relatedEntityId?: number) => {
-        const template = taskTemplates.find(t => t.id === templateId);
-        if (!template) {
-            addToast("Görev şablonu bulunamadı.", "error");
-            return;
-        }
-        if (employees.length === 0) {
-            addToast("Sistemde görev atanacak çalışan bulunamadı.", "error");
-            return;
-        }
-        
-        const start = new Date(startDate);
-        const newTasks: (T.Task | null)[] = template.items.map(item => {
-            const dueDate = new Date(start);
-            dueDate.setDate(start.getDate() + item.dueDaysAfterStart);
-            const assignee = employees.find(e => e.role === item.defaultAssigneeRoleId) || employees[0];
-            
-            if (!assignee) {
-                console.error(`'${item.defaultAssigneeRoleId}' rolüne sahip bir çalışan bulunamadı. Görev atanamadı: '${item.taskName}'`);
-                return null;
-            }
-
-            let relatedEntityName = '';
-            if(relatedEntityType && relatedEntityId){
-                 switch (relatedEntityType) {
-                    case 'customer': relatedEntityName = customers.find(c => c.id === relatedEntityId)?.name || ''; break;
-                    case 'project': relatedEntityName = projects.find(p => p.id === relatedEntityId)?.name || ''; break;
-                    case 'deal': relatedEntityName = deals.find(d => d.id === relatedEntityId)?.title || ''; break;
-                }
-            }
-            
-            return {
-                id: Date.now() + Math.random(),
-                title: item.taskName,
-                description: '',
-                status: T.TaskStatus.Todo,
-                priority: item.priority,
-                dueDate: dueDate.toISOString().split('T')[0],
-                startDate: startDate,
-                assignedToId: assignee.id,
-                assignedToName: assignee.name,
-                estimatedTime: item.estimatedTime,
-                relatedEntityType,
-                relatedEntityId,
-                relatedEntityName,
-            };
-        });
-
-        const validTasks = newTasks.filter((task): task is T.Task => task !== null);
-
-        if (validTasks.length > 0) {
-            setTasks(prev => [...prev, ...validTasks]);
-            logActivity(T.ActionType.TASK_CREATED_MULTIPLE, `${validTasks.length} görev '${template.name}' şablonundan oluşturuldu.`);
-            addToast(`${validTasks.length} görev oluşturuldu.`, 'success');
-        }
-        
-        if (validTasks.length !== newTasks.length) {
-            addToast("Bazı görevler atama yapılamadığı için oluşturulamadı.", "warning");
-        }
-
-    }, [taskTemplates, employees, customers, projects, deals, setTasks, logActivity, addToast]);
+    const updateHrParameters = useCallback((params: T.HrParameters) => {
+        setHrParameters(params);
+        addToast('Bordro parametreleri güncellendi.', 'success');
+    }, [setHrParameters, addToast]);
     
-    const addProject = useCallback((projectData: Omit<T.Project, 'id' | 'client'>, taskTemplateId?: number): T.Project => {
-        const customer = customers.find(c => c.id === projectData.customerId);
-        const newProject: T.Project = { ...projectData, id: Date.now(), client: customer?.name || 'Bilinmeyen' };
-        setProjects(prev => [newProject, ...prev]);
-        logActivity(T.ActionType.PROJECT_CREATED, `Proje '${newProject.name}' oluşturuldu.`, 'project', newProject.id);
-        if (taskTemplateId) {
-            createTasksFromTemplate(taskTemplateId, newProject.startDate, 'project', newProject.id);
-        }
-        return newProject;
-    }, [customers, setProjects, logActivity, createTasksFromTemplate]);
-
-    const runEventTriggeredAutomations = useCallback(async (triggerType: T.AutomationTriggerType, data: { deal?: T.Deal, customer?: T.Customer }) => {
-        const relevantAutomations = automations.filter(a => a.active && a.triggerType === triggerType);
-    
-        for (const auto of relevantAutomations) {
-            let conditionMet = false;
-            if (triggerType === T.AutomationTriggerType.DEAL_STAGE_CHANGED && data.deal) {
-                if (data.deal.stage === auto.triggerConfig.stageId) {
-                    conditionMet = true;
-                }
-            }
-    
-            if (conditionMet) {
-                logActivity(T.ActionType.UPDATED, `Otomasyon '${auto.name}' tetiklendi.`, 'automation', auto.id);
-                for (const action of auto.actions) {
-                    try {
-                        switch (action.type) {
-                            case T.AutomationActionType.CREATE_PROJECT:
-                                if(data.deal) {
-                                    const projectName = action.config.projectNameTemplate
-                                        .replace('{dealTitle}', data.deal.title)
-                                        .replace('{customerName}', data.deal.customerName);
-                                    addProject({
-                                        name: projectName,
-                                        customerId: data.deal.customerId,
-                                        deadline: new Date(new Date().setDate(new Date().getDate() + 30)).toISOString().split('T')[0],
-                                        status: 'beklemede',
-                                        progress: 0,
-                                        description: `Anlaşma #${data.deal.id} üzerinden otomatik oluşturuldu.`,
-                                        startDate: new Date().toISOString().split('T')[0],
-                                        teamMemberIds: [data.deal.assignedToId],
-                                        budget: data.deal.value * 0.8,
-                                        spent: 0,
-                                        tags: ['otomasyon']
-                                    });
-                                }
-                                break;
-                        }
-                    } catch (e) {
-                        console.error(`Automation action failed for automation ${auto.id}`, e);
-                    }
-                }
-            }
-        }
-    }, [automations, logActivity, addProject]);
-
-    const addDeal = useCallback((dealData: Omit<T.Deal, 'id' | 'customerName' | 'assignedToName' | 'value' | 'lastActivityDate' | 'createdDate'>): T.Deal => {
-        const customer = customers.find(c => c.id === dealData.customerId);
-        const employee = employees.find(e => e.id === dealData.assignedToId);
-        const value = dealData.lineItems.reduce((sum, item) => sum + (item.price * item.quantity), 0);
-        const newDeal: T.Deal = {
-            ...dealData,
-            id: Date.now(),
-            customerName: customer?.name || 'Bilinmeyen Müşteri',
-            assignedToName: employee?.name || 'Bilinmeyen Sorumlu',
-            value: value,
-            lastActivityDate: new Date().toISOString(),
-            createdDate: new Date().toISOString(),
-        };
-        setDeals(prev => [newDeal, ...prev]);
-        logActivity(T.ActionType.CREATED, `Anlaşma '${newDeal.title}' oluşturuldu.`, 'deal', newDeal.id);
-        return newDeal;
-    }, [customers, employees, setDeals, logActivity]);
-    
-    const updateDeal = useCallback((deal: T.Deal): T.Deal | undefined => {
-        let updated: T.Deal | undefined;
-        setDeals(prev => prev.map(d => {
-            if (d.id === deal.id) {
-                const customer = customers.find(c => c.id === deal.customerId);
-                const employee = employees.find(e => e.id === deal.assignedToId);
-                const value = deal.lineItems.reduce((sum, item) => sum + (item.price * item.quantity), 0);
-                updated = { ...deal, customerName: customer?.name || 'Bilinmeyen', assignedToName: employee?.name || 'Bilinmeyen', value: value, lastActivityDate: new Date().toISOString(), };
-                return updated;
-            }
-            return d;
-        }));
-        if(updated) logActivity(T.ActionType.UPDATED, `Anlaşma '${updated.title}' güncellendi.`, 'deal', updated.id);
-        return updated;
-    }, [customers, employees, setDeals, logActivity]);
-    
-    const deleteDeal = useCallback((id: number) => {
-        const dealToDelete = deals.find(d => d.id === id);
-        if (dealToDelete) {
-            setDeals(prev => prev.filter(d => d.id !== id));
-            logActivity(T.ActionType.DELETED, `Anlaşma '${dealToDelete.title}' silindi.`, 'deal', id);
-        }
-    }, [deals, setDeals, logActivity]);
-    
-    const updateProject = useCallback((project: T.Project): T.Project | undefined => {
-        let updated: T.Project | undefined;
-        setProjects(prev => prev.map(p => {
-            if (p.id === project.id) {
-                const customer = customers.find(c => c.id === project.customerId);
-                updated = { ...project, client: customer?.name || 'Bilinmeyen' };
-                return updated;
-            }
-            return p;
-        }));
-        if(updated) logActivity(T.ActionType.PROJECT_UPDATED, `Proje '${updated.name}' güncellendi.`, 'project', updated.id);
-        return updated;
-    }, [customers, setProjects, logActivity]);
-
-    const deleteProject = useCallback((id: number) => {
-        const projectToDelete = projects.find(p => p.id === id);
-        if (projectToDelete) {
-            setProjects(prev => prev.filter(p => p.id !== id));
-            setTasks(prev => prev.filter(t => !(t.relatedEntityType === 'project' && t.relatedEntityId === id)));
-            logActivity(T.ActionType.PROJECT_DELETED, `Proje '${projectToDelete.name}' ve ilgili görevler silindi.`, 'project', id);
-        }
-    }, [projects, setProjects, setTasks, logActivity]);
-
-    const addTask = useCallback((taskData: Omit<T.Task, 'id' | 'assignedToName' | 'relatedEntityName'>, subtaskTitles: string[] = []): T.Task => {
-        const getRelatedName = (type?: string, id?: number) => {
-            if (!type || !id) return '';
-            switch (type) {
-                case 'customer': return customers.find(c => c.id === id)?.name;
-                case 'deal': return deals.find(d => d.id === id)?.title;
-                case 'project': return projects.find(p => p.id === id)?.name;
-                default: return '';
-            }
-        };
-        const employee = employees.find(e => e.id === taskData.assignedToId);
-        const mainTask: T.Task = { ...taskData, id: Date.now(), assignedToName: employee?.name || 'Bilinmeyen', relatedEntityName: getRelatedName(taskData.relatedEntityType, taskData.relatedEntityId) };
-        const newSubtasks: T.Task[] = subtaskTitles.map((title, i) => ({ id: Date.now() + i + 1, title, description: '', status: T.TaskStatus.Todo, priority: taskData.priority, dueDate: taskData.dueDate, assignedToId: taskData.assignedToId, assignedToName: employee?.name || 'Bilinmeyen', parentId: mainTask.id }));
-        setTasks(prev => [...prev, mainTask, ...newSubtasks]);
-        logActivity(T.ActionType.TASK_CREATED, `Görev '${mainTask.title}' oluşturuldu.`, 'task', mainTask.id);
-        if (newSubtasks.length > 0) logActivity(T.ActionType.TASK_CREATED_MULTIPLE, `${newSubtasks.length} alt görev oluşturuldu: '${mainTask.title}'.`, 'task', mainTask.id);
-        return mainTask;
-    }, [employees, customers, deals, projects, setTasks, logActivity]);
-
-    const updateTask = useCallback((task: T.Task, options?: { silent?: boolean }): T.Task | undefined => {
-        let updated: T.Task | undefined;
-        setTasks(prev => prev.map(t => {
-            if (t.id === task.id) {
-                updated = task;
-                return task;
-            }
-            return t;
-        }));
-        if(updated && !options?.silent) logActivity(T.ActionType.TASK_UPDATED, `Görev '${updated.title}' güncellendi.`, 'task', updated.id);
-        return updated;
-    }, [setTasks, logActivity]);
-
-    const deleteTask = useCallback((id: number) => {
-        const taskToDelete = tasks.find(t => t.id === id);
-        if (taskToDelete) {
-            setTasks(prev => prev.filter(t => t.id !== id && t.parentId !== id));
-            logActivity(T.ActionType.TASK_DELETED, `Görev '${taskToDelete.title}' silindi.`, 'task', id);
-        }
-    }, [tasks, setTasks, logActivity]);
-    
-    const deleteMultipleTasks = useCallback((taskIds: number[]) => {
-        setTasks(prevTasks => {
-            const idsToDelete = new Set(taskIds);
-            let changed = true;
-            // Keep iterating until no more subtasks can be added to the deletion set
-            while (changed) {
-                changed = false;
-                const currentSize = idsToDelete.size;
-                prevTasks.forEach(task => {
-                    if (task.parentId && idsToDelete.has(task.parentId) && !idsToDelete.has(task.id)) {
-                        idsToDelete.add(task.id);
-                    }
-                });
-                if (idsToDelete.size > currentSize) {
-                    changed = true;
-                }
-            }
-            return prevTasks.filter(task => !idsToDelete.has(task.id));
-        });
-        logActivity(T.ActionType.DELETED_MULTIPLE, `${taskIds.length} görev ve tüm alt görevleri silindi.`, 'task');
-        addToast(`${taskIds.length} görev başarıyla silindi.`, 'success');
-    }, [setTasks, logActivity, addToast]);
-
     const logTimeOnTask = useCallback((taskId: number, minutes: number) => {
-        setTasks(prev => prev.map(t => t.id === taskId ? { ...t, timeSpent: (t.timeSpent || 0) + minutes } : t));
-        addToast(`${minutes} dakika süre eklendi.`, 'success');
-    }, [setTasks, addToast]);
-
-    const toggleTaskStar = useCallback((taskId: number) => {
-        let isStarred: boolean | undefined;
-        let taskTitle: string | undefined;
-        setTasks(prev =>
-            prev.map(task => {
-                if (task.id === taskId) {
-                    isStarred = !task.isStarred;
-                    taskTitle = task.title;
-                    return { ...task, isStarred };
-                }
-                return task;
-            })
-        );
-        if (taskTitle !== undefined) {
-             addToast(`Görev '${isStarred ? 'yıldızlandı' : 'yıldızı kaldırıldı'}'`, 'info');
-             logActivity(T.ActionType.UPDATED, `Görev '${taskTitle}' ${isStarred ? 'yıldızlandı' : 'yıldızı kaldırıldı'}.`, 'task', taskId);
-        }
-    }, [setTasks, logActivity, addToast]);
-    
-    const toggleDocumentStar = useCallback((docId: number) => {
-        let isStarred: boolean | undefined;
-        let docName: string | undefined;
-        setDocuments(prev =>
-            prev.map(doc => {
-                if (doc.id === docId) {
-                    isStarred = !doc.isStarred;
-                    docName = doc.name;
-                    return { ...doc, isStarred };
-                }
-                return doc;
-            })
-        );
-        if (docName !== undefined) {
-             addToast(`Doküman '${isStarred ? 'yıldızlandı' : 'yıldızı kaldırıldı'}'`, 'info');
-             logActivity(T.ActionType.UPDATED, `Doküman '${docName}' ${isStarred ? 'yıldızlandı' : 'yıldızı kaldırıldı'}.`, 'document', docId);
-        }
-    }, [setDocuments, logActivity, addToast]);
-
-    const addTicket = useCallback((ticketData: Omit<T.SupportTicket, "id" | "ticketNumber" | "customerName" | "assignedToName" | "createdDate">): T.SupportTicket => {
-        const newTicket: T.SupportTicket = { ...ticketData, id: Date.now(), ticketNumber: `TKT-${Date.now()}`, createdDate: new Date().toISOString(), customerName: customers.find(c => c.id === ticketData.customerId)?.name || 'Bilinmeyen', assignedToName: employees.find(e => e.id === ticketData.assignedToId)?.name || 'Bilinmeyen' };
-        setTickets(prev => [newTicket, ...prev]);
-        logActivity(T.ActionType.CREATED, `Destek talebi #${newTicket.ticketNumber} oluşturuldu.`, 'ticket', newTicket.id);
-        return newTicket;
-    }, [customers, employees, setTickets, logActivity]);
-
-    const updateTicket = useCallback((ticket: T.SupportTicket): T.SupportTicket | undefined => {
-        let updated: T.SupportTicket | undefined;
-        setTickets(prev => prev.map(t => {
-            if (t.id === ticket.id) {
-                 updated = { ...ticket, customerName: customers.find(c => c.id === ticket.customerId)?.name || 'Bilinmeyen', assignedToName: employees.find(e => e.id === ticket.assignedToId)?.name || 'Bilinmeyen' };
-                 return updated;
+        let taskToUpdate: T.Task | undefined;
+        setTasks(prev => prev.map(t => {
+            if (t.id === taskId) {
+                taskToUpdate = { ...t, timeSpent: (t.timeSpent || 0) + minutes };
+                return taskToUpdate;
             }
             return t;
         }));
-        if(updated) logActivity(T.ActionType.UPDATED, `Destek talebi #${updated.ticketNumber} güncellendi.`, 'ticket', updated.id);
-        return updated;
-    }, [customers, employees, setTickets, logActivity]);
-
-    const deleteTicket = useCallback((id: number) => {
-        const ticketToDelete = tickets.find(t => t.id === id);
-        if (ticketToDelete) {
-            setTickets(prev => prev.filter(t => t.id !== id));
-            logActivity(T.ActionType.DELETED, `Destek talebi #${ticketToDelete.ticketNumber} silindi.`, 'ticket', id);
-        }
-    }, [tickets, setTickets, logActivity]);
-
-    const addSalesOrder = useCallback((orderData: Omit<T.SalesOrder, "id" | "orderNumber" | "customerName">): T.SalesOrder => {
-        for (const item of orderData.items) {
-            const stockInfo = getProductStockInfo(item.productId);
-            if (stockInfo.available < item.quantity) {
-                const product = products.find(p => p.id === item.productId);
-                addToast(`Yetersiz stok: '${product?.name || 'Bilinmeyen'}'. Mevcut: ${stockInfo.available}, İstenen: ${item.quantity}.`, "warning");
-                return { ...orderData, id: -1, orderNumber: '', customerName: '' } as T.SalesOrder; 
+        if (taskToUpdate) {
+            logActivity(T.ActionType.UPDATED, `Göreve zaman eklendi: ${taskToUpdate.title}`, 'task', taskId);
+            
+            if (taskToUpdate.relatedEntityType === 'project' && taskToUpdate.relatedEntityId) {
+                const cost = (minutes / 60) * hrParameters.DEFAULT_HOURLY_RATE;
+                setProjects(prevProjects => prevProjects.map(p =>
+                    p.id === taskToUpdate!.relatedEntityId ? { ...p, spent: p.spent + cost } : p
+                ));
             }
         }
-        
-        const newOrder: T.SalesOrder = { ...orderData, id: Date.now(), orderNumber: `SO-${Date.now()}`, customerName: customers.find(c=>c.id === orderData.customerId)?.name || '' };
-        setSalesOrders(prev => [newOrder, ...prev]);
-        logActivity(T.ActionType.CREATED, `Satış Siparişi #${newOrder.orderNumber} oluşturuldu.`, 'sales_order', newOrder.id);
-        return newOrder;
-    }, [customers, products, setSalesOrders, logActivity, getProductStockInfo, addToast]);
+    }, [setTasks, logActivity, hrParameters, setProjects]);
 
+    const addSalesReturn = useCallback((returnData: Omit<T.SalesReturn, 'id' | 'returnNumber' | 'customerName'>): T.SalesReturn => {
+        const customer = customers.find(c => c.id === returnData.customerId);
+        const newReturn: T.SalesReturn = {
+            ...returnData,
+            id: Date.now(),
+            returnNumber: `SR-${Date.now()}`,
+            customerName: customer?.name || 'Bilinmeyen Müşteri'
+        };
+        setSalesReturns(prev => [newReturn, ...prev]);
+        logActivity(T.ActionType.CREATED, `Satış iadesi oluşturuldu: ${newReturn.returnNumber}`, 'sales_return', newReturn.id);
+        return newReturn;
+    }, [customers, setSalesReturns, logActivity]);
 
-    const updateSalesOrder = useCallback((order: T.SalesOrder): T.SalesOrder | undefined => {
-        let updated: T.SalesOrder | undefined;
-        setSalesOrders(prev => prev.map(so => {
-            if (so.id === order.id) {
-                updated = { ...order, customerName: customers.find(c=>c.id === order.customerId)?.name || '' };
-                return updated;
+    const updateSalesReturn = useCallback((salesReturn: T.SalesReturn): T.SalesReturn | undefined => {
+        let updated: T.SalesReturn | undefined;
+        setSalesReturns(prev => prev.map(sr => {
+            if (sr.id === salesReturn.id) {
+                updated = salesReturn;
+                return salesReturn;
             }
-            return so;
+            return sr;
         }));
-        if(updated) logActivity(T.ActionType.UPDATED, `Satış Siparişi #${updated.orderNumber} güncellendi.`, 'sales_order', updated.id);
+        if (updated) logActivity(T.ActionType.UPDATED, `Satış iadesi güncellendi: ${updated.returnNumber}`, 'sales_return', updated.id);
         return updated;
-    }, [customers, setSalesOrders, logActivity]);
+    }, [setSalesReturns, logActivity]);
 
-    const deleteSalesOrder = useCallback((orderId: number) => {
-        const orderToDelete = salesOrders.find(so => so.id === orderId);
-        if (orderToDelete) {
-            setSalesOrders(prev => prev.filter(so => so.id !== orderId));
-            logActivity(T.ActionType.DELETED, `Satış Siparişi #${orderToDelete.orderNumber} silindi.`, 'sales_order', orderId);
+    const deleteSalesReturn = useCallback((id: number) => {
+        const toDelete = salesReturns.find(sr => sr.id === id);
+        if (toDelete) {
+            setSalesReturns(prev => prev.filter(sr => sr.id !== id));
+            logActivity(T.ActionType.DELETED, `Satış iadesi silindi: ${toDelete.returnNumber}`, 'sales_return', toDelete.id);
         }
-    }, [salesOrders, setSalesOrders, logActivity]);
-    
-    const updateSalesOrderStatus = useCallback((orderId: number, newStatus: T.SalesOrderStatus) => {
-        setSalesOrders(prevOrders => {
-            const newOrders = [...prevOrders];
-            const orderIndex = newOrders.findIndex(o => o.id === orderId);
-            if (orderIndex === -1) return prevOrders;
-    
-            const order = JSON.parse(JSON.stringify(newOrders[orderIndex]));
-            const oldStatus = order.status;
-            let finalStatus = newStatus;
-            let logMessage = `Sipariş #${order.orderNumber} durumu '${oldStatus}' -> '${newStatus}' olarak değiştirildi.`;
-    
-            if (oldStatus === T.SalesOrderStatus.OnayBekliyor && newStatus === T.SalesOrderStatus.Onaylandı) {
-                let allItemsAvailable = true;
-                let needsProduction = false;
-                let needsManualAllocation = false;
-    
-                order.items.forEach((item: T.SalesOrderItem) => {
-                    const product = products.find(p => p.id === item.productId);
-                    if (!product || product.productType === T.ProductType.Hizmet) return;
-    
-                    const needed = item.quantity - (item.committedStockItemIds?.length || 0);
-                    if (needed <= 0) return;
-    
-                    const stockInfo = getProductStockInfo(item.productId);
-                    if (stockInfo.available < needed) {
-                        allItemsAvailable = false;
-                        if (product.productType === T.ProductType.Mamul) needsProduction = true;
-                    } else {
-                        if (product.trackBy !== 'none') {
-                            needsManualAllocation = true;
-                        }
-                    }
-                });
-    
-                if (!allItemsAvailable) {
-                    finalStatus = needsProduction ? T.SalesOrderStatus.UretimBekleniyor : T.SalesOrderStatus.StokBekleniyor;
-                } else {
-                     if (needsManualAllocation) {
-                        finalStatus = T.SalesOrderStatus.Onaylandı;
-                    } else {
-                        finalStatus = T.SalesOrderStatus.SevkeHazır;
-                    }
-                }
-                logMessage = `Sipariş #${order.orderNumber} onaylandı ve durumu otomatik olarak '${finalStatus}' olarak güncellendi.`;
-            }
-            
-            order.status = finalStatus;
-            newOrders[orderIndex] = order;
-            logActivity(T.ActionType.STATUS_CHANGED, logMessage, 'sales_order', order.id);
-            
-            return newOrders;
-        });
-    }, [setSalesOrders, products, getProductStockInfo, logActivity]);
-
-    const addLead = useCallback((leadData: Omit<T.Lead, 'id'>): T.Lead => {
-        const newLead = { ...leadData, id: Date.now() };
-        setLeads(prev => [newLead, ...prev]);
-        logActivity(T.ActionType.CREATED, `Potansiyel müşteri '${newLead.name}' oluşturuldu.`, 'lead', newLead.id);
-        return newLead;
-    }, [setLeads, logActivity]);
-    
-    const convertLead = useCallback((leadId: number): { customer: T.Customer; contact: T.Contact; deal: T.Deal } | undefined => {
-        const lead = leads.find(l => l.id === leadId);
-        if (!lead) return undefined;
-
-        const newCustomerData: Omit<T.Customer, 'id' | 'avatar'> = {
-            name: lead.company || lead.name,
-            company: lead.company || lead.name,
-            email: lead.email,
-            phone: lead.phone,
-            lastContact: new Date().toISOString().split('T')[0],
-            status: 'potansiyel',
-            industry: '',
-            tags: ['lead-conversion'],
-            assignedToId: lead.assignedToId,
-            leadSource: lead.source,
-            accountType: 'Tüzel Kişi',
-            accountCode: `CUST-${Date.now()}`,
-            taxId: '',
-            taxOffice: '',
-            billingAddress: { country: 'Türkiye', city: '', district: '', streetAddress: '', postalCode: '', email: lead.email, phone: lead.phone },
-            shippingAddress: { country: 'Türkiye', city: '', district: '', streetAddress: '', postalCode: '', email: lead.email, phone: lead.phone },
-            iban: '',
-            openingBalance: 0,
-            currency: 'TRY',
-            openingDate: new Date().toISOString().split('T')[0],
-        };
-        const newCustomer = addCustomer(newCustomerData);
-    
-        const newContactData: Omit<T.Contact, 'id'> = {
-            customerId: newCustomer.id,
-            name: lead.name,
-            title: 'İlgili Kişi',
-            email: lead.email,
-            phone: lead.phone,
-        };
-        const newContact = addContact(newContactData);
-    
-        const newDealData: Omit<T.Deal, 'id' | 'customerName' | 'assignedToName' | 'value' | 'lastActivityDate' | 'createdDate'> = {
-            title: `${lead.company || lead.name} Anlaşması`,
-            customerId: newCustomer.id,
-            stage: T.DealStage.Lead,
-            closeDate: new Date(new Date().setDate(new Date().getDate() + 30)).toISOString().split('T')[0],
-            assignedToId: lead.assignedToId,
-            lineItems: [],
-        };
-        const newDeal = addDeal(newDealData);
-        
-        setLeads(prev => prev.filter(l => l.id !== leadId));
-        logActivity(T.ActionType.LEAD_CONVERTED, `Potansiyel müşteri '${lead.name}' müşteriye dönüştürüldü.`, 'lead', leadId);
-        addToast(`'${lead.name}' başarıyla dönüştürüldü!`, 'success');
-        
-        return { customer: newCustomer, contact: newContact, deal: newDeal };
-    }, [leads, setLeads, addCustomer, addContact, addDeal, logActivity, addToast]);
+    }, [salesReturns, setSalesReturns, logActivity]);
     
     const addQuotation = useCallback((quotationData: Omit<T.Quotation, 'id' | 'quotationNumber' | 'customerName'>): T.Quotation => {
-        const customer = customers.find(c => c.id === quotationData.customerId);
-        const newQuotation: T.Quotation = {
+        const newQuotation = {
             ...quotationData,
             id: Date.now(),
             quotationNumber: `QT-${Date.now()}`,
-            customerName: customer?.name || 'Bilinmeyen Müşteri'
+            customerName: customers.find(c => c.id === quotationData.customerId)?.name || '',
         };
-        setQuotations(prev => [newQuotation, ...prev]);
-        logActivity(T.ActionType.CREATED, `Teklif #${newQuotation.quotationNumber} oluşturuldu.`, 'quotation', newQuotation.id);
+        setQuotations(prev => [...prev, newQuotation]);
         return newQuotation;
-    }, [customers, setQuotations, logActivity]);
+    }, [customers, setQuotations]);
 
     const updateQuotation = useCallback((quotation: T.Quotation): T.Quotation | undefined => {
-        let updated: T.Quotation | undefined;
+        let updated;
         setQuotations(prev => prev.map(q => {
             if (q.id === quotation.id) {
-                const customer = customers.find(c => c.id === quotation.customerId);
-                updated = { ...quotation, customerName: customer?.name || 'Bilinmeyen' };
-                return updated;
+                updated = quotation;
+                return quotation;
             }
             return q;
         }));
-        if (updated) logActivity(T.ActionType.UPDATED, `Teklif #${updated.quotationNumber} güncellendi.`, 'quotation', updated.id);
         return updated;
-    }, [customers, setQuotations, logActivity]);
+    }, [setQuotations]);
 
     const deleteQuotation = useCallback((id: number) => {
-        const toDelete = quotations.find(q => q.id === id);
-        if(toDelete) {
-            setQuotations(prev => prev.filter(q => q.id !== id));
-            logActivity(T.ActionType.DELETED, `Teklif #${toDelete.quotationNumber} silindi.`, 'quotation', id);
-        }
-    }, [quotations, setQuotations, logActivity]);
-    
+        setQuotations(prev => prev.filter(q => q.id !== id));
+    }, [setQuotations]);
+
     const convertQuotationToSalesOrder = useCallback((quotationId: number): T.SalesOrder | undefined => {
         const quotation = quotations.find(q => q.id === quotationId);
-        if (!quotation) return undefined;
+        if (!quotation) return;
+        
         const customer = customers.find(c => c.id === quotation.customerId);
-        if (!customer) return undefined;
+        if (!customer) return;
 
-        const orderItems: T.SalesOrderItem[] = quotation.items.map(item => ({
-            productId: item.productId,
-            productName: item.productName,
-            quantity: item.quantity,
-            price: item.unitPrice,
-            discountRate: item.discountRate,
-            taxRate: item.taxRate,
-            committedStockItemIds: [],
-            shippedQuantity: 0,
-        }));
-    
-        const orderData: Omit<T.SalesOrder, "id" | "orderNumber" | "customerName"> = {
+        const newOrder: Omit<T.SalesOrder, "id" | "orderNumber" | "customerName"> = {
             customerId: quotation.customerId,
             orderDate: new Date().toISOString().split('T')[0],
-            items: orderItems,
+            items: quotation.items.map(item => ({
+                productId: item.productId,
+                productName: item.productName,
+                quantity: item.quantity,
+                price: item.unitPrice,
+                discountRate: item.discountRate,
+                taxRate: item.taxRate,
+                committedStockItemIds: [],
+                shippedQuantity: 0,
+            })),
             status: T.SalesOrderStatus.OnayBekliyor,
             shippingAddress: customer.shippingAddress,
             billingAddress: customer.billingAddress,
@@ -1451,628 +1394,218 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
             subTotal: quotation.subTotal,
             totalDiscount: quotation.totalDiscount,
             totalTax: quotation.totalTax,
-            shippingCost: 0, 
+            shippingCost: 0,
             grandTotal: quotation.grandTotal,
             dealId: quotation.dealId,
         };
-        
-        const newOrder = addSalesOrder(orderData);
-        if (newOrder.id !== -1) { // Check if stock was available
-            updateQuotation({ ...quotation, status: T.QuotationStatus.Accepted, salesOrderId: newOrder.id });
-            logActivity(T.ActionType.CREATED, `Teklif #${quotation.quotationNumber}, Satış Siparişi #${newOrder.orderNumber}'e dönüştürüldü.`, 'sales_order', newOrder.id);
-            return newOrder;
+        const addedOrder = addSalesOrder(newOrder);
+        if (addedOrder) {
+             updateQuotation({ ...quotation, status: T.QuotationStatus.Accepted, salesOrderId: addedOrder.id });
         }
-        return undefined;
+        return addedOrder;
+    }, [quotations, customers, setQuotations, addSalesOrder]);
 
-    }, [quotations, customers, addSalesOrder, updateQuotation, logActivity]);
+    const addLead = useCallback((leadData: Omit<T.Lead, 'id'>): T.Lead => {
+        const newLead = { ...leadData, id: Date.now() };
+        setLeads(prev => [...prev, newLead]);
+        return newLead;
+    }, [setLeads]);
 
-    const addSalesActivity = useCallback((activityData: Omit<T.SalesActivity, "id" | "userName" | "userAvatar" | "timestamp">): T.SalesActivity => {
-        const newActivity: T.SalesActivity = {
-            ...activityData,
-            id: Date.now(),
-            timestamp: new Date().toISOString(),
-            userName: currentUser.name,
-            userAvatar: currentUser.avatar
+    const convertLead = useCallback((leadId: number): { customer: T.Customer; contact: T.Contact; deal: T.Deal } | undefined => {
+        const lead = leads.find(l => l.id === leadId);
+        if (!lead) return;
+        const newCustomerData = {
+            name: lead.company || lead.name,
+            company: lead.company || lead.name,
+            email: lead.email,
+            phone: lead.phone,
+            lastContact: new Date().toISOString().split('T')[0],
+            status: 'potansiyel',
+            industry: '',
+            tags: ['dönüştürüldü'],
+            assignedToId: lead.assignedToId,
+            leadSource: lead.source,
+            accountType: 'Tüzel Kişi' as 'Tüzel Kişi',
+            accountCode: '',
+            taxId: '',
+            taxOffice: '',
+            billingAddress: { country: 'Türkiye', city: '', district: '', streetAddress: '', postalCode: '', email: '', phone: '' },
+            shippingAddress: { country: 'Türkiye', city: '', district: '', streetAddress: '', postalCode: '', email: '', phone: '' },
+            iban: '',
+            openingBalance: 0,
+            currency: 'TRY' as 'TRY',
+            openingDate: new Date().toISOString().split('T')[0]
         };
-        setSalesActivities(prev => [newActivity, ...prev]);
-        setDeals(prev => prev.map(deal => deal.id === activityData.dealId ? { ...deal, lastActivityDate: newActivity.timestamp } : deal));
-        logActivity(T.ActionType.COMMENT_ADDED, `Aktivite eklendi: ${newActivity.type}`, 'deal', newActivity.dealId);
-        return newActivity;
-    }, [currentUser, setSalesActivities, setDeals, logActivity]);
-    
-    const updateDealStage = useCallback((dealId: number, newStage: T.DealStage) => {
-        let updatedDeal: T.Deal | undefined;
-        setDeals(prev => prev.map(d => {
-            if (d.id === dealId) {
-                logActivity(T.ActionType.STATUS_CHANGED, `Anlaşma '${d.title}' durumu '${d.stage}' -> '${newStage}' olarak değiştirildi.`, 'deal', dealId);
-                updatedDeal = { ...d, stage: newStage, lastActivityDate: new Date().toISOString() };
-                return updatedDeal;
-            }
-            return d;
-        }));
-         if (updatedDeal) {
-            runEventTriggeredAutomations(T.AutomationTriggerType.DEAL_STAGE_CHANGED, { deal: updatedDeal });
-        }
-    }, [setDeals, logActivity, runEventTriggeredAutomations]);
-    
-    const bulkUpdateDealStage = useCallback((dealIds: number[], newStage: T.DealStage, reason: string = '') => {
-        setDeals(prev => prev.map(d => {
-            if (dealIds.includes(d.id)) {
-                const updatedDeal = { ...d, stage: newStage, lastActivityDate: new Date().toISOString(), closeDate: new Date().toISOString().split('T')[0] };
-                if (newStage === T.DealStage.Won) updatedDeal.winReason = reason;
-                if (newStage === T.DealStage.Lost) updatedDeal.lossReason = reason;
-                return updatedDeal;
-            }
-            return d;
-        }));
-        logActivity(T.ActionType.STATUS_CHANGED, `${dealIds.length} anlaşmanın durumu '${newStage}' olarak güncellendi.`);
-    }, [setDeals, logActivity]);
-    
-    const updateDealWinLossReason = useCallback((dealId: number, stage: T.DealStage.Won | T.DealStage.Lost, reason: string) => {
-        setDeals(prev => prev.map(d => {
-            if (d.id === dealId) {
-                const updatedDeal = { ...d, stage, lastActivityDate: new Date().toISOString(), closeDate: new Date().toISOString().split('T')[0] };
-                if (stage === T.DealStage.Won) updatedDeal.winReason = reason;
-                else updatedDeal.lossReason = reason;
-                logActivity(T.ActionType.STATUS_CHANGED, `Anlaşma '${d.title}' durumu '${stage}' olarak güncellendi. Neden: ${reason}`, 'deal', dealId);
-                return updatedDeal;
-            }
-            return d;
-        }));
-    }, [setDeals, logActivity]);
-    
-    const winDeal = useCallback(async (deal: T.Deal, winReason: string, createProject: boolean, useTaskTemplate?: boolean, taskTemplateId?: number): Promise<void> => {
-        const wonDeal: T.Deal = { ...deal, stage: T.DealStage.Won, winReason: winReason, closeDate: new Date().toISOString().split('T')[0], lastActivityDate: new Date().toISOString() };
-        updateDeal(wonDeal);
-        addToast(`'${deal.title}' anlaşması kazanıldı!`, 'success');
-        
-        const commissionAmount = deal.value * 0.10;
-        const newCommission: T.CommissionRecord = { id: Date.now(), employeeId: deal.assignedToId, dealId: deal.id, dealValue: deal.value, commissionAmount: commissionAmount, earnedDate: new Date().toISOString().split('T')[0] };
-        setCommissionRecords(prev => [...prev, newCommission]);
+        const newCustomer = addCustomer(newCustomerData);
 
-        if (deal.lineItems.length > 0) {
-            const customer = customers.find(c => c.id === deal.customerId);
-            if (customer) {
-                const orderData: Omit<T.SalesOrder, "id" | "orderNumber" | "customerName"> = {
-                    customerId: deal.customerId, orderDate: new Date().toISOString().split('T')[0],
-                    items: deal.lineItems.map(li => ({ productId: li.productId, productName: li.productName, quantity: li.quantity, price: li.price, discountRate: 0, taxRate: products.find(p=>p.id === li.productId)?.financials.vatRate || 20, committedStockItemIds: [], shippedQuantity: 0, })),
-                    status: T.SalesOrderStatus.OnayBekliyor, shippingAddress: customer.shippingAddress, billingAddress: customer.billingAddress, dealId: deal.id,
-                    subTotal: deal.value, totalDiscount: 0, totalTax: 0, shippingCost: 0, grandTotal: deal.value,
-                };
-                addSalesOrder(orderData);
-            }
-        }
-        if (createProject) {
-            const projectData: Omit<T.Project, 'id' | 'client'> = {
-                name: `${deal.title} Projesi`, customerId: deal.customerId, deadline: new Date(new Date().setDate(new Date().getDate() + 90)).toISOString().split('T')[0], status: 'beklemede',
-                progress: 0, description: `${deal.title} anlaşmasından otomatik oluşturuldu.`, startDate: new Date().toISOString().split('T')[0],
-                teamMemberIds: [deal.assignedToId], budget: deal.value * 0.8, spent: 0, tags: ['sales-generated']
-            };
-            const templateIdToUse = useTaskTemplate ? taskTemplateId : undefined;
-            addProject(projectData, templateIdToUse);
-        }
-    }, [updateDeal, setCommissionRecords, addSalesOrder, addProject, customers, products, addToast]);
-    
-    const deleteMultipleDeals = useCallback((dealIds: number[]) => {
-        setDeals(prev => prev.filter(d => !dealIds.includes(d.id)));
-        logActivity(T.ActionType.DELETED_MULTIPLE, `${dealIds.length} anlaşma silindi.`);
-    }, [setDeals, logActivity]);
-
-    const addStockMovement = useCallback((productId: number, warehouseId: number, type: T.StockMovementType, quantityChange: number, notes?: string, relatedDocumentId?: number) => {
-        const product = products.find(p => p.id === productId);
-        if (!product) {
-            console.error(`addStockMovement: Product with ID ${productId} not found.`);
-            return;
-        }
-
-        const newMovement: T.StockMovement = {
-            id: Date.now(),
-            timestamp: new Date().toISOString(),
-            productId,
-            productName: product.name,
-            warehouseId,
-            warehouseName: warehouses.find(w => w.id === warehouseId)?.name || 'Bilinmeyen Depo',
-            type,
-            quantityChange,
-            notes,
-            relatedDocumentId,
-        };
-        setStockMovements(prev => [newMovement, ...prev]);
-
-        if (quantityChange < 0) { // Stoktan Düşme
-            let amountToRemove = Math.abs(quantityChange);
-            
-            setStockItems(prevStockItems => {
-                const updatedStockItems = [...prevStockItems];
-                const availableItems = updatedStockItems.filter(i => 
-                    i.productId === productId &&
-                    i.warehouseId === warehouseId &&
-                    i.status === T.StockItemStatus.Available
-                ).sort((a,b) => new Date(a.expiryDate || '9999-12-31').getTime() - new Date(b.expiryDate || '9999-12-31').getTime());
-
-                for (const item of availableItems) {
-                    if (amountToRemove === 0) break;
-                    if (product.trackBy === 'batch') {
-                        const removable = Math.min(item.quantity || 0, amountToRemove);
-                        item.quantity = (item.quantity || 0) - removable;
-                        amountToRemove -= removable;
-                    } else { // Serial or None
-                        item.status = T.StockItemStatus.Consumed;
-                        amountToRemove--;
-                    }
-                }
-                return updatedStockItems.filter(item => item.status !== T.StockItemStatus.Consumed && (item.quantity === undefined || item.quantity > 0));
-            });
-        }
-    }, [products, warehouses, setStockMovements, setStockItems]);
-
-    const addProduct = useCallback((productData: Omit<T.Product, "id">, initialStock?: { warehouseId: number, quantity: number }): T.Product => {
-        const newProduct = { ...productData, id: Date.now() };
-        setProducts(prev => [...prev, newProduct]);
-        
-        if (initialStock && initialStock.quantity > 0 && initialStock.warehouseId) {
-            const newItems: T.StockItem[] = [];
-            if (newProduct.trackBy === 'serial') {
-                for(let i=0; i<initialStock.quantity; i++) {
-                    newItems.push({
-                        id: Date.now() + i,
-                        productId: newProduct.id,
-                        warehouseId: initialStock.warehouseId,
-                        status: T.StockItemStatus.Available,
-                        serialNumber: `SER-${newProduct.sku}-${Date.now() + i}`
-                    });
-                }
-            } else if (newProduct.trackBy === 'batch') {
-                 newItems.push({
-                    id: Date.now(),
-                    productId: newProduct.id,
-                    warehouseId: initialStock.warehouseId,
-                    status: T.StockItemStatus.Available,
-                    batchNumber: `BAT-${newProduct.sku}-${Date.now()}`,
-                    quantity: initialStock.quantity
-                });
-            } else { // 'none'
-                 for(let i=0; i<initialStock.quantity; i++) {
-                    newItems.push({
-                        id: Date.now() + i,
-                        productId: newProduct.id,
-                        warehouseId: initialStock.warehouseId,
-                        status: T.StockItemStatus.Available
-                    });
-                }
-            }
-            setStockItems(prev => [...prev, ...newItems]);
-            addStockMovement(newProduct.id, initialStock.warehouseId, T.StockMovementType.Adjustment, initialStock.quantity, "Başlangıç Stoku");
-        }
-        logActivity(T.ActionType.CREATED, `Ürün '${newProduct.name}' oluşturuldu.`, 'product', newProduct.id);
-        return newProduct;
-    }, [setProducts, logActivity, addStockMovement, setStockItems]);
-
-    const updateProduct = useCallback((product: T.Product): T.Product | undefined => {
-        let updated: T.Product | undefined;
-        setProducts(prev => prev.map(p => {
-            if (p.id === product.id) {
-                updated = product;
-                return product;
-            }
-            return p;
-        }));
-        if(updated) logActivity(T.ActionType.UPDATED, `Ürün '${updated.name}' güncellendi.`, 'product', updated.id);
-        return updated;
-    }, [setProducts, logActivity]);
-
-    const deleteProduct = useCallback((id: number) => {
-        const productToDelete = products.find(p => p.id === id);
-        if (productToDelete) {
-            setProducts(prev => prev.filter(p => p.id !== id));
-            setStockItems(prev => prev.filter(si => si.productId !== id));
-            addStockMovement(id, 0, T.StockMovementType.Adjustment, 0, `Ürün silindi: ${productToDelete.name}`);
-            logActivity(T.ActionType.DELETED, `Ürün '${productToDelete.name}' silindi.`, 'product', id);
-        }
-    }, [products, setProducts, setStockItems, addStockMovement, logActivity]);
-    
-     const receivePurchaseOrderItems = useCallback((poId: number, itemsToReceive: { productId: number, quantity: number, details: (string | { batch: string; expiry: string })[] }[], warehouseId: number) => {
-        const po = purchaseOrders.find(p => p.id === poId);
-        if (!po) {
-            addToast("Satın alma siparişi bulunamadı.", "error");
-            return;
-        }
-
-        const newStockItems: T.StockItem[] = [];
-        const stockMovementsToAdd: Parameters<typeof addStockMovement>[] = [];
-
-        itemsToReceive.forEach(item => {
-            const product = products.find(p => p.id === item.productId);
-            if (!product) return;
-
-            if (product.trackBy === 'serial') {
-                (item.details as string[]).forEach((serialNumber, i) => {
-                    newStockItems.push({
-                        id: Date.now() + i + Math.random(),
-                        productId: item.productId,
-                        warehouseId,
-                        status: T.StockItemStatus.Available,
-                        serialNumber: serialNumber,
-                    });
-                });
-            } else if (product.trackBy === 'batch') {
-                const batchDetail = item.details[0] as { batch: string, expiry: string };
-                newStockItems.push({
-                    id: Date.now() + Math.random(),
-                    productId: item.productId,
-                    warehouseId,
-                    status: T.StockItemStatus.Available,
-                    batchNumber: batchDetail.batch,
-                    expiryDate: batchDetail.expiry,
-                    quantity: item.quantity,
-                });
-            } else { // trackBy: 'none'
-                for (let i = 0; i < item.quantity; i++) {
-                    newStockItems.push({
-                        id: Date.now() + i + Math.random(),
-                        productId: item.productId,
-                        warehouseId,
-                        status: T.StockItemStatus.Available,
-                    });
-                }
-            }
-             stockMovementsToAdd.push([item.productId, warehouseId, T.StockMovementType.PurchaseReceive, item.quantity, `PO #${po.poNumber}`, po.id]);
-        });
-        
-        if (newStockItems.length > 0) {
-            setStockItems(prev => [...prev, ...newStockItems]);
-            stockMovementsToAdd.forEach(args => addStockMovement(...args));
-        }
-        
-        setPurchaseOrders(prevPOs => {
-            return prevPOs.map(p => {
-                if (p.id === poId) {
-                    const updatedItems = p.items.map(poItem => {
-                        const receivedItem = itemsToReceive.find(r => r.productId === poItem.productId);
-                        return receivedItem
-                            ? { ...poItem, receivedQuantity: (poItem.receivedQuantity || 0) + receivedItem.quantity }
-                            : poItem;
-                    });
-                    
-                    const isFullyReceived = updatedItems.every(item => item.receivedQuantity >= item.quantity);
-                    const newStatus = isFullyReceived ? T.PurchaseOrderStatus.Received : T.PurchaseOrderStatus.PartiallyReceived;
-
-                    return { ...p, items: updatedItems, status: newStatus };
-                }
-                return p;
-            });
+        const newContact = addContact({
+            customerId: newCustomer.id,
+            name: lead.name,
+            title: '',
+            email: lead.email,
+            phone: lead.phone,
         });
 
-        addToast(`${itemsToReceive.length} kalem ürün başarıyla teslim alındı.`, 'success');
-    }, [purchaseOrders, products, setStockItems, setPurchaseOrders, addStockMovement, addToast]);
-
-    const updateInvoice = useCallback((invoice: T.Invoice): T.Invoice | undefined => {
-        let updated: T.Invoice | undefined;
-        setInvoices(prev => prev.map(i => {
-            if (i.id === invoice.id) {
-                updated = { ...invoice, customerName: customers.find(c => c.id === invoice.customerId)?.name || 'Bilinmeyen Müşteri' };
-                return updated;
-            }
-            return i;
-        }));
-        if (updated) logActivity(T.ActionType.UPDATED, `Fatura #${updated.invoiceNumber} güncellendi.`, 'invoice', updated.id);
-        return updated;
-    }, [customers, setInvoices, logActivity]);
-
-    const deleteInvoice = useCallback((id: number) => {
-        const toDelete = invoices.find(i => i.id === id);
-        if (toDelete) {
-            setInvoices(prev => prev.filter(i => i.id !== id));
-            logActivity(T.ActionType.DELETED, `Fatura #${toDelete.invoiceNumber} silindi.`, 'invoice', id);
-        }
-    }, [invoices, setInvoices, logActivity]);
-
-    const bulkUpdateInvoiceStatus = useCallback((invoiceIds: number[], newStatus: T.InvoiceStatus) => {
-        setInvoices(prev => prev.map(i =>
-            invoiceIds.includes(i.id)
-                ? { ...i, status: newStatus }
-                : i
-        ));
-        logActivity(T.ActionType.STATUS_CHANGED, `${invoiceIds.length} faturanın durumu '${newStatus}' olarak güncellendi.`);
-    }, [setInvoices, logActivity]);
-
-    const addInvoice = useCallback((invoiceData: Omit<T.Invoice, 'id' | 'invoiceNumber' | 'customerName'>): T.Invoice => {
-        const customer = customers.find(c => c.id === invoiceData.customerId);
-        const newInvoice: T.Invoice = {
-            ...invoiceData,
-            id: Date.now(),
-            invoiceNumber: `${counters.prefix}${String(counters.nextNumber).padStart(counters.padding, '0')}`,
-            customerName: customer?.name || 'Bilinmeyen Müşteri'
-        };
-        setInvoices(prev => [newInvoice, ...prev]);
-        setCounters(prev => ({ ...prev, nextNumber: prev.nextNumber + 1 }));
-        logActivity(T.ActionType.CREATED, `Fatura #${newInvoice.invoiceNumber} oluşturuldu.`, 'invoice', newInvoice.id);
-        return newInvoice;
-    }, [customers, counters, setInvoices, setCounters, logActivity]);
+        const newDeal = addDeal({
+            title: `${newCustomer.name} Anlaşması`,
+            customerId: newCustomer.id,
+            stage: T.DealStage.Contacted,
+            closeDate: new Date().toISOString().split('T')[0],
+            assignedToId: lead.assignedToId,
+            lineItems: [],
+        });
+        
+        setLeads(prev => prev.filter(l => l.id !== leadId));
+        return { customer: newCustomer, contact: newContact, deal: newDeal };
+    }, [leads, addCustomer, addContact, addDeal, setLeads]);
     
-    const markNotificationAsRead = useCallback((id: number) => {
-        setNotifications(prev => prev.map(n => n.id === id ? { ...n, read: true } : n));
-    }, [setNotifications]);
-
-    const clearAllNotifications = useCallback(() => {
-        setNotifications(prev => prev.map(n => ({ ...n, read: true })));
-    }, [setNotifications]);
-
-    const deleteNotification = useCallback((id: number) => {
-        setNotifications(prev => prev.filter(n => n.id !== id));
-    }, [setNotifications]);
-
-    const deleteAllNotifications = useCallback(() => {
-        setNotifications([]);
-    }, [setNotifications]);
-    
-    // START: ALL DUMMY FUNCTIONS IMPLEMENTED
-    const updateHrParameters = useCallback((params: T.HrParameters) => {
-        setHrParameters(params);
-        addToast("Bordro parametreleri güncellendi.", "success");
-    }, [setHrParameters, addToast]);
-    const isManager = useCallback((employeeId: number): boolean => employees.some(e => e.managerId === employeeId), [employees]);
+    const isManager = useCallback((employeeId: number) => employees.some(e => e.managerId === employeeId), [employees]);
     const itemCount = useMemo(() => cartItems.reduce((sum, item) => sum + item.quantity, 0), [cartItems]);
     const addToCart = useCallback((product: T.Product, quantity: number) => {
         setCartItems(prev => {
-            const existingItem = prev.find(item => item.productId === product.id);
-            if(existingItem) {
-                return prev.map(item => item.productId === product.id ? {...item, quantity: item.quantity + quantity} : item);
+            const existing = prev.find(i => i.productId === product.id);
+            if (existing) {
+                return prev.map(i => i.productId === product.id ? { ...i, quantity: i.quantity + quantity } : i);
             }
-            return [...prev, { productId: product.id, productName: product.name, price: product.price, quantity, sku: product.sku }];
+            return [...prev, { productId: product.id, productName: product.name, quantity, price: product.price, sku: product.sku }];
         });
     }, [setCartItems]);
-    const removeFromCart = useCallback((productId: number) => setCartItems(prev => prev.filter(item => item.productId !== productId)), [setCartItems]);
-    const updateCartQuantity = useCallback((productId: number, quantity: number) => setCartItems(prev => prev.map(item => item.productId === productId ? {...item, quantity: Math.max(0, quantity)} : item).filter(item => item.quantity > 0)), [setCartItems]);
+    const removeFromCart = useCallback((productId: number) => setCartItems(prev => prev.filter(i => i.productId !== productId)), [setCartItems]);
+    const updateCartQuantity = useCallback((productId: number, quantity: number) => {
+        if (quantity < 1) {
+            removeFromCart(productId);
+            return;
+        }
+        setCartItems(prev => prev.map(i => i.productId === productId ? { ...i, quantity } : i));
+    }, [setCartItems, removeFromCart]);
     const clearCart = useCallback(() => setCartItems([]), [setCartItems]);
     
     const createSalesOrderFromCart = useCallback((customerId: number): T.SalesOrder | undefined => {
-        if (cartItems.length === 0) {
-            addToast("Sepet boş.", "warning");
-            return undefined;
-        }
+        if (cartItems.length === 0) return;
         const customer = customers.find(c => c.id === customerId);
-        if(!customer) return undefined;
-        const orderItems: T.SalesOrderItem[] = cartItems.map(item => ({
-            productId: item.productId, productName: item.productName, quantity: item.quantity, price: item.price,
-            discountRate: 0, taxRate: products.find(p => p.id === item.productId)?.financials.vatRate || 20,
-            committedStockItemIds: [], shippedQuantity: 0,
+        if (!customer) return;
+
+        const items: T.SalesOrderItem[] = cartItems.map(item => ({
+            productId: item.productId,
+            productName: item.productName,
+            quantity: item.quantity,
+            price: item.price,
+            discountRate: 0,
+            taxRate: 20, // default
+            committedStockItemIds: [],
+            shippedQuantity: 0,
         }));
-        const subTotal = orderItems.reduce((sum, item) => sum + item.quantity * item.price, 0);
-        const totalTax = orderItems.reduce((sum, item) => sum + (item.quantity * item.price * (item.taxRate / 100)), 0);
-        const newOrder = addSalesOrder({
-            customerId, orderDate: new Date().toISOString().split('T')[0], items: orderItems,
-            status: T.SalesOrderStatus.OnayBekliyor, shippingAddress: customer.shippingAddress,
-            billingAddress: customer.billingAddress, subTotal: subTotal, totalDiscount: 0,
-            totalTax: totalTax, shippingCost: 0, grandTotal: subTotal + totalTax,
-        });
-        if (newOrder.id !== -1) {
-            clearCart();
-            addToast(`Satış siparişi #${newOrder.orderNumber} oluşturuldu.`, 'success');
-            return newOrder;
-        }
-        return undefined;
-    }, [cartItems, customers, products, addSalesOrder, clearCart, addToast]);
-    
-    const updateRecurringTask = useCallback((task: T.Task, updateData: Partial<T.Task>, scope: 'this' | 'all', options?: { silent?: boolean }) => {
-        const parentId = task.seriesId || task.id;
-        const parentTask = tasks.find(t => t.id === parentId);
-        if (!parentTask) return;
-        if (scope === 'all') {
-            updateTask({ ...parentTask, ...updateData }, options);
-        } else {
-            const exceptions = parentTask.recurrenceExceptions || [];
-            if (task.originalDate && !exceptions.includes(task.originalDate)) {
-                const newExceptions = [...exceptions, task.originalDate];
-                updateTask({ ...parentTask, recurrenceExceptions: newExceptions }, { silent: true });
-            }
-            addTask({ ...task, ...updateData, seriesId: undefined, originalDate: undefined, recurrenceRule: undefined });
-        }
-        if (!options?.silent) addToast("Tekrarlanan görev güncellendi.", "success");
-    }, [tasks, updateTask, addTask, addToast]);
-    const updateTaskStatus = useCallback((taskId: number, newStatus: T.TaskStatus) => {
-        const task = tasks.find(t => t.id === taskId);
-        if(task) updateTask({ ...task, status: newStatus });
-    }, [tasks, updateTask]);
-    const addSubtask = useCallback((parentId: number, title: string) => {
-        const parentTask = tasks.find(t => t.id === parentId);
-        if (!parentTask) return undefined;
-        const newSubtaskData: Omit<T.Task, 'id' | 'assignedToName' | 'relatedEntityName'> = {
-            title, description: '', status: T.TaskStatus.Todo, priority: parentTask.priority,
-            dueDate: parentTask.dueDate, assignedToId: parentTask.assignedToId, parentId,
+        const subTotal = items.reduce((sum, item) => sum + item.quantity * item.price, 0);
+        const totalTax = items.reduce((sum, item) => sum + (item.quantity * item.price * (item.taxRate / 100)), 0);
+        
+        const newOrderData: Omit<T.SalesOrder, "id" | "orderNumber" | "customerName"> = {
+            customerId,
+            orderDate: new Date().toISOString().split('T')[0],
+            items,
+            status: T.SalesOrderStatus.OnayBekliyor,
+            shippingAddress: customer.shippingAddress,
+            billingAddress: customer.billingAddress,
+            subTotal,
+            totalDiscount: 0,
+            totalTax,
+            shippingCost: 0,
+            grandTotal: subTotal + totalTax
         };
-        return addTask(newSubtaskData);
-    }, [tasks, addTask]);
+
+        const newOrder = addSalesOrder(newOrderData);
+        clearCart();
+        return newOrder;
+    }, [cartItems, customers, addSalesOrder, clearCart]);
+
+    const updateTask = useCallback((task: T.Task, options?: { silent?: boolean }): T.Task | undefined => {
+        let updated: T.Task | undefined;
+        setTasks(prev => prev.map(t => {
+            if (t.id === task.id) {
+                updated = { ...t, ...task };
+                return updated;
+            }
+            return t;
+        }));
+        if (updated && !options?.silent) {
+            logActivity(T.ActionType.TASK_UPDATED, `Görev güncellendi: ${updated.title}`, 'task', updated.id);
+        }
+        return updated;
+    }, [setTasks, logActivity]);
     
-    const value: T.AppContextType = {
+    // FIX: Implement missing functions
+    const updateSalesOrderStatus = useCallback((orderId: number, newStatus: T.SalesOrderStatus) => {
+        setSalesOrders(prev => prev.map(o => o.id === orderId ? { ...o, status: newStatus } : o));
+        logActivity(T.ActionType.STATUS_CHANGED, `Satış siparişi durumu güncellendi: ${newStatus}`, 'sales_order', orderId);
+    }, [setSalesOrders, logActivity]);
+
+    const updateCompanyInfo = useCallback((info: T.CompanyInfo) => {
+        setCompanyInfo(info);
+    }, [setCompanyInfo]);
+    
+    const updateBrandingSettings = useCallback((settings: T.BrandingSettings) => {
+        setBrandingSettings(settings);
+    }, [setBrandingSettings]);
+
+    const updateSecuritySettings = useCallback((settings: T.SecuritySettings) => {
+        setSecuritySettings(settings);
+    }, [setSecuritySettings]);
+    
+    const updateAccountingLockDate = useCallback((date: string | null) => {
+        setAccountingLockDate(date);
+    }, [setAccountingLockDate]);
+
+    // FIX: Corrected contextValue to implement all properties from AppContextType
+    const contextValue: T.AppContextType = {
         customers, addCustomer, updateCustomer, updateCustomerStatus, bulkUpdateCustomerStatus, assignCustomersToEmployee, addTagsToCustomers, deleteCustomer, deleteMultipleCustomers, importCustomers,
         contacts, addContact, updateContact, deleteContact,
         communicationLogs, addCommunicationLog, updateCommunicationLog, deleteCommunicationLog,
         savedViews, addSavedView, deleteSavedView, loadSavedView,
         summarizeActivityFeed,
-        deals, addDeal, updateDeal, deleteDeal, updateDealStage, bulkUpdateDealStage, deleteMultipleDeals, updateDealWinLossReason, winDeal,
-        projects, addProject, updateProject, deleteProject,
-        tasks, addTask, updateTask, deleteTask, updateTaskStatus, addSubtask, deleteMultipleTasks, updateRecurringTask,
-        notifications,
-        invoices, addInvoice, updateInvoice, deleteInvoice, bulkUpdateInvoiceStatus,
-        bills,
-        products, addProduct, updateProduct, deleteProduct,
-        suppliers,
-        purchaseOrders,
-        employees, addEmployee, updateEmployee, deleteEmployee,
-        leaveRequests, addLeaveRequest, updateLeaveRequestStatus,
-        performanceReviews, addPerformanceReview, updatePerformanceReview,
-        jobOpenings, addJobOpening, updateJobOpening,
-        candidates, addCandidate, updateCandidate, updateCandidateStage,
-        onboardingTemplates, addOnboardingTemplate, updateOnboardingTemplate,
-        onboardingWorkflows, startOnboardingWorkflow, updateOnboardingWorkflowStatus,
-        payrollRuns, addPayrollRun, updatePayrollRunStatus, postPayrollRunToJournal, exportPayrollRunToAphbXml,
-        payslips, updatePayslip,
-        bankAccounts,
-        transactions,
-        tickets, addTicket, updateTicket, deleteTicket,
-        documents,
-        comments,
-        salesActivities, addSalesActivity,
-        activityLogs, logActivity,
-        customFieldDefinitions,
-        dashboardLayout, setDashboardLayout,
-        companyInfo, 
-        brandingSettings, 
-        securitySettings,
-        roles,
-        rolesPermissions,
-        taxRates,
-        systemLists,
-        emailTemplates,
-        priceLists,
-        priceListItems,
-        automations,
-        automationLogs,
-        taskTemplates, addTaskTemplate, updateTaskTemplate, deleteTaskTemplate,
-        scheduledTasks,
-        counters,
-        cartItems, addToCart, removeFromCart, updateCartQuantity, clearCart, createSalesOrderFromCart, itemCount,
-        warehouses,
-        stockMovements, addStockMovement,
-        inventoryTransfers,
-        inventoryAdjustments,
-        salesOrders, addSalesOrder, updateSalesOrder, deleteSalesOrder, updateSalesOrderStatus,
-        shipments,
-        stockItems,
-        pickLists,
-        boms,
-        workOrders, updateWorkOrderStatus,
-        accounts,
-        journalEntries, addJournalEntry,
-        recurringJournalEntries,
-        budgets,
-        costCenters,
-        accountingLockDate, 
-        currentUser, setCurrentUser,
-        expenses, addExpense, updateExpenseStatus,
-        assets, addAsset, updateAsset,
-        hrParameters,
-        salesReturns,
-        quotations, addQuotation, updateQuotation, deleteQuotation, convertQuotationToSalesOrder,
-        leads, addLead, convertLead,
-        commissionRecords,
-        isManager,
-        hasPermission,
-        getProductStockInfo,
-        calculateAnnualLeaveBalance, calculateTerminationPayments, calculatePayrollCost,
-        isCommandPaletteOpen, setIsCommandPaletteOpen,
-        isCustomerFormOpen, setIsCustomerFormOpen, editingCustomer,
-        isDealFormOpen, setIsDealFormOpen, editingDeal, prefilledDealData,
-        isTaskFormOpen, setIsTaskFormOpen, editingTask, prefilledTaskData,
-        isProjectFormOpen, setIsProjectFormOpen, editingProject, prefilledProjectData,
-        isTicketFormOpen, setIsTicketFormOpen, editingTicket, prefilledTicketData,
-        isSalesOrderFormOpen, setIsSalesOrderFormOpen, editingSalesOrder, prefilledSalesOrderData,
-        isLogModalOpen, setIsLogModalOpen, logModalCustomerId,
-        receivePurchaseOrderItems,
-        createTasksFromTemplate,
-        addBill: () => ({} as T.Bill), 
-        updateBill: () => undefined,
-        bulkUpdateBillStatus: () => {},
-        addSupplier: () => ({} as T.Supplier),
-        updateSupplier: () => undefined,
-        deleteSupplier: () => {},
-        addPurchaseOrder: () => ({} as T.PurchaseOrder),
-        updatePurchaseOrder: () => undefined,
-        updatePurchaseOrderStatus: () => {},
-        createBillFromPO: () => undefined,
-        deletePurchaseOrder: () => {},
-        addBankAccount: () => ({} as T.BankAccount),
-        updateBankAccount: () => undefined,
-        deleteBankAccount: () => {},
-        addTransaction: () => ({} as T.Transaction),
-        updateTransaction: () => undefined,
-        deleteTransaction: () => {},
-        addDocument: () => ({} as T.Document),
-        renameDocument: () => {},
-        deleteDocument: () => {},
-        deleteMultipleDocuments: () => {},
-        addFolder: () => ({} as T.Document),
-        moveDocuments: () => {},
-        toggleDocumentStar,
-        shareDocument: () => {},
-        addComment: () => ({} as T.Comment),
-        updateComment: () => undefined,
-        deleteComment: () => {},
-        addCustomField: () => ({} as T.CustomFieldDefinition),
-        updateCustomField: () => undefined,
-        deleteCustomField: () => {},
-        addWidgetToDashboard: () => {},
-        removeWidgetFromDashboard: () => {},
-        updateCompanyInfo: (info: T.CompanyInfo) => { setCompanyInfo(info); addToast('Şirket bilgileri güncellendi.', 'success'); },
-        updateBrandingSettings: (settings: T.BrandingSettings) => { setBrandingSettings(settings); addToast('Görünüm ayarları güncellendi.', 'success'); },
-        updateSecuritySettings: (settings: T.SecuritySettings) => { setSecuritySettings(settings); addToast('Güvenlik ayarları güncellendi.', 'success'); },
-        addRole: () => ({} as T.Role),
-        updateRolePermissions: (roleId: string, permissions: T.Permission[]) => { setRolesPermissions(prev => ({...prev, [roleId]: permissions})); addToast('Rol izinleri güncellendi.', 'success'); },
-        deleteRole: () => {},
-        addTaxRate: () => ({} as T.TaxRate),
-        updateTaxRate: () => undefined,
-        deleteTaxRate: () => {},
-        updateSystemList: () => {},
-        updateEmailTemplate: () => {},
-        addPriceList: () => ({} as T.PriceList),
-        updatePriceList: () => undefined,
-        deletePriceList: () => {},
-        updatePriceListItems: () => {},
-        addAutomation: () => ({} as T.Automation),
-        updateAutomation: () => undefined,
-        deleteAutomation: () => {},
-        addScheduledTask: () => ({} as T.ScheduledTask),
-        updateScheduledTask: () => undefined,
-        deleteScheduledTask: () => {},
-        runScheduledTasksCheck: () => {},
-        updateCounters: (settings: T.CountersSettings) => { setCounters(settings); addToast('Sayaç ayarları güncellendi.', 'success'); },
-        addWarehouse: () => ({} as T.Warehouse),
-        updateWarehouse: () => undefined,
-        deleteWarehouse: () => {},
-        addInventoryTransfer: () => undefined,
-        addInventoryAdjustment: () => undefined,
-        convertOrderToInvoice: () => undefined,
-        createShipmentFromSalesOrder: () => undefined,
-        allocateStockToSalesOrder: () => {},
-        createPickList: () => undefined,
-        confirmPickList: () => {},
-        addBom: () => undefined,
-        updateBom: () => undefined,
-        addWorkOrder: () => undefined,
-        updateWorkOrder: () => undefined,
-        addAccount: () => ({} as T.Account),
-        updateAccount: () => undefined,
-        updateJournalEntry: () => undefined,
-        deleteJournalEntry: () => {},
-        reverseJournalEntry: () => undefined,
-        addRecurringJournalEntry: () => ({} as T.RecurringJournalEntry),
-        updateRecurringJournalEntry: () => undefined,
-        deleteRecurringJournalEntry: () => {},
-        generateEntryFromRecurringTemplate: async () => undefined,
-        addBudget: () => ({} as T.Budget),
-        updateBudget: () => undefined,
-        deleteBudget: () => {},
-        addCostCenter: () => ({} as T.CostCenter),
-        updateCostCenter: () => undefined,
-        deleteCostCenter: () => {},
-        updateAccountingLockDate: (date: string | null) => { setAccountingLockDate(date); addToast('Muhasebe kilit tarihi güncellendi.', 'success'); },
-        updateHrParameters,
-        addSalesReturn: () => ({} as T.SalesReturn),
-        updateSalesReturn: () => undefined,
-        deleteSalesReturn: () => {},
-        getProductStockByWarehouse: () => ({ physical: 0, committed: 0, available: 0 }),
-        addTaskDependency: () => {},
-        removeTaskDependency: () => {},
-        logTimeOnTask,
-        toggleTaskStar,
-        addAttachmentToTask: () => {},
-        deleteAttachmentFromTask: () => {},
-        markNotificationAsRead,
-        clearAllNotifications,
-        deleteNotification,
-        deleteAllNotifications,
+        deals, projects, tasks, notifications, invoices, bills, products, suppliers, purchaseOrders, employees, leaveRequests, performanceReviews, jobOpenings, candidates, onboardingTemplates, onboardingWorkflows, payrollRuns, payslips, bankAccounts, transactions, tickets, documents, comments, salesActivities, activityLogs, customFieldDefinitions, dashboardLayout, companyInfo, brandingSettings, securitySettings, roles, rolesPermissions, taxRates, systemLists, emailTemplates, priceLists, priceListItems, automations, automationLogs, taskTemplates, scheduledTasks, counters, cartItems, warehouses, stockMovements, inventoryTransfers, inventoryAdjustments, salesOrders, shipments, stockItems, pickLists, boms, workOrders, accounts, journalEntries, recurringJournalEntries, budgets, costCenters, accountingLockDate, currentUser, expenses, assets, hrParameters,
+        salesReturns, addSalesReturn, updateSalesReturn, deleteSalesReturn, quotations, addQuotation, updateQuotation, deleteQuotation, convertQuotationToSalesOrder, leads, addLead, convertLead, commissionRecords,
+        setCurrentUser, isManager, itemCount, addToCart, removeFromCart, updateCartQuantity, clearCart, createSalesOrderFromCart,
+        runScheduledTasksCheck: () => {}, addScheduledTask: (d) => d as any, updateScheduledTask: (d) => d, deleteScheduledTask: () => {},
+        addTaskTemplate, updateTaskTemplate, deleteTaskTemplate,
+        addBom: (d) => d as any, updateBom: (d) => d, addWorkOrder: (d) => d as any, updateWorkOrder: (d) => d, getProductStockByWarehouse: () => ({physical:0, committed:0, available:0}),
+        updateWorkOrderStatus, getProductStockInfo,
+        addSalesOrder, updateSalesOrder: (d) => d, deleteSalesOrder: () => {}, updateSalesOrderStatus, convertOrderToInvoice: () => undefined, confirmPickList: () => {},
+        addProduct: (d) => d as any, updateProduct: (d) => d, deleteProduct: () => {}, addWarehouse: (d) => d as any, updateWarehouse: (d) => d, deleteWarehouse: () => {},
+        addInventoryTransfer: () => undefined, addInventoryAdjustment: () => undefined, receivePurchaseOrderItems: () => {},
+        addPurchaseOrder: (d) => d as any, updatePurchaseOrder: (d) => d, updatePurchaseOrderStatus: () => {}, createBillFromPO: () => undefined,
+        allocateStockToSalesOrder: () => {}, createShipmentFromSalesOrder: () => undefined, createPickList: () => undefined,
+        addAutomation: (d) => d as any, updateAutomation: (d) => d, deleteAutomation: () => {}, updateSystemList: () => {}, updateEmailTemplate: () => {},
+        addPriceList: (d) => d as any, updatePriceList: (d) => d, deletePriceList: () => {}, updatePriceListItems: () => {},
+        addTaxRate: (d) => d as any, updateTaxRate: (d) => d, deleteTaxRate: () => {}, addAccount: (d) => d as any, updateAccount: (d) => d,
+        addJournalEntry, updateJournalEntry: (d) => d, deleteJournalEntry: () => {}, reverseJournalEntry: () => undefined,
+        addRecurringJournalEntry: (d) => d as any, updateRecurringJournalEntry: (d) => d, deleteRecurringJournalEntry: () => {}, generateEntryFromRecurringTemplate: async () => undefined,
+        addBudget: (d) => d as any, updateBudget: (d) => d, deleteBudget: () => {}, addCostCenter: (d) => d as any, updateCostCenter: (d) => d, deleteCostCenter: () => {},
+        setDashboardLayout, addWidgetToDashboard: () => {}, removeWidgetFromDashboard: () => {}, hasPermission,
+        addDeal, updateDeal, updateDealStage, bulkUpdateDealStage, updateDealWinLossReason, winDeal, deleteDeal, deleteMultipleDeals,
+        addProject, updateProject, deleteProject,
+        addTask, updateTask, updateRecurringTask: () => {}, deleteTask: () => {}, updateTaskStatus: () => {}, addSubtask: () => undefined,
+        addTaskDependency: () => {}, removeTaskDependency: () => {}, deleteMultipleTasks: () => {}, logTimeOnTask, toggleTaskStar: () => {}, createTasksFromTemplate,
+        addAttachmentToTask: () => {}, deleteAttachmentFromTask: () => {}, addInvoice: (d) => d as any, updateInvoice: (d) => d, bulkUpdateInvoiceStatus: () => {}, deleteInvoice: () => {},
+        addBill: (d) => d as any, updateBill: (d) => d, bulkUpdateBillStatus: () => {}, addSupplier: (d) => d as any, updateSupplier: (d) => d, deleteSupplier: () => {}, deletePurchaseOrder: () => {},
+        addEmployee, updateEmployee, deleteEmployee,
+        addLeaveRequest: (d) => d as any, updateLeaveRequestStatus: () => {}, addBankAccount: (d) => d as any, updateBankAccount: (d) => d, deleteBankAccount: () => {},
+        addTransaction: (d) => d as any, updateTransaction: (d) => d, deleteTransaction: () => {},
+        addTicket: (d) => d as any, updateTicket: (d) => d, deleteTicket: () => {},
+        addDocument: (d) => d as any, renameDocument: () => {}, deleteDocument: () => {}, deleteMultipleDocuments: () => {}, addFolder: (d) => ({id:0, name:d} as any), moveDocuments: () => {}, toggleDocumentStar: () => {}, shareDocument: () => {},
+        addComment, updateComment, deleteComment,
+        addSalesActivity: (d) => d as any,
+        addPerformanceReview, updatePerformanceReview,
+        addJobOpening, updateJobOpening,
+        addCandidate, updateCandidate, updateCandidateStage,
+        addOnboardingTemplate, updateOnboardingTemplate, startOnboardingWorkflow, updateOnboardingWorkflowStatus,
+        addPayrollRun, updatePayrollRunStatus, postPayrollRunToJournal, exportPayrollRunToAphbXml, updatePayslip,
+        calculateTerminationPayments, calculateAnnualLeaveBalance, calculatePayrollCost,
+        updateCompanyInfo, updateBrandingSettings, updateSecuritySettings, updateCounters: () => {}, addRole: (d) => d as any, updateRolePermissions: () => {}, deleteRole: () => {},
+        addCustomField: (d) => d as any, updateCustomField: (d) => d, deleteCustomField: () => {},
+        markNotificationAsRead: () => {}, clearAllNotifications: () => {}, deleteNotification: () => {}, deleteAllNotifications: () => {},
+        logActivity, updateAccountingLockDate, addStockMovement: () => {}, 
+        addExpense, addProjectExpense, deleteExpense, updateExpenseStatus, addAsset, updateAsset, updateHrParameters,
+        isCommandPaletteOpen, setIsCommandPaletteOpen, isCustomerFormOpen, setIsCustomerFormOpen, editingCustomer, isDealFormOpen, setIsDealFormOpen, editingDeal, prefilledDealData, isTaskFormOpen, setIsTaskFormOpen, editingTask, prefilledTaskData, isProjectFormOpen, setIsProjectFormOpen, editingProject, prefilledProjectData, isTicketFormOpen, setIsTicketFormOpen, editingTicket, prefilledTicketData, isSalesOrderFormOpen, setIsSalesOrderFormOpen, editingSalesOrder, prefilledSalesOrderData, isLogModalOpen, setIsLogModalOpen, logModalCustomerId,
     };
 
-    return <AppContext.Provider value={value}>{children}</AppContext.Provider>;
+    return <AppContext.Provider value={contextValue}>{children}</AppContext.Provider>;
 };

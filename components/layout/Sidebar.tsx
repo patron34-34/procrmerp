@@ -157,11 +157,15 @@ const Sidebar: React.FC = () => {
                             <NavItem to="/my-team" text="Ekibim" icon={ICONS.team} permission="ik:goruntule" />
                         </CollapsibleNavItem>
 
-                        <CollapsibleNavItem text="Muhasebe" icon={ICONS.accounting} basePaths={['/accounting', '/finance']} permissions={['muhasebe:goruntule', 'finans:goruntule', 'muhasebe:yonet']}>
+                        <CollapsibleNavItem text="Finans" icon={ICONS.bank} basePaths={['/finance']} permissions={['finans:goruntule', 'finans:yonet']}>
+                            <NavItem to="/finance/bank-accounts" text="Banka Hesapları" icon={ICONS.bank} permission="finans:goruntule" />
+                            <NavItem to="/finance/transactions" text="İşlemler" icon={ICONS.transfer} permission="finans:goruntule" />
+                        </CollapsibleNavItem>
+
+                        <CollapsibleNavItem text="Muhasebe" icon={ICONS.accounting} basePaths={['/accounting']} permissions={['muhasebe:goruntule', 'muhasebe:yonet']}>
                             <NavItem to="/accounting/dashboard" text="Kontrol Paneli" icon={ICONS.dashboard} permission="muhasebe:goruntule" />
                             <NavItem to="/accounting/chart-of-accounts" text="Hesap Planı" icon={ICONS.list} permission="muhasebe:goruntule" />
                             <NavItem to="/accounting/journal-entries" text="Yevmiye Kayıtları" icon={ICONS.ledger} permission="muhasebe:yonet" />
-                            <NavItem to="/finance/bank-accounts" text="Banka Hesapları" icon={ICONS.bank} permission="finans:goruntule" />
                         </CollapsibleNavItem>
                         
                         <NavItem to="/reports" text="Raporlar" icon={ICONS.reports} permission="rapor:goruntule" />
